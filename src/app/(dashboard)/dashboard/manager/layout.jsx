@@ -1,12 +1,19 @@
-import { isManager } from "@/lib/middleware";
-import { redirect } from "next/navigation";
+import { isManager } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import React from 'react'
+import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 
-export default async function ManagerLayout({ children }) {
-    const check = await isManager();
-    
-    if (!check.success) {
-        redirect("/dashboard");
-    }
+export const metadata = {
+  title: `Manager Dashboard | ${STORE_NAME} - ${STORE_TAGLINE}`,
+  description: `Manager Control Panel on ${STORE_NAME}, ${STORE_TAGLINE}.`,
+}
 
-    return <>{children}</>;
+export default async function DashboardManagerLayout({ children }) {
+  const auth=await isManager()
+    if(!auth.success) redirect('/dashboard')
+  return (
+    <>
+      {children}
+    </>
+  )
 }

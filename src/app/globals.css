@@ -1,30 +1,100 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: var(--color-slate-800);
-  --color-primary-dark: var(--color-slate-900);
-  --color-accent: var(--color-slate-400);
-  
-  --font-sans: "Inter", "Roboto", "sans-serif";
-  --font-serif: "Outfit", "serif";
+  --color-primary: #73976A;       
+  --color-primary-dark: #607E59;  
+  --color-primary-light: #a2ba9c;
+
+  --color-secondary: #BD4444;  
+  --color-secondary-dark: #842f2f;
+  --color-secondary-light: #d07c7c;
+
+  --color-tertiary: #F1F5F9;   
+  --color-tertiary-dark: #000000; 
+  --color-tertiary-light: #ffffff;
+
 }
 
-@layer base {
-  body {
-    @apply text-slate-900 selection:bg-slate-100 selection:text-black;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
-  }
+
+
+
+@layer utilities{
+    .standard-input{
+        @apply w-full border border-black/70 rounded-md py-1 px-3 outline-none bg-white text-black
+    }
+
+    .primary-button{
+        @apply w-auto px-5 cursor-pointer bg-black text-white rounded-2xl py-1
+    }
+
+    .input-style {
+        width: 100%;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        background-color: var(--color-tertiary);
+        outline: none;
+        border-radius: 4px;
+        color: var(--color-tertiary-dark);
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        
+    }
+    
+
 }
 
-@layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20;
-  }
-  
-  .glass-dark {
-    @apply bg-black/50 backdrop-blur-md border border-white/10;
-  }
+.ProseMirror {
+  outline: none;
+}
+.ProseMirror[contenteditable="true"] {
+  min-height: 120px;
+}
+.ProseMirror p {
+  margin-bottom: 0.5rem;
+}
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.ProseMirror blockquote {
+  border-left: 3px solid #cbd5e1;
+  padding-left: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+.ProseMirror code {
+  background-color: #f1f5f9;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+.ProseMirror pre {
+  background-color: #0f172a;
+  color: #f8fafc;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-family: monospace;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+/* Placeholder styling */
+.ProseMirror p.is-editor-empty:first-child::before,
+.ProseMirror p.is-empty::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

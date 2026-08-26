@@ -1,339 +1,333 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
-import { toast } from 'react-hot-toast'
+import toast from 'react-hot-toast'
+import { Context } from '@/component/helper/Context'
+import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 import { 
-  Save, Globe, Mail, Phone, MapPin, 
-  Layout, Search, Palette, ShoppingBag, Loader2,
-  CreditCard, Calendar, CheckCircle2, AlertCircle
-} from 'lucide-react'
-import { RiFacebookFill, RiInstagramLine, RiLinkedinBoxLine, RiYoutubeLine } from 'react-icons/ri'
-import { motion } from 'framer-motion'
+  BiCog, 
+  BiUpload, 
+  BiLoaderAlt, 
+  BiSave, 
+  BiShow,
+  BiGlobe,
+  BiLayout,
+  BiLink
+} from 'react-icons/bi'
 
-const SettingsPage = () => {
-  const [loading, setLoading] = useState(true)
+export default function DashboardAdminSettingsPage() {
+  const { dashSidebar, fetchWebsite } = useContext(Context)
+  const themeColor = '#73976A'
+  
+  // Form fields
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [sociallink, setSociallink] = useState('')
+  const [heroTitle, setHeroTitle] = useState('')
+  const [heroSubtitle, setHeroSubtitle] = useState('')
+  
+  // Logo upload state
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState('')
+  const [existingLogoUrl, setExistingLogoUrl] = useState('')
+
+  // UI status
+  const [fetching, setFetching] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [data, setData] = useState({
-    name: '',
-    business_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    country: '',
-    logo: '',
-    favicon: '',
-    meta_title: '',
-    meta_description: '',
-    facebook: '',
-    instagram: '',
-    linkedin: '',
-    youtube: '',
-    primary_color: '#10b981',
-    secondary_color: '#ffffff',
-    is_public: true,
-    is_store_enabled: true,
-    subscription_status: '',
-    subscription_expires_at: '',
-    tenant_status: ''
-  })
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get('/api/settings')
+        const data = res.data
+        if (data) {
+          setEmail(data.email || '')
+          setPhone(data.phone || '')
+          setAddress(data.address || '')
+          setSociallink(data.sociallink || '')
+          setHeroTitle(data.hero_title || '')
+          setHeroSubtitle(data.hero_subtitle || '')
+          setLogoPreview(data.logo || data.logo_url || '')
+          setExistingLogoUrl(data.logo || data.logo_url || '')
+        }
+      } catch (err) {
+        toast.error('Failed to load website settings')
+        console.error(err)
+      } finally {
+        setFetching(false)
+      }
+    }
     fetchSettings()
   }, [])
 
-  const fetchSettings = async () => {
-    try {
-      const response = await axios.get('/api/website', { withCredentials: true })
-      if (response.data.success) {
-        setData(response.data.payload)
-      }
-    } catch (error) {
-      toast.error('Failed to load settings')
-    } finally {
-      setLoading(false)
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setLogoFile(file)
+      setLogoPreview(URL.createObjectURL(file))
     }
-  }
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
+    
+    const formData = new FormData()
+    formData.append('email', email)
+    formData.append('phone', phone)
+    formData.append('address', address)
+    formData.append('sociallink', sociallink)
+    formData.append('hero_title', heroTitle)
+    formData.append('hero_subtitle', heroSubtitle)
+    
+    if (logoFile) {
+      formData.append('logo', logoFile)
+    }
+
     try {
-      const response = await axios.put('/api/website', data, { withCredentials: true })
-      if (response.data.success) {
-        toast.success('Settings updated successfully')
+      const res = await axios.post('/api/settings', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      toast.success('Website settings updated successfully!')
+      if (res.data && (res.data.logo || res.data.logo_url)) {
+        const newUrl = res.data.logo || res.data.logo_url
+        setExistingLogoUrl(newUrl)
+        setLogoPreview(newUrl)
+        setLogoFile(null)
       }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update settings')
+      if (fetchWebsite) {
+        fetchWebsite()
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save settings')
+      console.error(err)
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) {
+  if (fetching) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-800" />
+      <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'} flex items-center justify-center`}>
+        <div className="flex items-center gap-2 text-slate-500 font-semibold">
+          <BiLoaderAlt className="animate-spin text-xl text-slate-800" />
+          <span>Loading settings details...</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Store Settings</h1>
-        <p className="text-slate-500 font-medium">Manage your website information and preferences.</p>
-      </div>
-
-      {/* --- Subscription Status (New Section) --- */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl p-1 border border-slate-100 shadow-sm overflow-hidden"
-      >
-        <div className="flex flex-col md:flex-row items-center gap-6 p-6 md:p-8">
-          <div className="p-4 bg-slate-900 rounded-2xl text-white">
-            <CreditCard size={32} />
-          </div>
-          <div className="flex-1 text-center md:text-left space-y-1">
-            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Subscription Plan</h2>
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                data.subscription_status === 'active' ? 'bg-slate-100 text-slate-900' : 'bg-slate-100 text-slate-900'
-              }`}>
-                {data.subscription_status === 'active' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                {data.subscription_status || 'Unknown'}
-              </span>
-              <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">•</span>
-              <span className="text-slate-500 font-bold text-sm">
-                Expires on: <span className="text-slate-900">{data.subscription_expires_at ? new Date(data.subscription_expires_at).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}</span>
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col items-center md:items-end gap-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Website & Account Status</span>
-            <div className="flex gap-2">
-              <div className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border ${
-                data.status === 'active' ? 'border-slate-100 bg-slate-50 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-900'
-              }`}>
-                Site: {data.status || 'Unknown'}
-              </div>
-              <div className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest border ${
-                data.tenant_status === 'active' ? 'border-slate-100 bg-slate-50 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-900'
-              }`}>
-                Tenant: {data.tenant_status || 'Inactive'}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-slate-50 px-8 py-3 flex items-center justify-between border-t border-slate-100">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">For billing inquiries or plan upgrades, please visit disibin.com</p>
-          <a href="https://www.disibin.com" target="_blank" className="text-xs font-black text-slate-800 uppercase tracking-widest hover:text-slate-900 transition-colors">Contact Support</a>
-        </div>
-      </motion.div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
+    <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
+      <div className="w-full flex flex-col gap-6">
         
-        {/* --- Business Profile --- */}
-        <Section title="Business Profile" icon={<Globe className="text-slate-800" />}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <InputField 
-                label="Website Name" name="name" 
-                value={data.name} onChange={handleChange} 
-                placeholder="e.g. My Awesome Store"
-              />
-            </div>
-            <InputField 
-              label="Business Legal Name" name="business_name" 
-              value={data.business_name} onChange={handleChange} 
-            />
-            <InputField 
-              label="Contact Email" name="email" type="email"
-              value={data.email} onChange={handleChange} 
-            />
-            <InputField 
-              label="Phone Number" name="phone" 
-              value={data.phone} onChange={handleChange} 
-            />
-            <div className="md:col-span-2">
-              <InputField 
-                label="Office Address" name="address" 
-                value={data.address} onChange={handleChange} 
-              />
-            </div>
-            <InputField 
-              label="City" name="city" 
-              value={data.city} onChange={handleChange} 
-            />
-            <InputField 
-              label="Country" name="country" 
-              value={data.country} onChange={handleChange} 
-            />
-          </div>
-        </Section>
-
-        {/* --- Branding & Assets --- */}
-        <Section title="Branding" icon={<Layout className="text-slate-800" />}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField 
-              label="Logo URL" name="logo" 
-              value={data.logo} onChange={handleChange} 
-              placeholder="https://example.com/logo.png"
-            />
-            <InputField 
-              label="Favicon URL" name="favicon" 
-              value={data.favicon} onChange={handleChange} 
-              placeholder="https://example.com/favicon.ico"
-            />
-            <ColorField 
-              label="Primary Color" name="primary_color" 
-              value={data.primary_color} onChange={handleChange} 
-            />
-            <ColorField 
-              label="Secondary Color" name="secondary_color" 
-              value={data.secondary_color} onChange={handleChange} 
-            />
-          </div>
-        </Section>
-
-        {/* --- SEO Settings --- */}
-        <Section title="SEO & Meta" icon={<Search className="text-slate-800" />}>
-          <div className="grid grid-cols-1 gap-6">
-            <InputField 
-              label="Meta Title" name="meta_title" 
-              value={data.meta_title} onChange={handleChange} 
-            />
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">Meta Description</label>
-              <textarea 
-                name="meta_description"
-                value={data.meta_description}
-                onChange={handleChange}
-                rows={3}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-slate-800 transition-all text-sm"
-              />
-            </div>
-          </div>
-        </Section>
-
-        {/* --- Social Links --- */}
-        <Section title="Social Presence" icon={<RiFacebookFill className="text-slate-900" size={24} />}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SocialField icon={<RiFacebookFill size={18} />} label="Facebook" name="facebook" value={data.facebook} onChange={handleChange} />
-            <SocialField icon={<RiInstagramLine size={18} />} label="Instagram" name="instagram" value={data.instagram} onChange={handleChange} />
-            <SocialField icon={<RiLinkedinBoxLine size={18} />} label="LinkedIn" name="linkedin" value={data.linkedin} onChange={handleChange} />
-            <SocialField icon={<RiYoutubeLine size={18} />} label="YouTube" name="youtube" value={data.youtube} onChange={handleChange} />
-          </div>
-        </Section>
-
-        {/* --- Platform Controls --- */}
-        <Section title="Platform Controls" icon={<ShoppingBag className="text-slate-800" />}>
-          <div className="flex flex-wrap gap-8">
-            <ToggleField 
-              label="Public Website" 
-              description="Make the website visible to everyone."
-              name="is_public" checked={data.is_public} onChange={handleChange} 
-            />
-            <ToggleField 
-              label="Enable Store" 
-              description="Enable checkout and shopping features."
-              name="is_store_enabled" checked={data.is_store_enabled} onChange={handleChange} 
-            />
-          </div>
-        </Section>
-
-        <div className="flex justify-end pt-4 pb-12">
-          <button 
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+        {/* Header */}
+        <div className="border-b border-slate-200 pb-4">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <BiCog style={{ color: themeColor }} />
+            Website Settings & Configuration
+          </h1>
+          <p className="text-slate-500 text-xs md:text-sm mt-0.5">Configure store branding logo, contact details, and landing page banner headers.</p>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          {/* Main Settings Form Panel */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            
+            {/* General Identity */}
+            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
+              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                <BiGlobe style={{ color: themeColor }} className="text-base" /> General Identity
+              </h2>
+              
+              {/* Secret.js Info Box */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center rounded-xl">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: themeColor }}>Secret Configured</span>
+                  <h4 className="text-xs font-bold text-slate-800">{STORE_NAME}</h4>
+                  <p className="text-[11px] text-slate-500 italic mt-0.5">"{STORE_TAGLINE}"</p>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded">
+                  Managed in secret.js
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Contact Email */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700">Store Support Email</label>
+                  <input 
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition"
+                  />
+                </div>
+
+                {/* Contact Phone */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700">Store Customer Phone</label>
+                  <input 
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700">Office Showroom / Warehouse Address</label>
+                <textarea
+                  rows={2}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition resize-none"
+                />
+              </div>
+
+              {/* Social Link */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                  <BiLink className="text-slate-400 text-sm" /> Social Profile Link (e.g. Facebook/Instagram)
+                </label>
+                <input 
+                  type="text"
+                  value={sociallink}
+                  onChange={(e) => setSociallink(e.target.value)}
+                  className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition"
+                />
+              </div>
+
+            </div>
+
+            {/* Layout Settings & Hero Banner */}
+            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
+              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                <BiLayout style={{ color: themeColor }} className="text-base" /> Landing Hero Section
+              </h2>
+
+              {/* Hero Banner Title */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700">Hero Main Title Banner</label>
+                <input 
+                  type="text"
+                  value={heroTitle}
+                  onChange={(e) => setHeroTitle(e.target.value)}
+                  className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition"
+                />
+              </div>
+
+              {/* Hero Banner Subtitle */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700">Hero Subtitle Banner</label>
+                <textarea
+                  rows={2}
+                  value={heroSubtitle}
+                  onChange={(e) => setHeroSubtitle(e.target.value)}
+                  className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition resize-none"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Visual Elements & Logo Upload */}
+          <div className="flex flex-col gap-6">
+            
+            {/* Visual Branding & Logo */}
+            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
+              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                <BiUpload style={{ color: themeColor }} className="text-base" /> Website Logo (Cloudinary)
+              </h2>
+
+              {/* Logo Upload */}
+              <div className="flex flex-col gap-2.5">
+                <label className="text-xs font-bold text-slate-700">Website Logo File</label>
+                
+                <div className="flex flex-col items-center gap-4 border-2 border-dashed border-slate-200 p-4 hover:bg-slate-50 transition relative rounded-xl">
+                  
+                  {logoPreview ? (
+                    <div className="relative w-28 h-28 border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 rounded-xl overflow-hidden p-2">
+                      <img
+                        src={logoPreview}
+                        alt="Logo Preview"
+                        className="object-contain w-full h-full"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-28 h-28 border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] font-bold uppercase tracking-wider border-dashed border-2 rounded-xl">
+                      No Logo
+                    </div>
+                  )}
+
+                  <label className="w-full flex items-center justify-center py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer select-none gap-1.5 border border-slate-200 rounded-xl">
+                    <BiUpload className="text-base" style={{ color: themeColor }} /> Select & Replace Logo
+                    <input className="hidden"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                    />
+                  </label>
+                  <p className="text-[10px] text-slate-400 text-center">Uploading a new logo will delete the old image from Cloudinary automatically.</p>
+                </div>
+              </div>
+
+              {/* Save Controls */}
+              <div className="border-t border-slate-100 pt-4 mt-1 flex flex-col gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full py-3 text-white text-xs md:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-2 shadow-md rounded-xl disabled:opacity-50 hover:opacity-95"
+                  style={{ backgroundColor: themeColor }}
+                >
+                  {saving ? (
+                    <>
+                      <BiLoaderAlt className="animate-spin text-lg" />
+                      Saving settings...
+                    </>
+                  ) : (
+                    <>
+                      <BiSave className="text-lg" /> Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </div>
+
+            {/* Banner Live Rendering Card */}
+            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
+              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                <BiShow style={{ color: themeColor }} className="text-base" /> Live Preview
+              </h2>
+
+              <div className="w-full p-5 border border-slate-200 relative min-h-[160px] flex flex-col justify-center gap-2 rounded-xl bg-slate-50">
+                {/* Logo mock */}
+                {logoPreview && (
+                  <div className="w-12 h-12 bg-white p-1 w-fit mb-1 border border-slate-200 rounded-lg">
+                    <img src={logoPreview} alt="mock" className="object-contain w-full h-full" />
+                  </div>
+                )}
+                
+                <h3 className="text-xs md:text-sm font-bold text-slate-800 leading-tight">
+                  {heroTitle || 'Your Banner Title'}
+                </h3>
+                
+                <p className="text-[10px] text-slate-600 leading-relaxed">
+                  {heroSubtitle || 'Your Hero subtitle details banner content here.'}
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </form>
+
+      </div>
     </div>
   )
 }
-
-const Section = ({ title, icon, children }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm space-y-6"
-  >
-    <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-      <div className="p-2 bg-slate-50 rounded-xl">{icon}</div>
-      <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">{title}</h2>
-    </div>
-    {children}
-  </motion.div>
-)
-
-const InputField = ({ label, ...props }) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">{label}</label>
-    <input 
-      {...props}
-      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-slate-800 focus:bg-white transition-all text-sm font-medium"
-    />
-  </div>
-)
-
-const ColorField = ({ label, value, onChange, name }) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">{label}</label>
-    <div className="flex items-center gap-3">
-      <input 
-        type="color" name={name} value={value} onChange={onChange}
-        className="w-12 h-12 rounded-lg cursor-pointer border-none bg-transparent"
-      />
-      <input 
-        type="text" value={value} readOnly
-        className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-mono uppercase"
-      />
-    </div>
-  </div>
-)
-
-const SocialField = ({ icon, label, ...props }) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">{label}</label>
-    <div className="relative">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">{icon}</div>
-      <input 
-        {...props}
-        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-slate-800 focus:bg-white transition-all text-sm font-medium"
-      />
-    </div>
-  </div>
-)
-
-const ToggleField = ({ label, description, checked, onChange, name }) => (
-  <label className="flex items-start gap-4 cursor-pointer group">
-    <div className="relative mt-1">
-      <input 
-        type="checkbox" name={name} checked={checked} onChange={onChange}
-        className="sr-only"
-      />
-      <div className={`w-12 h-6 rounded-full transition-colors ${checked ? 'bg-slate-800' : 'bg-slate-200'}`} />
-      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${checked ? 'left-7' : 'left-1'}`} />
-    </div>
-    <div className="flex flex-col">
-      <span className="text-sm font-bold text-slate-800">{label}</span>
-      <span className="text-xs text-slate-500 font-medium">{description}</span>
-    </div>
-  </label>
-)
-
-export default SettingsPage

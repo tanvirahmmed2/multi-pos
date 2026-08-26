@@ -1,127 +1,81 @@
-import { pool } from "@/lib/database/db";
-import { getTenant } from "@/lib/database/tenant";
-import { NextResponse } from "next/server";
-import { sendEmail } from "@/lib/database/brevo";
+import { query } from '@/lib/db';
+import { authenticateUser } from '@/lib/auth';
+
+export async function GET(req) {
+  try {
+    const auth = await authenticateUser();
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 401 });
+    }
+
+    const isStaff = ['admin', 'manager', 'sales'].includes(auth.user.role);
+    let result;
+
+    if (isStaff) {
+      // Staff members see all tickets, joining user details
+      result = await query(`
+        SELECT 
+          s.*,
+          u.name AS user_name,
+          u.email AS user_email,
+          u.role AS user_role
+        FROM supports s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        ORDER BY s.updated_at DESC, s.support_id DESC
+      `);
+    } else {
+      // Normal customers see only their own tickets
+      result = await query(`
+        SELECT 
+          s.*,
+          u.name AS user_name,
+          u.email AS user_email,
+          u.role AS user_role
+        FROM supports s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        WHERE s.user_id = $1
+        ORDER BY s.updated_at DESC, s.support_id DESC
+      `, [auth.user.user_id]);
+    }
+
+    return Response.json(result.rows, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching support tickets:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
 export async function POST(req) {
-    try {
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const { name, email, subject, message } = await req.json()
-
-        if (!name || !email || !subject || !message) {
-            return NextResponse.json({
-                success: false, message: 'Please provide all information'
-            }, { status: 400 })
-        }
-
-        const newSupport = await pool.query(
-            `INSERT INTO ecom_supports (name, email, subject, message, tenant_id) VALUES ($1, $2, $3, $4, $5) RETURNING *`, 
-            [name, email, subject, message, tenant_id]
-        );
-
-        if (newSupport.rowCount === 0) {
-            return NextResponse.json({
-                success: false, message: 'Failed to send message'
-            }, { status: 400 })
-        }
-        return NextResponse.json({
-            success: true, message: 'Successfully sent message'
-        }, { status: 200 })
-    } catch (error) {
-        return NextResponse.json({
-            success: false, message: error.message
-        }, { status: 500 })
+  try {
+    const auth = await authenticateUser();
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 401 });
     }
+
+    const body = await req.json();
+    const { subject, description, priority } = body;
+
+    if (!subject || !subject.trim()) {
+      return Response.json({ error: 'Subject is required' }, { status: 400 });
+    }
+
+    const validPriorities = ['low', 'medium', 'high', 'urgent'];
+    const ticketPriority = validPriorities.includes(priority) ? priority : 'medium';
+
+    const result = await query(`
+      INSERT INTO supports (user_id, subject, description, priority, status)
+      VALUES ($1, $2, $3, $4, 'pending')
+      RETURNING *
+    `, [auth.user.user_id, subject.trim(), description?.trim() || '', ticketPriority]);
+
+    const newTicket = result.rows[0];
+    newTicket.user_name = auth.user.name;
+    newTicket.user_email = auth.user.email;
+    newTicket.user_role = auth.user.role;
+
+    return Response.json(newTicket, { status: 201 });
+  } catch (error) {
+    console.error('Error creating support ticket:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
-
-export async function GET() {
-    try {
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const data = await pool.query(`SELECT * FROM ecom_supports WHERE tenant_id = $1 ORDER BY created_at DESC`, [tenant_id])
-        const result = data.rows
-
-        return NextResponse.json({
-            success: true, message: 'Successfully fetched data', payload: result
-        }, { status: 200 })
-
-    } catch (error) {
-        return NextResponse.json({
-            success: false, message: error.message
-        }, { status: 500 })
-    }
-}
-
-export async function PUT(req) {
-    try {
-        const { email, name, subject, replyMessage } = await req.json();
-
-        if (!email || !replyMessage) {
-            return NextResponse.json({ success: false, message: 'Email and message are required' }, { status: 400 });
-        }
-
-        const emailResult = await sendEmail({
-            toEmail: email,
-            toName: name || 'Valued Customer',
-            subject: `Re: ${subject || 'Support Ticket'}`,
-            htmlContent: `
-                <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                    <h2>Support Response</h2>
-                    <p>Hello ${name || ''},</p>
-                    <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        ${replyMessage.replace(/\n/g, '<br/>')}
-                    </div>
-                    <p>Best regards,<br/>Support Team</p>
-                </div>
-            `
-        });
-
-        if (emailResult.success) {
-            return NextResponse.json({ success: true, message: 'Reply sent successfully' });
-        } else {
-            return NextResponse.json({ success: false, message: 'Failed to send email' }, { status: 500 });
-        }
-    } catch (error) {
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-    }
-}
-
-export async function DELETE(req) {
-    try {
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const { id } = await req.json()
-        if (!id) {
-            return NextResponse.json({
-                success: false, message: 'ID not received'
-            }, { status: 400 })
-        }
-        const result = await pool.query(`DELETE FROM ecom_supports WHERE support_id = $1 AND tenant_id = $2 RETURNING *`, [id, tenant_id])
-        if (result.rowCount === 0) {
-            return NextResponse.json({
-                success: false, message: 'Failed to remove message'
-            }, { status: 400 })
-        }
-
-        return NextResponse.json({
-            success: true, message: 'Successfully deleted message'
-        }, { status: 200 })
-    } catch (error) {
-        return NextResponse.json({
-            success: false, message: error.message
-        }, { status: 500 })
-    }
-}

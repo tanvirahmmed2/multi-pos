@@ -1,178 +1,70 @@
-import { pool } from '@/lib/database/db'
-import { getTenant } from '@/lib/database/tenant';
-import { NextResponse } from 'next/server'
-import { isAdmin, isManagement, isManager } from "@/lib/middleware";
+import { query } from '@/lib/db';
+import { isManager } from '@/lib/auth';
+import { uploadToCloudinary } from '@/lib/cloudinary';
+
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
+}
+
+export async function GET(req) {
+  try {
+    const result = await query(`
+      SELECT c.*, p.name AS parent_name 
+      FROM categories c
+      LEFT JOIN categories p ON c.parent_id = p.category_id
+      ORDER BY c.parent_id NULLS FIRST, c.category_id ASC
+    `);
+    return Response.json(result.rows, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
 export async function POST(req) {
   try {
     const auth = await isManager();
-    if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-
-    const website = await getTenant();
-    if (!website) {
-      return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-    }
-    const tenant_id = website.tenant_id;
-
-    const { name, parent_id } = await req.json()
-
-    if (!name || name.trim() === '') {
-      return NextResponse.json(
-        { success: false, message: 'Please add category name' },
-        { status: 400 }
-      )
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 403 });
     }
 
-    const parentId = parent_id ? parseInt(parent_id) : null;
+    const formData = await req.formData();
+    const name = formData.get('name');
+    const parentIdVal = formData.get('parent_id');
+    const imageFile = formData.get('image');
 
-    const existCat = await pool.query(
-      'SELECT 1 FROM ecom_categories WHERE name = $1 AND tenant_id = $2 AND (parent_id = $3 OR (parent_id IS NULL AND $3 IS NULL))',
-      [name.trim(), tenant_id, parentId]
-    )
-
-    if (existCat.rowCount > 0) {
-      return NextResponse.json(
-        { success: false, message: 'Category already exists' },
-        { status: 409 }
-      )
+    if (!name) {
+      return Response.json({ error: 'Category name is required' }, { status: 400 });
+    }
+    if (!imageFile) {
+      return Response.json({ error: 'Category image is required' }, { status: 400 });
     }
 
-    const newCat = await pool.query(
-      'INSERT INTO ecom_categories(name, parent_id, tenant_id) VALUES($1, $2, $3) RETURNING *',
-      [name.trim(), parentId, tenant_id]
-    )
+    const slug = slugify(name);
+    const parent_id = parentIdVal && parentIdVal !== 'null' && parentIdVal !== '' ? parseInt(parentIdVal, 10) : null;
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Successfully added category',
-        data: newCat.rows[0],
-      },
-      { status: 201 }
-    )
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-
-export async function GET() {
-  try {
-    const auth = await isManagement();
-    if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-
-    const website = await getTenant();
-    if (!website) {
-      return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-    }
-    const tenant_id = website.tenant_id;
-
-    const data = await pool.query(
-      'SELECT * FROM ecom_categories WHERE tenant_id = $1 ORDER BY created_at DESC',
-      [tenant_id]
-    )
-    const result = data.rows
-
-    if (!result || result.length === 0) {
-      return NextResponse.json({
-        success: false, message: 'No category found'
-      }, { status: 400 })
+    // Upload to Cloudinary
+    const uploadResult = await uploadToCloudinary(imageFile, 'categories');
+    if (!uploadResult) {
+      return Response.json({ error: 'Failed to upload image' }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true, message: 'Successfully fetched data', payload: result
-    }, { status: 200 })
-
-  } catch (error) {
-    return NextResponse.json({
-      success: false, message: error.message
-    }, { status: 500 })
-  }
-}
-
-export async function PUT(req) {
-  try {
-    const auth = await isManager();
-    if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-
-    const website = await getTenant();
-    if (!website) {
-      return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-    }
-    const tenant_id = website.tenant_id;
-
-    const { id, name, parent_id } = await req.json();
-
-    if (!id || !name) {
-      return NextResponse.json(
-        { success: false, message: 'ID and Name are required' },
-        { status: 400 }
-      );
-    }
-
-    const parentId = parent_id ? parseInt(parent_id) : null;
-
-    const result = await pool.query(
-      'UPDATE ecom_categories SET name = $1, parent_id = $2 WHERE category_id = $3 AND tenant_id = $4 RETURNING *',
-      [name.trim(), parentId, id, tenant_id]
+    const result = await query(
+      `INSERT INTO categories (name, slug, parent_id, image, image_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [name, slug, parent_id, uploadResult.url, uploadResult.id]
     );
 
-    if (result.rowCount === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Category not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: true, message: 'Successfully updated category', data: result.rows[0] },
-      { status: 200 }
-    );
+    return Response.json(result.rows[0], { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(req) {
-  try {
-    const auth = await isManager();
-    if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-
-    const website = await getTenant();
-    if (!website) {
-      return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-    }
-    const tenant_id = website.tenant_id;
-
-    const { id } = await req.json()
-    if (!id) {
-      return NextResponse.json({
-        success: false, message: 'ID not recieved'
-      }, { status: 400 })
-    }
-    const result = await pool.query(
-      `DELETE FROM ecom_categories WHERE category_id = $1 AND tenant_id = $2 RETURNING *`,
-      [id, tenant_id]
-    )
-
-    if (result.rowCount === 0) {
-      return NextResponse.json({
-        success: false, message: 'Failed to delete category'
-      }, { status: 400 })
-    }
-
-    return NextResponse.json({
-      success: true, message: 'Successfully deleted category'
-    }, { status: 200 })
-
-  } catch (error) {
-    return NextResponse.json({
-      success: false, message: error.message
-    }, { status: 500 })
+    console.error('Error creating category:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

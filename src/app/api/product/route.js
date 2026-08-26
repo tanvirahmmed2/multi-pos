@@ -1,384 +1,248 @@
-import cloudinary from "@/lib/database/cloudinary";
-import { pool } from "@/lib/database/db";
-import { getTenant } from "@/lib/database/tenant";
-import { NextResponse } from "next/server";
-import slugify from "slugify";
-import { isAdmin, isManagement, isManager } from "@/lib/middleware";
+import { query } from '@/lib/db';
+import { isManager } from '@/lib/auth';
+import { uploadToCloudinary } from '@/lib/cloudinary';
+import { generateUniqueBarcode } from '@/lib/barcode';
 
-export async function POST(req) {
-    try {
-        const auth = await isManager();
-        if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const formData = await req.formData();
-
-        const name = formData.get("name");
-        const description = formData.get('description');
-        const category_id = parseInt(formData.get('categoryId') || formData.get('category_id'));
-        const sub_category_id = null;
-        const brand_id = (formData.get('brandId') || formData.get('brand_id')) ? parseInt(formData.get('brandId') || formData.get('brand_id')) : null;
-        const unit = formData.get('unit');
-        const stock = parseFloat(formData.get('stock')) || 0;
-        const purchase_price = parseFloat(formData.get('purchasePrice') || formData.get('purchase_price')) || 0;
-        const sale_price = parseFloat(formData.get('salePrice') || formData.get('sale_price')) || 0;
-        const discount_price = parseFloat(formData.get('discountPrice') || formData.get('discount_price')) || 0;
-        const wholesale_price = parseFloat(formData.get('wholeSalePrice') || formData.get('wholesale_price')) || 0;
-        const retail_price = parseFloat(formData.get('retailPrice') || formData.get('retail_price')) || 0;
-        const dealer_price = parseFloat(formData.get('dealerPrice') || formData.get('dealer_price')) || 0;
-        const imageFile = formData.get('image');
-
-        if (!name || !category_id || !unit || isNaN(purchase_price) || isNaN(sale_price)) {
-            return NextResponse.json({ success: false, message: 'Please provide all required fields' }, { status: 400 });
-        }
-
-        let barcode = formData.get('barcode');
-        if (!barcode || barcode.trim() === '') {
-            const maxBarcodeResult = await pool.query(`
-                SELECT MAX(CAST(barcode AS BIGINT)) as max_code 
-                FROM ecom_products 
-                WHERE barcode ~ '^[0-9]+$' AND tenant_id = $1
-            `, [tenant_id]);
-            const maxCode = maxBarcodeResult.rows[0]?.max_code;
-            barcode = maxCode ? (Number(maxCode) + 1).toString() : "10001";
-        }
-
-        const computedStock = parseFloat(formData.get('stock')) || 0;
-
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-
-            const slug = slugify(name.trim(), { lower: true, strict: true });
-
-            const isExists = await client.query(
-                `SELECT product_id FROM ecom_products WHERE (slug=$1 OR barcode=$2) AND tenant_id = $3`,
-                [slug, barcode, tenant_id]
-            );
-            if (isExists.rowCount > 0) {
-                await client.query('ROLLBACK');
-                return NextResponse.json({ success: false, message: 'Product name or Barcode already exists' }, { status: 400 });
-            }
-
-            if (!imageFile) {
-                await client.query('ROLLBACK');
-                return NextResponse.json({ success: false, message: 'Please add image' }, { status: 400 });
-            }
-
-            const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-            const cloudImage = await new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
-                    { folder: `tenant_${tenant_id}` },
-                    (err, result) => {
-                        if (err) reject(err);
-                        else resolve(result);
-                    }
-                );
-                stream.end(imageBuffer);
-            });
-
-            const query = `
-                INSERT INTO ecom_products (
-                    name, description, category_id, sub_category_id, brand_id, slug, barcode, unit, 
-                    stock, purchase_price, sale_price, discount_price, 
-                    wholesale_price, retail_price, dealer_price, image, image_id, tenant_id
-                ) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
-                RETURNING product_id`;
-
-            const values = [
-                name, description, category_id, sub_category_id, brand_id, slug, barcode, unit,
-                computedStock, purchase_price, sale_price, discount_price,
-                wholesale_price, retail_price, dealer_price,
-                cloudImage.secure_url, cloudImage.public_id, tenant_id
-            ];
-
-            const newProduct = await client.query(query, values);
-            const productId = newProduct.rows[0].product_id;
-
-            // Fetch the final product to return
-            const finalProduct = await client.query(`
-                SELECT p.*, c.name as category_name, b.name as brand_name 
-                FROM ecom_products p
-                LEFT JOIN ecom_categories c ON p.category_id = c.category_id
-                LEFT JOIN ecom_brands b ON p.brand_id = b.brand_id
-                WHERE p.product_id = $1 AND p.tenant_id = $2
-            `, [productId, tenant_id]);
-
-            const productToReturn = finalProduct.rows[0];
-
-            await client.query('COMMIT');
-            return NextResponse.json({
-                success: true,
-                message: `Successfully added product. Barcode: ${barcode}`,
-                payload: productToReturn
-            }, { status: 201 });
-
-        } catch (error) {
-            await client.query('ROLLBACK');
-            console.error("Product POST Transaction Error:", error);
-            throw error;
-        } finally {
-            client.release();
-        }
-
-    } catch (error) {
-        console.error("Product POST API Error:", error);
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-    }
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
 }
 
 export async function GET(req) {
-    try {
-        const auth = await isManagement();
-        if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
+  try {
+    let sql = `
+      SELECT DISTINCT ON (p.product_id)
+        p.product_id, p.category_id, p.brand_id, p.name, p.slug, p.description, p.is_active, p.created_at, p.updated_at,
+        c.name AS category_name, b.name AS brand_name,
+        v.variant_id, v.variant_name, v.barcode, v.purchase_price, v.sale_price,
 
-        const { searchParams } = new URL(req.url);
-        const page = parseInt(searchParams.get('page')) || 1;
-        const limit = 20;
-        const offset = (page - 1) * limit;
+        v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price,
+        v.stock, v.image, v.image_id, v.weight, v.unit,
+        COALESCE((SELECT SUM(stock)::integer FROM product_variants WHERE product_id = p.product_id), 0) AS total_stock
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN brands b ON p.brand_id = b.brand_id
+      LEFT JOIN product_variants v ON p.product_id = v.product_id
+    `;
+    let params = [];
+    let whereClauses = [];
 
-        const countRes = await pool.query("SELECT COUNT(*) FROM ecom_products WHERE tenant_id = $1", [tenant_id]);
-        const totalItems = parseInt(countRes.rows[0].count);
-        const totalPages = Math.ceil(totalItems / limit);
+    const url = new URL(req.url);
+    const category = url.searchParams.get('category');
 
-        const data = await pool.query(
-            `SELECT 
-                p.*
-             FROM ecom_products p 
-             WHERE p.tenant_id = $1 
-             ORDER BY p.created_at DESC 
-             LIMIT $2 OFFSET $3`,
-            [tenant_id, limit, offset]
+    if (category) {
+      const isNumeric = /^\d+$/.test(category);
+      const catRes = await query(
+        isNumeric 
+          ? 'SELECT category_id FROM categories WHERE category_id = $1' 
+          : 'SELECT category_id FROM categories WHERE slug = $1',
+        [isNumeric ? parseInt(category, 10) : category]
+      );
+      
+      if (catRes.rows.length > 0) {
+        const targetId = catRes.rows[0].category_id;
+        const subcatsRes = await query(
+          'SELECT category_id FROM categories WHERE parent_id = $1 OR category_id = $1',
+          [targetId]
         );
-
-        const result = data.rows;
-
-        if (!result || result.length === 0) {
-            return NextResponse.json({
-                success: false,
-                message: 'No product found'
-            }, { status: 400 });
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: 'Successfully fetched data',
-            payload: result,
-            pagination: {
-                totalItems,
-                totalPages,
-                currentPage: page
-            }
-        }, { status: 200 });
-
-    } catch (error) {
-        return NextResponse.json({
-            success: false,
-            message: error.message
-        }, { status: 500 });
+        const categoryIds = subcatsRes.rows.map(r => r.category_id);
+        
+        whereClauses.push(`p.category_id = ANY($${params.length + 1}::int[])`);
+        params.push(categoryIds);
+      } else {
+        whereClauses.push(`1=0`);
+      }
     }
+
+    if (whereClauses.length > 0) {
+      sql += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    sql += ` ORDER BY p.product_id DESC, v.variant_id ASC`;
+    const result = await query(sql, params);
+    
+    // For simple integration, return stock mapped to total_stock
+    const mappedRows = result.rows.map(r => ({
+      ...r,
+      stock: r.total_stock
+    }));
+
+    return Response.json(mappedRows, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
 
-
-export async function DELETE(req) {
-    try {
-        const auth = await isManager();
-        if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const { id } = await req.json();
-
-        if (!id) {
-            return NextResponse.json(
-                { success: false, message: "ID not received" },
-                { status: 400 }
-            );
-        }
-
-        const { rows } = await pool.query(`SELECT * FROM ecom_products WHERE product_id = $1 AND tenant_id = $2`, [id, tenant_id]);
-        if (rows.length === 0) {
-            return NextResponse.json(
-                { success: false, message: "No product found with this ID" },
-                { status: 404 }
-            );
-        }
-
-        const product = rows[0];
-
-        const deleteImage = await cloudinary.uploader.destroy(product.image_id);
-        if (deleteImage.result !== "ok" && deleteImage.result !== "not found") {
-            return NextResponse.json(
-                { success: false, message: "Could not delete image from Cloudinary" },
-                { status: 500 }
-            );
-        }
-
-        const deleteProduct = await pool.query(
-            `DELETE FROM ecom_products WHERE product_id = $1 AND tenant_id = $2 RETURNING *`,
-            [id, tenant_id]
-        );
-
-        if (deleteProduct.rowCount === 0) {
-            return NextResponse.json(
-                { success: false, message: "Failed to delete product" },
-                { status: 500 }
-            );
-        }
-
-        return NextResponse.json(
-            { success: true, message: "Successfully deleted product" },
-            { status: 200 }
-        );
-
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json(
-            { success: false, message: "Internal server error" },
-            { status: 500 }
-        );
+export async function POST(req) {
+  try {
+    const auth = await isManager();
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 403 });
     }
-}
 
-export async function PUT(req) {
-    const client = await pool.connect();
-    try {
-        const auth = await isManager();
-        if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
+    const formData = await req.formData();
+    const name = formData.get('name');
+    const description = formData.get('description') || '';
+    const category_id = formData.get('category_id') ? parseInt(formData.get('category_id'), 10) : null;
+    const brand_id = formData.get('brand_id') ? parseInt(formData.get('brand_id'), 10) : null;
+    
+    if (!name) {
+      return Response.json({ error: 'Product name is required' }, { status: 400 });
+    }
 
-        const formData = await req.formData();
-        const id = formData.get("id");
-        const name = formData.get("name");
+    const purchase_price = formData.get('purchase_price') ? parseFloat(formData.get('purchase_price')) : 0;
+    const sale_price = formData.get('sale_price') ? parseFloat(formData.get('sale_price')) : 0;
+    const discount_price = formData.get('discount_price') ? parseFloat(formData.get('discount_price')) : 0;
+    const wholesale_price = formData.get('wholesale_price') ? parseFloat(formData.get('wholesale_price')) : 0;
+    const dealer_price = formData.get('dealer_price') ? parseFloat(formData.get('dealer_price')) : 0;
+    const retail_price = formData.get('retail_price') ? parseFloat(formData.get('retail_price')) : 0;
 
-        if (!id) {
-            return NextResponse.json({ success: false, message: 'Product ID is required' }, { status: 400 });
-        }
+    const unit = formData.get('unit') || 'Pcs';
+    let barcode = formData.get('barcode') || '';
+    const stock = formData.get('stock') ? parseInt(formData.get('stock'), 10) : 0;
+    const variantsStr = formData.get('variants');
 
+    let variants = [];
+    if (variantsStr) {
+      try {
+        variants = JSON.parse(variantsStr);
+      } catch (err) {
+        return Response.json({ error: 'Invalid variants JSON format' }, { status: 400 });
+      }
+    }
 
-        const description = formData.get('description');
-        const category_id = parseInt(formData.get('categoryId') || formData.get('category_id'));
-        const sub_category_id = null;
-        const brand_id = (formData.get('brandId') || formData.get('brand_id')) ? parseInt(formData.get('brandId') || formData.get('brand_id')) : null;
-        const barcode = formData.get('barcode');
-        const unit = formData.get('unit');
-        const stock = parseFloat(formData.get('stock')) || 0;
-        const purchase_price = parseFloat(formData.get('purchasePrice') || formData.get('purchase_price')) || 0;
-        const sale_price = parseFloat(formData.get('salePrice') || formData.get('sale_price')) || 0;
-        const discount_price = parseFloat(formData.get('discountPrice') || formData.get('discount_price')) || 0;
-        const wholesale_price = parseFloat(formData.get('wholeSalePrice') || formData.get('wholesale_price')) || 0;
-        const retail_price = parseFloat(formData.get('retailPrice') || formData.get('retail_price')) || 0;
-        const dealer_price = parseFloat(formData.get('dealerPrice') || formData.get('dealer_price')) || 0;
+    if (!Array.isArray(variants) || variants.length === 0) {
+      if (!sale_price || !purchase_price) {
+        return Response.json({ error: 'At least one variant or primary pricing details are required' }, { status: 400 });
+      }
+      variants = [{
+        variant_name: 'Default',
+        barcode: barcode || null,
+        purchase_price,
+        sale_price,
+        discount_price,
+        wholesale_price,
+        dealer_price,
+        retail_price,
+        stock,
+        unit
+      }];
+    }
 
-        const computedStock = parseFloat(formData.get('stock')) || 0;
-
-        await client.query('BEGIN');
-
-        const slug = name ? slugify(name.trim(), { lower: true, strict: true }) : null;
-
-        const imageFile = formData.get("image");
-        let imageUrl = null;
-        let imagePublicId = null;
-
-        if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
-            const arrayBuffer = await imageFile.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-
-            const uploadResponse = await new Promise((resolve, reject) => {
-                cloudinary.uploader.upload_stream(
-                    { folder: `tenant_${tenant_id}` },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                ).end(buffer);
-            });
-
-            imageUrl = uploadResponse.secure_url;
-            imagePublicId = uploadResponse.public_id;
-        }
-
-        let query = `
-            UPDATE ecom_products 
-            SET 
-                name = COALESCE($1, name), 
-                description = $2, 
-                category_id = $3, 
-                sub_category_id = $4,
-                brand_id = $5, 
-                slug = COALESCE($6, slug), 
-                barcode = $7, 
-                unit = $8, 
-                stock = $9, 
-                purchase_price = $10, 
-                sale_price = $11, 
-                discount_price = $12, 
-                wholesale_price = $13, 
-                retail_price = $14, 
-                dealer_price = $15
-        `;
-
-        const values = [
-            name, description, category_id, sub_category_id, brand_id, slug, barcode, unit,
-            computedStock, purchase_price, sale_price, discount_price,
-            wholesale_price, retail_price, dealer_price
-        ];
-
-        if (imageUrl) {
-            query += `, image = $16, image_id = $17 WHERE product_id = $18 AND tenant_id = $19`;
-            values.push(imageUrl, imagePublicId, id, tenant_id);
+    // Pre-populate barcodes and validate uniqueness
+    let lastGeneratedBarcode = null;
+    for (const variant of variants) {
+      if (!variant.barcode) {
+        if (lastGeneratedBarcode) {
+          const nextBarcode = (parseInt(lastGeneratedBarcode, 10) + 1).toString();
+          variant.barcode = nextBarcode;
+          lastGeneratedBarcode = nextBarcode;
         } else {
-            query += ` WHERE product_id = $16 AND tenant_id = $17`;
-            values.push(id, tenant_id);
+          const generated = await generateUniqueBarcode();
+          variant.barcode = generated;
+          lastGeneratedBarcode = generated;
         }
-
-        const updatedProduct = await client.query(query + " RETURNING *", values);
-
-        if (updatedProduct.rowCount === 0) {
-            await client.query('ROLLBACK');
-            return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
+      } else {
+        const checkBarcode = await query('SELECT variant_id FROM product_variants WHERE barcode = $1', [variant.barcode]);
+        if (checkBarcode.rows.length > 0) {
+          return Response.json({ error: `Barcode '${variant.barcode}' already exists. It must be unique.` }, { status: 400 });
         }
-
-        // Fetch the final product to return
-        const finalProduct = await client.query(`
-            SELECT p.*, c.name as category_name, b.name as brand_name 
-            FROM ecom_products p
-            LEFT JOIN ecom_categories c ON p.category_id = c.category_id
-            LEFT JOIN ecom_brands b ON p.brand_id = b.brand_id
-            WHERE p.product_id = $1 AND p.tenant_id = $2
-        `, [id, tenant_id]);
-
-        const productToReturn = finalProduct.rows[0];
-
-        await client.query('COMMIT');
-        return NextResponse.json({
-            success: true,
-            message: 'Successfully updated product',
-            payload: productToReturn
-        }, { status: 200 });
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error("Update Error:", error);
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-    } finally {
-        client.release();
+      }
     }
+
+    const slug = slugify(name) + '-' + Math.floor(1000 + Math.random() * 9000);
+    const is_active = formData.get('is_active') === 'false' ? false : true;
+
+    // Begin DB transaction
+    await query('BEGIN');
+
+    // Insert Product into Database
+    const productResult = await query(
+      `INSERT INTO products (
+        category_id, brand_id, name, slug, description, is_active
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [category_id, brand_id, name, slug, description, is_active]
+    );
+
+    const product = productResult.rows[0];
+
+    // Insert all variants
+    let index = 0;
+    let firstVariantInserted = null;
+    for (const variant of variants) {
+      const vName = variant.variant_name || 'Default';
+      const vBarcode = variant.barcode || await generateUniqueBarcode();
+      const vPurchasePrice = parseFloat(variant.purchase_price) || 0;
+      const vSalePrice = parseFloat(variant.sale_price) || 0;
+      const vDiscountPrice = parseFloat(variant.discount_price) || 0;
+      const vWholesalePrice = parseFloat(variant.wholesale_price) || 0;
+      const vDealerPrice = parseFloat(variant.dealer_price) || 0;
+      const vRetailPrice = parseFloat(variant.retail_price) || 0;
+      const vStock = parseInt(variant.stock, 10) || 0;
+      const vUnit = variant.unit || unit || 'Pcs';
+      const vWeight = (variant.weight !== undefined && variant.weight !== null && variant.weight !== '') ? parseFloat(variant.weight) : null;
+      const vIsActive = variant.is_active !== false;
+
+      let vImage = null;
+      let vImageId = null;
+
+      // Check if there is a variant-specific image uploaded
+      const varImageFile = formData.get(`variant_image_${index}`);
+      if (varImageFile && typeof varImageFile !== 'string') {
+        const varUploadResult = await uploadToCloudinary(varImageFile, 'products');
+        if (varUploadResult) {
+          vImage = varUploadResult.url;
+          vImageId = varUploadResult.id;
+        }
+      }
+
+      const insertedVariant = await query(
+        `INSERT INTO product_variants (
+          product_id, variant_name, barcode, purchase_price, sale_price, 
+          discount_price, wholesale_price, dealer_price, retail_price, stock, weight, unit, image, image_id, is_active
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        RETURNING *`,
+        [
+          product.product_id, vName, vBarcode, vPurchasePrice, vSalePrice,
+          vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vStock, vWeight, vUnit, vImage, vImageId, vIsActive
+        ]
+      );
+
+      if (index === 0) {
+        firstVariantInserted = insertedVariant.rows[0];
+      }
+      index++;
+    }
+
+    await query('COMMIT');
+
+    const firstVar = firstVariantInserted || variants[0];
+    return Response.json({
+      ...product,
+      purchase_price: firstVar.purchase_price,
+      sale_price: firstVar.sale_price,
+      discount_price: firstVar.discount_price || 0,
+      wholesale_price: firstVar.wholesale_price || 0,
+      dealer_price: firstVar.dealer_price || 0,
+      retail_price: firstVar.retail_price || 0,
+      unit: firstVar.unit || 'Pcs',
+      barcode: firstVar.barcode,
+      stock: firstVar.stock,
+      image: firstVar.image || null,
+      image_id: firstVar.image_id || null
+    }, { status: 201 });
+
+
+  } catch (error) {
+    await query('ROLLBACK');
+    console.error('Error creating product:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

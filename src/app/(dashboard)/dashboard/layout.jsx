@@ -1,32 +1,23 @@
-import DashboardSidebar from "@/components/bar/DashboardSidebar"
-import DashboardTopbar from "@/components/bar/DashboardTopbar"
-import FooterTagline from "@/components/bar/FooterTagline"
-import MainContentWrapper from "@/components/bar/MainContentWrapper"
-import {  isUserLogin } from "@/lib/middleware"
-import { redirect } from "next/navigation"
+import Dashboardnavbar from '@/component/bars/Navbar'
+import Dashboardsidebar from '@/component/bars/Sidebar'
+import { isManagementRole } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import React from 'react'
+import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 
 export const metadata = {
-  title: 'Manage',
-  description: 'Management site'
+  title: `Dashboard | ${STORE_NAME} - ${STORE_TAGLINE}`,
+  description: `Management Dashboard on ${STORE_NAME}, ${STORE_TAGLINE}.`,
 }
 
-const PosLayout = async ({ children, }) => {
-  const auth = await isUserLogin()
-  if (!auth.success || auth.payload.role==='user') return redirect('/login')
+export default async function DashboardLayout({ children }) {
+  const auth=await isManagementRole()
+  if(!auth.success) redirect('/')
   return (
-    <div className="w-full flex min-h-screen bg-slate-50 relative overflow-x-hidden">
-      <DashboardSidebar />
-      <MainContentWrapper>
-        <DashboardTopbar />
-        <div className="flex-1 p-4 md:p-8">
-          {children}
-        </div>
-        <div className="py-6 border-t border-slate-200 px-4 md:px-8">
-          <FooterTagline />
-        </div>
-      </MainContentWrapper>
+    <div className='w-full overflow-x-hidden relative'>
+      <Dashboardnavbar/>
+      <Dashboardsidebar/>
+      {children}
     </div>
   )
 }
-
-export default PosLayout

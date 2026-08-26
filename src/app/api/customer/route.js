@@ -1,102 +1,37 @@
-import { pool } from "@/lib/database/db";
-import { getTenant } from "@/lib/database/tenant";
-import { NextResponse } from "next/server";
-import { isManagement } from "@/lib/middleware";
+import { query } from '@/lib/db';
+import { authenticateUser } from '@/lib/auth';
 
-// GET: Fetch all customers
-export async function GET() {
-    const client = await pool.connect();
-    try {
-        const auth = await isManagement();
-        if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const result = await client.query(`
-            SELECT * FROM ecom_customers 
-            WHERE tenant_id = $1
-            ORDER BY created_at DESC
-        `, [tenant_id]);
-        
-        return NextResponse.json({
-            success: true,
-            payload: result.rows
-        }, { status: 200 });
-
-    } catch (error) {
-        console.error("Fetch Customers Error:", error);
-        return NextResponse.json({ 
-            success: false, 
-            message: "Internal server error" 
-        }, { status: 500 });
-    } finally {
-        client.release();
+export async function GET(req) {
+  try {
+    // Authenticate user
+    const auth = await authenticateUser();
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 401 });
     }
-}
 
-// POST: Create a new customer
-export async function POST(req) {
-    const client = await pool.connect();
-    try {
-        const auth = await isManagement();
-        if (!auth.success) return NextResponse.json({ success: false, message: auth.message }, { status: 403 });
-
-        const website = await getTenant();
-        if (!website) {
-            return NextResponse.json({ success: false, message: 'Website/Tenant not found' }, { status: 404 });
-        }
-        const tenant_id = website.tenant_id;
-
-        const body = await req.json();
-        const { name, phone, email, address } = body;
-
-        // 1. Basic Validation
-        if (!name || !phone) {
-            return NextResponse.json({ 
-                success: false, 
-                message: "Name and Phone are required" 
-            }, { status: 400 });
-        }
-
-        // 2. Check if phone already exists (unique constraint check)
-        const checkExist = await client.query(
-            "SELECT customer_id FROM ecom_customers WHERE phone = $1 AND tenant_id = $2", 
-            [phone, tenant_id]
-        );
-
-        if (checkExist.rowCount > 0) {
-            return NextResponse.json({ 
-                success: false, 
-                message: "A customer with this phone number already exists" 
-            }, { status: 400 });
-        }
-
-        // 3. Insert into Database
-        const query = `
-            INSERT INTO ecom_customers (name, phone, email, address, tenant_id) 
-            VALUES ($1, $2, $3, $4, $5) 
-            RETURNING *
-        `;
-        const values = [name, phone, email || null, address || null, tenant_id];
-        const result = await client.query(query, values);
-
-        return NextResponse.json({
-            success: true,
-            message: "Customer added successfully",
-            payload: result.rows[0]
-        }, { status: 201 });
-
-    } catch (error) {
-        console.error("Create Customer Error:", error);
-        return NextResponse.json({ 
-            success: false, 
-            message: "Failed to create customer: " + error.message 
-        }, { status: 500 });
-    } finally {
-        client.release();
+    const isStaff = ['admin', 'manager', 'sales'].includes(auth.user.role);
+    if (!isStaff) {
+      return Response.json({ error: 'Access denied' }, { status: 403 });
     }
+
+    const url = new URL(req.url);
+    const search = url.searchParams.get('search');
+
+    let sql = 'SELECT * FROM customers';
+    let params = [];
+
+    if (search) {
+      sql += ' WHERE phone LIKE $1 OR name ILIKE $1 OR email ILIKE $1';
+      params.push(`%${search.trim()}%`);
+    }
+
+    sql += ' ORDER BY name ASC LIMIT 50';
+
+    const result = await query(sql, params);
+    return Response.json(result.rows, { status: 200 });
+
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

@@ -1,132 +1,419 @@
 'use client'
-import React, { use, useEffect, useState } from 'react'
-import axios from 'axios'
+import React, { useContext, useEffect, useState } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { printPurchaseInvoice } from '@/lib/database/printPurchaseInvoice'
+import axios from 'axios'
+import toast from 'react-hot-toast'
+import { Context } from '@/component/helper/Context'
+import { 
+  BiChevronLeft, 
+  BiPrinter, 
+  BiTrash, 
+  BiLoaderAlt, 
+  BiDollarCircle, 
+  BiPlusCircle,
+  BiCalendar,
+  BiUser,
+  BiCreditCard,
+  BiDetail
+} from 'react-icons/bi'
 
-const PurchaseDetailsPage = ({ params }) => {
-    const { id } = use(params)
-    const [purchase, setPurchase] = useState(null)
-    const [loading, setLoading] = useState(true)
+export default function PurchaseDetailPage() {
+  const { dashSidebar } = useContext(Context)
+  const router = useRouter()
+  const params = useParams()
+  const { id } = params
 
-    useEffect(() => {
-        const fetchPurchase = async () => {
-            try {
-                const res = await axios.get(`/api/purchase/${id}`, { withCredentials: true })
-                setPurchase(res.data.payload)
-            } catch (error) {
-                console.error("Error fetching purchase:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchPurchase()
-    }, [id])
+  const [purchase, setPurchase] = useState(null)
+  const [fetching, setFetching] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
-    if (loading) return <div className="p-10 text-center animate-pulse text-slate-500 font-sans text-sm tracking-widest uppercase">Loading Record...</div>
-    if (!purchase) return <div className="p-10 text-center text-slate-800 font-bold">Purchase Record Not Found</div>
+  // Subsequent payment states
+  const [amountPaid, setAmountPaid] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('Cash')
+  const [transactionId, setTransactionId] = useState('')
+  const [paying, setPaying] = useState(false)
 
+  const fetchPurchaseDetails = async () => {
+    if (!id) return
+    try {
+      const res = await axios.get(`/api/purchase/${id}`)
+      setPurchase(res.data)
+      // Pre-fill next payment with remaining due
+      const due = parseFloat(res.data.due_amount) || 0
+      setAmountPaid(due > 0 ? String(due) : '')
+    } catch (err) {
+      toast.error('Failed to load purchase invoice details')
+      console.error(err)
+    } finally {
+      setFetching(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPurchaseDetails()
+  }, [id])
+
+  const handleDelete = async () => {
+    if (!window.confirm('WARNING: Deleting this invoice will REVERT stock levels of the purchase items and delete all associated payments. Are you sure you want to proceed?')) {
+      return
+    }
+    setDeleting(true)
+    try {
+      await axios.delete(`/api/purchase/${id}`)
+      toast.success('Purchase invoice deleted successfully')
+      router.push('/dashboard/manager/purchase')
+      router.refresh()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete purchase invoice')
+      console.error(err)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleLogPayment = async (e) => {
+    e.preventDefault()
+    const amt = parseFloat(amountPaid)
+    if (isNaN(amt) || amt <= 0) {
+      toast.error('Please enter a valid positive payment amount')
+      return
+    }
+
+    const due = parseFloat(purchase.due_amount) || 0
+    if (amt > due + 0.01) {
+      toast.error(`Payment exceeds remaining due of $${due.toFixed(2)}`)
+      return
+    }
+
+    setPaying(true)
+    try {
+      await axios.post(`/api/purchase/${id}/payment`, {
+        amount_paid: amt,
+        payment_method: paymentMethod,
+        transaction_id: transactionId
+      })
+      toast.success('Payment logged successfully')
+      setTransactionId('')
+      fetchPurchaseDetails()
+      router.refresh()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to record subsequent payment')
+      console.error(err)
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  // Format currency
+  const formatCurrency = (val) => {
+    const num = parseFloat(val) || 0
+    return `$${num.toFixed(2)}`
+  }
+
+  if (fetching) {
     return (
-        <div className="w-full min-h-screen p-4 bg-slate-50/50 print:bg-white print:p-0">
-            <div className="w-full max-w-2xl flex flex-col items-center gap-6 mx-auto bg-white shadow-xl rounded-sm p-6 sm:p-8 border border-slate-100 print:shadow-none print:border-none">
-                
-                <div className="w-full flex flex-col gap-8">
-                    
-                    <div className="w-full flex flex-row items-start justify-between">
-                        <div className="flex flex-col gap-1">
-                            <h1 className="text-2xl font-black tracking-tight text-slate-900 leading-none">NIZAM VARIETIES STORE</h1>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-medium">Pakuritala Bazar, Tarakanda</p>
-                            <p className='text-[11px] text-slate-500 font-medium'>Contact: 01645-172356</p>
-                        </div>
-                        <div className="flex flex-col text-right gap-1">
-                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Purchase Record</h2>
-                            <p className="text-[11px] text-slate-500"><strong>ID:</strong> PR-{purchase.purchase_id}</p>
-                            <p className="text-[11px] text-slate-500"><strong>Invoice:</strong> {purchase.invoice_no || 'N/A'}</p>
-                            <p className="text-[11px] text-slate-500"><strong>Date:</strong> {new Date(purchase.created_at || purchase.date).toLocaleDateString('en-GB')}</p>
-                        </div>
-                    </div>
-
-                    <div className='w-full h-px bg-slate-200'/>
-
-                    <div className="w-full flex flex-row items-start justify-between gap-4">
-                        <div className='flex flex-col gap-1'>
-                            <h3 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Supplier Details</h3>
-                            <p className="font-bold text-sm text-slate-800 uppercase leading-none">{purchase.supplier_name}</p>
-                            <p className="text-xs text-slate-600 font-medium">{purchase.supplier_phone || 'N/A'}</p>
-                            <p className="text-xs text-slate-500 whitespace-pre-wrap leading-relaxed max-w-[200px]">{purchase.supplier_address || ''}</p>
-                        </div>
-                        <div className='flex flex-col gap-1 text-right'>
-                            <h3 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Payment Info</h3>
-                            <p className="text-xs text-slate-700">
-                                Method: <span className="font-bold text-slate-900 uppercase">{purchase.payment_method || 'Cash'}</span>
-                            </p>
-                            <p className="text-[10px] font-black text-slate-900 uppercase italic tracking-wider">Verified Record</p>
-                            <p className="text-[11px] text-slate-400 italic max-w-[180px] leading-tight mt-1">{purchase.note || 'No additional instructions'}</p>
-                        </div>
-                    </div>
-
-                    <div className="w-full flex flex-col text-[13px]">
-                        <div className="w-full grid grid-cols-7 gap-2 border-b-2 border-slate-900 pb-2 font-bold text-slate-800 uppercase tracking-tighter">
-                            <div className="col-span-1">SL</div>
-                            <div className="col-span-3">Product Description</div>
-                            <div className="col-span-1 text-right">Price</div>
-                            <div className="col-span-1 text-center">Qty</div>
-                            <div className="col-span-1 text-right">Amount</div>
-                        </div>
-
-                        {purchase.items?.map((item, index) => (
-                            <div key={index} className="w-full grid grid-cols-7 gap-2 py-3 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                                <div className="col-span-1 text-slate-400 font-mono text-xs">{String(index + 1).padStart(2, '0')}</div>
-                                <div className="col-span-3 font-semibold text-slate-800 uppercase tracking-tight">{item.name}</div>
-                                <div className="col-span-1 text-right text-slate-600 font-medium">৳{parseFloat(item.purchase_price).toLocaleString()}</div>
-                                <div className="col-span-1 text-center text-slate-600 font-medium">{item.quantity}</div>
-                                <div className="col-span-1 text-right font-bold text-slate-900">৳{(parseFloat(item.purchase_price) * item.quantity).toLocaleString()}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="w-full sm:w-1/2 ml-auto flex flex-col gap-2 pt-2">
-                        <div className="flex justify-between text-slate-500 text-xs font-medium">
-                            <span>Subtotal</span>
-                            <span className="text-slate-900">৳{parseFloat(purchase.subtotal_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                        </div>
-                        
-                        {purchase.extra_discount > 0 && (
-                            <div className="flex justify-between text-slate-800 text-xs font-bold">
-                                <span className="uppercase tracking-tighter">Discount</span>
-                                <span>-৳{parseFloat(purchase.extra_discount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                            </div>
-                        )}
-
-                        <div className="flex justify-between items-center border-t border-slate-900 pt-3 mt-1">
-                            <span className="font-black text-slate-900 text-sm uppercase tracking-tighter">Net Payable</span>
-                            <span className="text-xl font-black text-black tracking-tighter">
-                                ৳{parseFloat(purchase.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="mt-12 text-center border-t border-slate-100 pt-8">
-                        <p className="text-[9px] font-bold italic text-slate-300 uppercase tracking-[0.3em]">Computer Generated Document • No Signature Required</p>
-                        <p className="mt-2 text-[10px] font-black text-slate-200 tracking-widest uppercase italic">© {new Date().getFullYear()} DISIBIN LTD</p>
-                    </div>
-                </div>
-
-                <div className="w-full flex flex-row items-center justify-between gap-4 mt-6 print:hidden">
-                    <Link href="/dashboard/purchase" 
-                        className="flex-1 py-3 text-xs font-bold text-slate-500 bg-slate-50 rounded border border-slate-200 text-center uppercase tracking-widest transition-all hover:bg-slate-100 hover:text-slate-900">
-                        ← Back to List
-                    </Link>
-                    <button 
-                        onClick={() => printPurchaseInvoice(purchase)}
-                        className="flex-1 py-3 text-xs font-black text-white bg-slate-900 rounded shadow-sm uppercase tracking-[0.2em] transition-all hover:bg-black hover:shadow-lg active:scale-[0.98]"
-                    >
-                        Print Invoice
-                    </button>
-                </div>
-            </div>
+      <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'} flex items-center justify-center print:hidden`}>
+        <div className="flex items-center gap-2 text-slate-500 font-semibold">
+          <BiLoaderAlt className="animate-spin text-xl text-emerald-600" />
+          <span>Fetching invoice details...</span>
         </div>
+      </div>
     )
-}
+  }
 
-export default PurchaseDetailsPage
+  if (!purchase) {
+    return (
+      <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'} flex items-center justify-center print:hidden`}>
+        <div className="text-slate-400 font-semibold text-center">Purchase invoice not found.</div>
+      </div>
+    )
+  }
+
+  const due = parseFloat(purchase.due_amount) || 0
+  const isFullyPaid = due <= 0
+
+  return (
+    <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${
+      dashSidebar ? 'lg:pl-68' : 'lg:pl-8'
+    } print:bg-white print:p-0 print:pt-0`}>
+      <div className="max-w-4xl mx-auto flex flex-col gap-6">
+        
+        {/* Actions bar (hidden in print) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 print:hidden">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/manager/purchase" className="p-2 bg-white hover:bg-slate-55 border border-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800">
+              <BiChevronLeft className="text-xl" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800 flex items-center gap-1.5">
+                <BiDetail className="text-emerald-650" />
+                Invoice Detail
+              </h1>
+              <p className="text-slate-500 text-xs mt-0.5">Invoice ID: #{purchase.purchase_id}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.print()}
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm flex items-center gap-1.5 cursor-pointer"
+            >
+              <BiPrinter className="text-lg" /> Print Invoice
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-sm font-semibold transition border border-rose-200 shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {deleting ? (
+                <BiLoaderAlt className="animate-spin" />
+              ) : (
+                <BiTrash className="text-lg" />
+              )}
+              Delete & Revert
+            </button>
+          </div>
+        </div>
+
+        {/* Invoice Printable Layout */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col gap-6 relative overflow-hidden print:shadow-none print:border-none">
+          
+          {/* Status Overlay Ribbon (hidden in print) */}
+          <div className="absolute top-4 right-4 print:hidden">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+              isFullyPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+            }`}>
+              {isFullyPaid ? 'Fully Paid' : 'Due Outstanding'}
+            </span>
+          </div>
+
+          {/* Corporate Header */}
+          <div className="flex flex-col md:flex-row justify-between gap-4 border-b border-slate-100 pb-6">
+            <div>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">E-COMMERCE SYSTEM</h2>
+              <p className="text-slate-450 text-xs mt-0.5">Procurement Management Division</p>
+            </div>
+            <div className="text-left md:text-right">
+              <h3 className="text-slate-450 text-xs font-bold uppercase tracking-wider">Purchase Invoice</h3>
+              <p className="font-mono text-slate-800 text-lg font-bold mt-0.5">
+                {purchase.invoice_no ? `#${purchase.invoice_no}` : `INV-PR-${purchase.purchase_id}`}
+              </p>
+              <p className="text-slate-450 text-xs mt-1 flex md:justify-end items-center gap-1">
+                <BiCalendar />
+                {new Date(purchase.created_at).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Supplier Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 print:bg-white print:border-slate-100 print:p-2">
+            <div>
+              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Billing From (Supplier)</h4>
+              <p className="font-bold text-slate-850 mt-1 flex items-center gap-1.5">
+                <BiUser className="text-slate-400" />
+                {purchase.supplier_name || 'Walk-in Supplier'}
+              </p>
+              {purchase.supplier_phone && (
+                <p className="text-xs text-slate-500 mt-1">Phone: {purchase.supplier_phone}</p>
+              )}
+            </div>
+            
+            {purchase.note && (
+              <div>
+                <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Internal Annotations</h4>
+                <p className="text-xs text-slate-650 mt-1 leading-relaxed italic">{purchase.note}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Line Items Table */}
+          <div>
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Line Items</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-semibold text-xs border-b border-slate-200 uppercase print:bg-white print:border-b-2 print:border-slate-300">
+                    <th scope="col" className="px-4 py-2.5">Product Asset / Details</th>
+                    <th scope="col" className="px-4 py-2.5 text-center">Quantity</th>
+                    <th scope="col" className="px-4 py-2.5 text-right">Cost Price</th>
+                    <th scope="col" className="px-4 py-2.5 text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {purchase.items?.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/20">
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-slate-800">{item.product_name || 'Deleted Product'}</span>
+                          {item.variant_name && (
+                            <span className="text-slate-500 text-xs mt-0.5">Variant: {item.variant_name}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-slate-700">{item.quantity}</td>
+                      <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(item.purchase_price)}</td>
+                      <td className="px-4 py-3 text-right font-medium text-slate-850">
+                        {formatCurrency(parseFloat(item.quantity) * parseFloat(item.purchase_price))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals Summary */}
+          <div className="flex justify-end pt-4 border-t border-slate-100">
+            <div className="w-full md:w-80 flex flex-col gap-2.5 text-sm text-slate-650">
+              <div className="flex justify-between">
+                <span>Subtotal Invoice:</span>
+                <span className="font-medium text-slate-850">{formatCurrency(purchase.subtotal_amount)}</span>
+              </div>
+              {parseFloat(purchase.extra_discount) > 0 && (
+                <div className="flex justify-between text-rose-600">
+                  <span>Extra Discount:</span>
+                  <span>-{formatCurrency(purchase.extra_discount)}</span>
+                </div>
+              )}
+              <hr className="border-slate-100" />
+              <div className="flex justify-between text-base font-bold text-slate-800">
+                <span>Total Amount:</span>
+                <span>{formatCurrency(purchase.total_amount)}</span>
+              </div>
+              <div className="flex justify-between text-emerald-700 font-semibold">
+                <span>Total Amount Paid:</span>
+                <span>{formatCurrency(purchase.total_paid)}</span>
+              </div>
+              
+              <div className="flex justify-between p-2 rounded-xl bg-slate-55 bg-slate-50/75 border border-slate-150 items-center">
+                <span className="font-semibold text-slate-700">Remaining Balance:</span>
+                <span className={`text-base font-bold ${due > 0 ? 'text-amber-600' : 'text-emerald-700'}`}>
+                  {formatCurrency(purchase.due_amount)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Payments Ledger */}
+          <div className="border-t border-slate-100 pt-6 mt-2">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Payments Ledger</h4>
+            {purchase.payments && purchase.payments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase print:bg-white print:border-b-2 print:border-slate-200">
+                      <th scope="col" className="px-3 py-2">Payment Date</th>
+                      <th scope="col" className="px-3 py-2">Method</th>
+                      <th scope="col" className="px-3 py-2">Transaction ID</th>
+                      <th scope="col" className="px-3 py-2 text-right">Amount Paid</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {purchase.payments.map((p) => (
+                      <tr key={p.payment_id}>
+                        <td className="px-3 py-2.5 text-slate-650">
+                          {new Date(p.payment_date).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className="font-medium text-slate-800">{p.payment_method || 'Cash'}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-500 font-mono">
+                          {p.transaction_id || 'N/A'}
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-semibold text-emerald-700">
+                          {formatCurrency(p.amount_paid)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-450 italic">No payment record found for this invoice.</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* Subsequent Payment Logging Form (hidden in print) */}
+        {!isFullyPaid && (
+          <form onSubmit={handleLogPayment} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4 print:hidden animate-fade-in">
+            <div className="border-b border-slate-50 pb-2 flex items-center gap-1.5">
+              <BiPlusCircle className="text-emerald-600 text-lg" />
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Log Invoice Payment</h2>
+            </div>
+            
+            <p className="text-slate-500 text-xs">
+              Log an incremental payment received by the supplier against the outstanding due balance of <span className="font-bold text-amber-600">${due.toFixed(2)}</span>.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+              {/* Payment Amount */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 uppercase">Payment Amount *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450 text-xs">$</span>
+                  <input className="input-style"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={due}
+                    required
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 uppercase">Payment Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="Card">Credit/Debit Card</option>
+                  <option value="Mobile Banking">Mobile Banking</option>
+                </select>
+              </div>
+
+              {/* Transaction ID */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 uppercase">Transaction ID</label>
+                <input className="input-style"
+                  type="text"
+                  placeholder="Optional reference ID"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4">
+              <button
+                type="submit"
+                disabled={paying}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-sm shadow-emerald-600/10"
+              >
+                {paying ? (
+                  <>
+                    <BiLoaderAlt className="animate-spin text-lg" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <BiDollarCircle className="text-lg" /> Log Payment
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+      </div>
+    </div>
+  )
+}

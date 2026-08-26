@@ -1,16 +1,11 @@
 import React from 'react'
+import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 
-export const metadata={
-    title:'New Product | Dashboard',
-    description:'New Product Page'
+export const metadata = {
+  title: `POS Sales Desk | ${STORE_NAME} - ${STORE_TAGLINE}`,
+  description: `Point of Sale Billing Terminal on ${STORE_NAME}.`,
 }
 
-const layout = ({children}) => {
-  return (
-    <div className='w-full'>
-      {children}
-    </div>
-  )
+export default function SalesTerminalLayout({ children }) {
+  return <>{children}</>
 }
-
-export default layout
