@@ -39,7 +39,7 @@ export default function SupplierForm({ initialData, onSubmit, loading }) {
       
       {/* Title */}
       <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
-        <Link href="/dashboard/manager/supplier" className="p-2 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition">
+        <Link href="/dashboard/supplier" className="p-2 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition">
           <BiChevronLeft className="text-xl" />
         </Link>
         <div>
@@ -139,7 +139,7 @@ export default function SupplierForm({ initialData, onSubmit, loading }) {
       {/* Buttons */}
       <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
         <Link
-          href="/dashboard/manager/supplier"
+          href="/dashboard/supplier"
           className="px-5 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition"
         >
           Cancel

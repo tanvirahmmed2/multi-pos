@@ -1,23 +1,84 @@
-import Dashboardnavbar from '@/component/bars/Navbar'
-import Dashboardsidebar from '@/component/bars/Sidebar'
-import { isManagementRole } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import React from 'react'
-import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
+'use client'
+import React, { useContext } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { Context } from '@/component/helper/Context'
+import Navbar from '@/component/bars/Navbar'
+import Sidebar from '@/component/bars/Sidebar'
+import { BiShieldX, BiLoaderAlt, BiHome } from 'react-icons/bi'
 
-export const metadata = {
-  title: `Dashboard | ${STORE_NAME} - ${STORE_TAGLINE}`,
-  description: `Management Dashboard on ${STORE_NAME}, ${STORE_TAGLINE}.`,
+const ROLE_PERMISSIONS = {
+  admin: [
+    'branches', 'people', 'category', 'brands', 'product', 'stock',
+    'purchase', 'supplier', 'customers', 'support', 'contact', 'reviews',
+    'payments', 'return', 'report', 'backup', 'settings', 'sale',
+    'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview'
+  ],
+  manager: [
+    'category', 'brands', 'product', 'stock', 'purchase', 'supplier',
+    'customers', 'support', 'contact', 'reviews', 'payments', 'return',
+    'report', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'completed-sale', 'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview'
+  ],
+  sales: [
+    'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
+    'profile', 'orders', 'overview'
+  ],
+  staff: [
+    'profile', 'issue', 'orders', 'overview'
+  ]
 }
 
-export default async function DashboardLayout({ children }) {
-  const auth=await isManagementRole()
-  if(!auth.success) redirect('/?invalid_session=1')
+export default function DashboardLayout({ children }) {
+  const { user, loading, website } = useContext(Context)
+  const pathname = usePathname()
+  const themeColor = website?.theme_color || '#73976A'
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-2">
+        <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />
+        <p className="text-slate-600 text-sm font-semibold animate-pulse">Authenticating staff session...</p>
+      </div>
+    )
+  }
+
+  const segments = pathname.split('/').filter(Boolean)
+  const moduleName = segments[1] 
+  const role = user?.role || 'staff'
+  const allowedModules = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.staff
+  const isAllowed = !moduleName || moduleName === 'profile' || allowedModules.includes(moduleName)
+
   return (
-    <div className='w-full overflow-x-hidden relative'>
-      <Dashboardnavbar/>
-      <Dashboardsidebar/>
-      {children}
-    </div>
+    <>
+      <Navbar />
+      <Sidebar />
+      {!isAllowed ? (
+        <div className="w-full min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 pt-20">
+          <div className="bg-white border border-slate-200 shadow-xl rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center gap-4 animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-3xl font-bold border border-rose-100">
+              <BiShieldX />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">Access Restricted</h2>
+              <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
+                Your staff role (<span className="font-bold uppercase text-slate-800">{role}</span>) does not have authorization to access the <span className="font-bold text-slate-800">/{moduleName}</span> console.
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="mt-2 px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer hover:opacity-95"
+              style={{ backgroundColor: themeColor }}
+            >
+              <BiHome className="text-base" /> Return to Dashboard
+            </Link>
+          </div>
+        </div>
+      ) : (
+        children
+      )}
+    </>
   )
 }

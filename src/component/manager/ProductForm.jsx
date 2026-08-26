@@ -429,7 +429,7 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-100 shadow-sm rounded-2xl p-4 md:p-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/manager/product" className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-850 rounded-xl transition duration-200">
+          <Link href="/dashboard/product" className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-850 rounded-xl transition duration-200">
             <BiChevronLeft className="text-xl" />
           </Link>
           <div>
@@ -443,7 +443,7 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         </div>
 
         <div className="flex items-center gap-3 self-end sm:self-auto">
-          <Link href="/dashboard/manager/product" className="px-4 py-2 border border-slate-200 text-slate-650 rounded-xl text-xs font-bold hover:bg-slate-50 transition duration-200">
+          <Link href="/dashboard/product" className="px-4 py-2 border border-slate-200 text-slate-650 rounded-xl text-xs font-bold hover:bg-slate-50 transition duration-200">
             Cancel
           </Link>
           <button
