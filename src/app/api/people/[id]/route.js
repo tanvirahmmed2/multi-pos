@@ -26,7 +26,15 @@ export async function PUT(req, { params }) {
     }
 
     const body = await req.json();
-    const { role, is_banned, is_active } = body;
+    const { role, is_banned, is_active, branch_id } = body;
+
+    const existingStaff = checkStaff.rows[0];
+    const targetRole = role !== undefined ? role : existingStaff.role;
+    const targetBranchId = branch_id !== undefined ? (branch_id ? parseInt(branch_id, 10) : null) : existingStaff.branch_id;
+
+    if (targetRole !== 'admin' && !targetBranchId) {
+      return Response.json({ error: 'Branch assignment is required for non-admin staff roles' }, { status: 400 });
+    }
 
     const fieldsToUpdate = [];
     const values = [];
@@ -39,6 +47,11 @@ export async function PUT(req, { params }) {
       }
       fieldsToUpdate.push(`role = $${placeholderCounter++}`);
       values.push(role);
+    }
+
+    if (branch_id !== undefined) {
+      fieldsToUpdate.push(`branch_id = $${placeholderCounter++}`);
+      values.push(targetBranchId);
     }
 
     if (is_banned !== undefined) {

@@ -47,6 +47,10 @@ export async function POST(req) {
     const verifiedStatus = is_varified !== false;
     const branchIdVal = branch_id ? parseInt(branch_id, 10) : null;
 
+    if (staffRole !== 'admin' && !branchIdVal) {
+      return Response.json({ error: 'Branch selection is required for non-admin staff roles' }, { status: 400 });
+    }
+
     const result = await query(
       `INSERT INTO staffs (branch_id, name, email, phone, password, role, is_active, is_varified, is_banned)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)

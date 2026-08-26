@@ -1,5 +1,5 @@
 import { query } from '@/lib/db';
-import { isManager } from '@/lib/auth';
+import { isManagerOrAdmin } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { generateUniqueBarcode } from '@/lib/barcode';
 
@@ -81,7 +81,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const auth = await isManager();
+    const auth = await isManagerOrAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }

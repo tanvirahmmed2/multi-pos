@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useContext } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
@@ -12,7 +12,7 @@ import {
   BiPhone, 
   BiLockAlt, 
   BiShieldQuarter, 
-  BiCheckCircle,
+  BiStoreAlt,
   BiLoaderAlt,
   BiPlus
 } from 'react-icons/bi'
@@ -22,6 +22,7 @@ export default function CreateNewUserPage() {
   const { dashSidebar, website } = useContext(Context)
   const themeColor = website?.theme_color || '#73976A'
 
+  const [branches, setBranches] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -30,9 +31,16 @@ export default function CreateNewUserPage() {
     password: '',
     confirmPassword: '',
     role: 'sales',
+    branch_id: '',
     is_active: true,
     is_varified: true
   })
+
+  useEffect(() => {
+    axios.get('/api/branch')
+      .then(res => setBranches(res.data))
+      .catch(err => console.error('Failed to fetch branches:', err))
+  }, [])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -51,13 +59,18 @@ export default function CreateNewUserPage() {
       return
     }
 
+    if (formData.role !== 'admin' && !formData.branch_id) {
+      toast.error('Branch selection is required for non-admin staff roles')
+      return
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match')
       return
     }
 
     setSubmitting(true)
-    const toastId = toast.loading('Creating user account...')
+    const toastId = toast.loading('Creating staff account...')
 
     try {
       const response = await axios.post('/api/people', {
@@ -66,14 +79,15 @@ export default function CreateNewUserPage() {
         phone: formData.phone,
         password: formData.password,
         role: formData.role,
+        branch_id: formData.branch_id || undefined,
         is_active: formData.is_active,
         is_varified: formData.is_varified
       })
 
-      toast.success(response.data.message || 'User created successfully!', { id: toastId })
+      toast.success(response.data.message || 'Staff account created successfully!', { id: toastId })
       router.push('/dashboard/admin/people')
     } catch (error) {
-      const errorMsg = error.response?.data?.error || 'Failed to create user'
+      const errorMsg = error.response?.data?.error || 'Failed to create staff account'
       toast.error(errorMsg, { id: toastId })
     } finally {
       setSubmitting(false)
@@ -90,7 +104,7 @@ export default function CreateNewUserPage() {
             href="/dashboard/admin/people"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition"
           >
-            <BiArrowBack className="text-base" /> Back to Accounts
+            <BiArrowBack className="text-base" /> Back to Staff Accounts
           </Link>
         </div>
 
@@ -101,8 +115,8 @@ export default function CreateNewUserPage() {
               <BiUser />
             </div>
             <div>
-              <h1 className="text-lg md:text-xl font-bold text-slate-800">Create Staff / User Account</h1>
-              <p className="text-slate-500 text-xs mt-0.5">Add a new user directly to the POS system with designated access permissions.</p>
+              <h1 className="text-lg md:text-xl font-bold text-slate-800">Create Staff Account</h1>
+              <p className="text-slate-500 text-xs mt-0.5">Create staff accounts for any role. Non-admin roles require an assigned branch.</p>
             </div>
           </div>
 
@@ -158,23 +172,52 @@ export default function CreateNewUserPage() {
               </div>
             </div>
 
-            {/* Role Selection */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="role" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <BiShieldQuarter className="text-sm" /> System Role *
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-slate-400 rounded-xl cursor-pointer transition"
-              >
-                <option value="sales">Sales (Billing & Desk Terminal Access)</option>
-                <option value="manager">Manager (Inventory, Reports & Catalog Control)</option>
-                <option value="admin">Administrator (Full System Privilege)</option>
-                <option value="user">User (Standard Account)</option>
-              </select>
+            {/* Role & Branch Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="role" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <BiShieldQuarter className="text-sm" /> System Role *
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-slate-400 rounded-xl cursor-pointer transition"
+                >
+                  <option value="admin">Admin (Global System Privilege)</option>
+                  <option value="manager">Manager (Branch Inventory & Sales)</option>
+                  <option value="sales">Sales (POS & Cashier Terminal)</option>
+                  <option value="staff">Staff (General Staff Member)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="branch_id" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <BiStoreAlt className="text-sm" /> Assigned Branch {formData.role !== 'admin' ? '*' : '(Optional for Admin)'}
+                </label>
+                <select
+                  id="branch_id"
+                  name="branch_id"
+                  required={formData.role !== 'admin'}
+                  value={formData.branch_id}
+                  onChange={handleChange}
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 border text-xs font-bold outline-none rounded-xl cursor-pointer transition ${
+                    formData.role !== 'admin' && !formData.branch_id
+                      ? 'border-rose-300 text-slate-800'
+                      : 'border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <option value="">
+                    {formData.role === 'admin' ? '-- No Specific Branch (Global Admin) --' : '-- Select Branch * --'}
+                  </option>
+                  {branches.map((b) => (
+                    <option key={b.branch_id} value={b.branch_id}>
+                      {b.name} ({b.code || `ID: ${b.branch_id}`}){!b.is_active ? ' [Inactive]' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Password & Confirm Password */}
@@ -257,7 +300,7 @@ export default function CreateNewUserPage() {
                   </>
                 ) : (
                   <>
-                    <BiPlus className="text-lg" /> Create User Account
+                    <BiPlus className="text-lg" /> Create Staff Account
                   </>
                 )}
               </button>

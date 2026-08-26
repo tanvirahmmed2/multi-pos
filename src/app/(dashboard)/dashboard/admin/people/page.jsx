@@ -7,11 +7,11 @@ import { Context } from '@/component/helper/Context'
 import { 
   BiSearch, 
   BiUser, 
-  BiShield, 
   BiBlock, 
   BiCheckCircle,
   BiLoaderAlt,
-  BiPlus
+  BiPlus,
+  BiStoreAlt
 } from 'react-icons/bi'
 
 export default function DashboardAdminPeoplePage() {
@@ -19,14 +19,19 @@ export default function DashboardAdminPeoplePage() {
   const themeColor = website?.theme_color || '#73976A'
   
   const [users, setUsers] = useState([])
+  const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [updatingId, setUpdatingId] = useState(null)
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/api/people')
-      setUsers(res.data)
+      const [peopleRes, branchRes] = await Promise.all([
+        axios.get('/api/people'),
+        axios.get('/api/branch').catch(() => ({ data: [] }))
+      ])
+      setUsers(peopleRes.data)
+      setBranches(branchRes.data || [])
     } catch (err) {
       toast.error('Failed to load accounts database')
       console.error(err)
@@ -39,7 +44,11 @@ export default function DashboardAdminPeoplePage() {
     fetchUsers()
   }, [])
 
-  const handleRoleChange = async (userId, newRole) => {
+  const handleRoleChange = async (userId, newRole, currentBranchId) => {
+    if (newRole !== 'admin' && !currentBranchId) {
+      toast.error(`Please assign a branch to this staff member before promoting to ${newRole}`)
+      return
+    }
     setUpdatingId(userId)
     try {
       await axios.put(`/api/people/${userId}`, { role: newRole })
@@ -53,19 +62,33 @@ export default function DashboardAdminPeoplePage() {
     }
   }
 
+  const handleBranchChange = async (userId, newBranchId) => {
+    setUpdatingId(userId)
+    try {
+      await axios.put(`/api/people/${userId}`, { branch_id: newBranchId || null })
+      toast.success(`Assigned branch updated successfully`)
+      fetchUsers()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update branch assignment')
+      console.error(err)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
   const handleBanToggle = async (userId, currentBanStatus) => {
     const action = currentBanStatus ? 'unban' : 'ban'
-    if (!window.confirm(`Are you sure you want to ${action} this user?`)) {
+    if (!window.confirm(`Are you sure you want to ${action} this staff member?`)) {
       return
     }
     
     setUpdatingId(userId)
     try {
       await axios.put(`/api/people/${userId}`, { is_banned: !currentBanStatus })
-      toast.success(`User account has been ${currentBanStatus ? 'unbanned' : 'banned'}`)
+      toast.success(`Staff account has been ${currentBanStatus ? 'unbanned' : 'banned'}`)
       fetchUsers()
     } catch (err) {
-      toast.error(err.response?.data?.error || `Failed to ${action} user`)
+      toast.error(err.response?.data?.error || `Failed to ${action} staff member`)
       console.error(err)
     } finally {
       setUpdatingId(null)
@@ -76,7 +99,7 @@ export default function DashboardAdminPeoplePage() {
     setUpdatingId(userId)
     try {
       await axios.put(`/api/people/${userId}`, { is_active: !currentActiveStatus })
-      toast.success(`User account has been ${currentActiveStatus ? 'deactivated' : 'activated'}`)
+      toast.success(`Staff account has been ${currentActiveStatus ? 'deactivated' : 'activated'}`)
       fetchUsers()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update account status')
@@ -84,6 +107,12 @@ export default function DashboardAdminPeoplePage() {
     } finally {
       setUpdatingId(null)
     }
+  }
+
+  const getBranchName = (branchId) => {
+    if (!branchId) return null
+    const b = branches.find(item => item.branch_id === parseInt(branchId, 10))
+    return b ? `${b.name} (${b.code || `ID:${b.branch_id}`})` : `Branch #${branchId}`
   }
 
   // Filter users based on search
@@ -110,9 +139,9 @@ export default function DashboardAdminPeoplePage() {
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
               <BiUser style={{ color: themeColor }} />
-              Accounts Management
+              Staff Accounts Management
             </h1>
-            <p className="text-slate-500 text-xs md:text-sm mt-0.5">Promote roles, activate accounts, and manage bans for store users.</p>
+            <p className="text-slate-500 text-xs md:text-sm mt-0.5">Manage staff roles, branch assignments, active statuses, and access permissions.</p>
           </div>
 
           <Link
@@ -121,16 +150,15 @@ export default function DashboardAdminPeoplePage() {
             style={{ backgroundColor: themeColor }}
           >
             <BiPlus className="text-lg" />
-            <span>Create New User</span>
+            <span>Create Staff Account</span>
           </Link>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
-          {/* Total Accounts */}
           <div className="bg-white p-5 border border-slate-200 shadow-sm flex items-center justify-between">
             <div className="flex flex-col gap-0.5">
-              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total registered</span>
+              <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Staff Accounts</span>
               <span className="text-2xl font-bold text-slate-800">{loading ? '...' : stats.total}</span>
             </div>
             <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
@@ -138,7 +166,6 @@ export default function DashboardAdminPeoplePage() {
             </div>
           </div>
 
-          {/* Active Accounts */}
           <div className="bg-white p-5 border border-slate-200 shadow-sm flex items-center justify-between">
             <div className="flex flex-col gap-0.5">
               <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Active & Valid</span>
@@ -149,7 +176,6 @@ export default function DashboardAdminPeoplePage() {
             </div>
           </div>
 
-          {/* Banned Accounts */}
           <div className="bg-white p-5 border border-slate-200 shadow-sm flex items-center justify-between">
             <div className="flex flex-col gap-0.5">
               <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Suspended / Banned</span>
@@ -179,26 +205,27 @@ export default function DashboardAdminPeoplePage() {
         {loading ? (
           <div className="w-full h-64 bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 gap-2">
             <BiLoaderAlt className="animate-spin text-xl text-slate-800" />
-            <span className="text-xs font-semibold">Loading registered database...</span>
+            <span className="text-xs font-semibold">Loading staff database...</span>
           </div>
         ) : filteredUsers.length > 0 ? (
-          <div className="bg-white border border-slate-200 shadow-sm">
+          <div className="bg-white border border-slate-200 shadow-sm overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-100/80 text-slate-650 font-bold border-b border-slate-200">
-                  <th className="px-3 md:px-4 py-3">User Details</th>
-                  <th className="px-3 md:px-4 py-3">Current Role</th>
+                  <th className="px-3 md:px-4 py-3">Staff Details</th>
+                  <th className="px-3 md:px-4 py-3">Assigned Branch</th>
+                  <th className="px-3 md:px-4 py-3">Role</th>
                   <th className="hidden sm:table-cell px-3 md:px-4 py-3">Verification</th>
                   <th className="hidden md:table-cell px-3 md:px-4 py-3 text-center">Banned Status</th>
                   <th className="hidden md:table-cell px-3 md:px-4 py-3 text-center">Active Status</th>
-                  <th className="hidden lg:table-cell px-3 md:px-4 py-3 text-right">Registered</th>
+                  <th className="hidden lg:table-cell px-3 md:px-4 py-3 text-right">Created</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {filteredUsers.map((u) => {
-                  const isSelf = currentUser && u.user_id === currentUser.user_id
+                  const isSelf = currentUser && u.staff_id === currentUser.staff_id
                   return (
-                    <tr key={u.user_id} className={`hover:bg-slate-50 transition ${isSelf ? 'bg-amber-50/40' : ''}`}>
+                    <tr key={u.staff_id} className={`hover:bg-slate-50 transition ${isSelf ? 'bg-amber-50/40' : ''}`}>
                       
                       {/* Name & Contact */}
                       <td className="px-3 md:px-4 py-3.5">
@@ -216,23 +243,47 @@ export default function DashboardAdminPeoplePage() {
                         </div>
                       </td>
 
+                      {/* Branch Selection / Badge */}
+                      <td className="px-3 md:px-4 py-3.5">
+                        {isSelf || u.role === 'admin' ? (
+                          <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                            <BiStoreAlt className="text-slate-400" />
+                            {u.role === 'admin' ? 'Global (No Branch Required)' : (getBranchName(u.branch_id) || 'Unassigned')}
+                          </span>
+                        ) : (
+                          <select
+                            value={u.branch_id || ''}
+                            disabled={updatingId === u.staff_id}
+                            onChange={(e) => handleBranchChange(u.staff_id, e.target.value)}
+                            className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold outline-none cursor-pointer disabled:opacity-50 rounded-lg"
+                          >
+                            <option value="">-- Select Branch * --</option>
+                            {branches.map(b => (
+                              <option key={b.branch_id} value={b.branch_id}>
+                                {b.name} ({b.code || `ID:${b.branch_id}`})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+
                       {/* Dropdown Role Promotion */}
                       <td className="px-3 md:px-4 py-3.5">
                         {isSelf ? (
-                          <span className="px-2 py-1 text-[10px] font-bold bg-slate-900 text-white uppercase border border-slate-900">
+                          <span className="px-2 py-1 text-[10px] font-bold bg-slate-900 text-white uppercase border border-slate-900 rounded">
                             {u.role}
                           </span>
                         ) : (
                           <select
                             value={u.role}
-                            disabled={updatingId === u.user_id}
-                            onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
-                            className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold outline-none cursor-pointer disabled:opacity-50"
+                            disabled={updatingId === u.staff_id}
+                            onChange={(e) => handleRoleChange(u.staff_id, e.target.value, u.branch_id)}
+                            className="px-2 py-1 bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold outline-none cursor-pointer disabled:opacity-50 rounded-lg"
                           >
                             <option value="admin">Admin</option>
                             <option value="manager">Manager</option>
                             <option value="sales">Sales</option>
-                            <option value="user">User</option>
+                            <option value="staff">Staff</option>
                           </select>
                         )}
                       </td>
@@ -250,13 +301,13 @@ export default function DashboardAdminPeoplePage() {
                       <td className="hidden md:table-cell px-3 md:px-4 py-3.5 text-center">
                         <button
                           type="button"
-                          disabled={isSelf || updatingId === u.user_id}
-                          onClick={() => handleBanToggle(u.user_id, u.is_banned)}
+                          disabled={isSelf || updatingId === u.staff_id}
+                          onClick={() => handleBanToggle(u.staff_id, u.is_banned)}
                           className={`px-2 py-1 text-[10px] font-bold uppercase transition cursor-pointer disabled:opacity-40 border ${
                             u.is_banned ? 'bg-rose-600 text-white border-rose-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-600'
                           }`}
                         >
-                          {u.is_banned ? 'Banned' : 'Ban User'}
+                          {u.is_banned ? 'Banned' : 'Ban Staff'}
                         </button>
                       </td>
 
@@ -264,8 +315,8 @@ export default function DashboardAdminPeoplePage() {
                       <td className="hidden md:table-cell px-3 md:px-4 py-3.5 text-center">
                         <button
                           type="button"
-                          disabled={isSelf || updatingId === u.user_id}
-                          onClick={() => handleActiveToggle(u.user_id, u.is_active)}
+                          disabled={isSelf || updatingId === u.staff_id}
+                          onClick={() => handleActiveToggle(u.staff_id, u.is_active)}
                           className={`px-2 py-1 text-[10px] font-bold uppercase transition cursor-pointer disabled:opacity-40 border ${
                             u.is_active ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600'
                           }`}
@@ -299,5 +350,3 @@ export default function DashboardAdminPeoplePage() {
     </div>
   )
 }
-
-

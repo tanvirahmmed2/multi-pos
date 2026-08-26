@@ -110,3 +110,12 @@ export const isManagementRole = async () => {
   return { success: true, staff: auth.staff, user: auth.staff };
 };
 
+export const isManagerOrAdmin = async () => {
+  const auth = await authenticateStaff();
+  if (!auth.success) return auth;
+  if (auth.staff.role !== 'manager' && auth.staff.role !== 'admin') {
+    return { success: false, message: 'Access denied: Admin or Manager role required' };
+  }
+  return { success: true, staff: auth.staff, user: auth.staff };
+};
+

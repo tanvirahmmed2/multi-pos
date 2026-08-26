@@ -14,7 +14,7 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerBrandsPage() {
-  const { dashSidebar, website } = useContext(Context)
+  const { dashSidebar, website, user } = useContext(Context)
   const themeColor = website?.theme_color || '#73976A'
 
   const [brands, setBrands] = useState([])
@@ -141,17 +141,20 @@ export default function DashboardManagerBrandsPage() {
                     >
                       <BiEditAlt />
                     </Link>
-                    <button
-                      onClick={() => handleDelete(brand.brand_id)}
-                      disabled={deletingId === brand.brand_id}
-                      className="p-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
-                    >
-                      {deletingId === brand.brand_id ? (
-                        <BiLoaderAlt className="animate-spin text-xs" />
-                      ) : (
-                        <BiTrash />
-                      )}
-                    </button>
+                    {user?.role === 'admin' && (
+                      <button
+                        onClick={() => handleDelete(brand.brand_id)}
+                        disabled={deletingId === brand.brand_id}
+                        className="p-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                        title="Delete brand (Admin only)"
+                      >
+                        {deletingId === brand.brand_id ? (
+                          <BiLoaderAlt className="animate-spin text-xs" />
+                        ) : (
+                          <BiTrash />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 

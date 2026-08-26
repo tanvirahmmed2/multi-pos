@@ -14,7 +14,7 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardManagerCategoryPage() {
-  const { dashSidebar, website } = useContext(Context)
+  const { dashSidebar, website, user } = useContext(Context)
   const themeColor = website?.theme_color || '#73976A'
   
   const [categories, setCategories] = useState([])
@@ -149,17 +149,20 @@ export default function DashboardManagerCategoryPage() {
                         >
                           <BiEditAlt />
                         </Link>
-                        <button
-                          onClick={() => handleDelete(cat.category_id)}
-                          disabled={deletingId === cat.category_id}
-                          className="p-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
-                        >
-                          {deletingId === cat.category_id ? (
-                            <BiLoaderAlt className="animate-spin text-xs" />
-                          ) : (
-                            <BiTrash />
-                          )}
-                        </button>
+                        {user?.role === 'admin' && (
+                          <button
+                            onClick={() => handleDelete(cat.category_id)}
+                            disabled={deletingId === cat.category_id}
+                            className="p-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                            title="Delete category (Admin only)"
+                          >
+                            {deletingId === cat.category_id ? (
+                              <BiLoaderAlt className="animate-spin text-xs" />
+                            ) : (
+                              <BiTrash />
+                            )}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

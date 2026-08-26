@@ -1,5 +1,5 @@
 import { query } from '@/lib/db';
-import { isManager } from '@/lib/auth';
+import { isManagerOrAdmin, isAdmin } from '@/lib/auth';
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/cloudinary';
 
 function slugify(text) {
@@ -39,7 +39,7 @@ export async function GET(req, { params }) {
 
 export async function PUT(req, { params }) {
   try {
-    const auth = await isManager();
+    const auth = await isManagerOrAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
@@ -100,7 +100,7 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const auth = await isManager();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }

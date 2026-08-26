@@ -35,6 +35,9 @@ const Sidebar = () => {
     const adminLinks = [
       { name: 'Overview', path: '/dashboard/admin/overview', icon: <BiHome /> },
       { name: 'Branches', path: '/dashboard/admin/branches', icon: <BiStoreAlt /> },
+      { name: 'Categories', path: '/dashboard/manager/category', icon: <BiCategory /> },
+      { name: 'Brands', path: '/dashboard/manager/brands', icon: <BiTag /> },
+      { name: 'Products', path: '/dashboard/manager/product', icon: <BiPackage /> },
       { name: 'People (Accounts)', path: '/dashboard/admin/people', icon: <BiUser /> },
       { name: 'Sales', path: '/dashboard/admin/sales', icon: <BiDollarCircle /> },
       { name: 'Stock', path: '/dashboard/admin/stock', icon: <BiPackage /> },
