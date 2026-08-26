@@ -10,7 +10,7 @@ export const metadata = {
 
 export default async function DashboardProfileLayout({ children }) {
   const auth = await authenticateUser()
-  if (!auth.success) redirect('/')
+  if (!auth.success) redirect('/?invalid_session=1')
   return (
     <>
       {children}

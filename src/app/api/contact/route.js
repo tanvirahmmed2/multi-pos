@@ -11,30 +11,34 @@ export async function GET(req) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
-    const result = await query(`
-      SELECT 
-        c.*,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'reply_id', cr.reply_id,
-              'message', cr.message,
-              'created_at', cr.created_at,
-              'user_name', u.name,
-              'user_email', u.email,
-              'user_role', u.role
-            ) ORDER BY cr.reply_id ASC
-          ) FILTER (WHERE cr.reply_id IS NOT NULL),
-          '[]'
-        ) AS replies
-      FROM contacts c
-      LEFT JOIN contact_replies cr ON c.contact_id = cr.contact_id
-      LEFT JOIN users u ON cr.user_id = u.user_id
-      GROUP BY c.contact_id
-      ORDER BY c.contact_id DESC
-    `);
+    try {
+      const result = await query(`
+        SELECT 
+          c.*,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'reply_id', cr.reply_id,
+                'message', cr.message,
+                'created_at', cr.created_at,
+                'user_name', u.name,
+                'user_email', u.email,
+                'user_role', u.role
+              ) ORDER BY cr.reply_id ASC
+            ) FILTER (WHERE cr.reply_id IS NOT NULL),
+            '[]'
+          ) AS replies
+        FROM contacts c
+        LEFT JOIN contact_replies cr ON c.contact_id = cr.contact_id
+        LEFT JOIN staffs u ON cr.user_id = u.staff_id
+        GROUP BY c.contact_id
+        ORDER BY c.contact_id DESC
+      `);
 
-    return Response.json(result.rows, { status: 200 });
+      return Response.json(result.rows, { status: 200 });
+    } catch (tableError) {
+      return Response.json([], { status: 200 });
+    }
 
   } catch (error) {
     console.error('Error fetching contacts:', error);

@@ -10,7 +10,7 @@ import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 
 const LoginForm = () => {
     const router = useRouter()
-    const { setUser } = useContext(Context)
+    const { setStaff, setUser } = useContext(Context)
     const [submitting, setSubmitting] = useState(false)
     const [formData, setFormData] = useState({
         email: '',
@@ -30,11 +30,13 @@ const LoginForm = () => {
         const toastId = toast.loading('Logging in...')
 
         try {
-            const response = await axios.post('/api/user/login', formData)
+            const response = await axios.post('/api/staff/login', formData)
             toast.success(response.data.message || 'Logged in successfully!', { id: toastId })
             
-            if (response.data.user) {
-                setUser(response.data.user)
+            const activeStaff = response.data.staff || response.data.user;
+            if (activeStaff) {
+                if (setStaff) setStaff(activeStaff);
+                else if (setUser) setUser(activeStaff);
             }
 
             window.location.replace('/dashboard')

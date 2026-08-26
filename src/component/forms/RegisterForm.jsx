@@ -36,7 +36,7 @@ const RegisterForm = () => {
 
         try {
             const { name, email, phone, password } = formData
-            const response = await axios.post('/api/user', { name, email, phone, password })
+            const response = await axios.post('/api/staff', { name, email, phone, password })
             toast.success(response.data.message || 'Account registered! Please verify your email.', {
                 id: toastId,
                 duration: 6000

@@ -31,7 +31,7 @@ const RecoverAccountForm = () => {
         const toastId = toast.loading('Sending reset link...')
 
         try {
-            const response = await axios.post('/api/user/recover-account', { email })
+            const response = await axios.post('/api/staff/recover-account', { email })
             setStatus('success')
             setMessage(response.data.message || 'Recovery email sent.')
             toast.success(response.data.message || 'Recovery link sent!', { id: toastId })
@@ -58,7 +58,7 @@ const RecoverAccountForm = () => {
         const toastId = toast.loading('Resetting password...')
 
         try {
-            const response = await axios.put('/api/user/recover-account', { token, password })
+            const response = await axios.put('/api/staff/recover-account', { token, password })
             setStatus('success')
             setMessage(response.data.message || 'Password reset successful.')
             toast.success(response.data.message || 'Password reset successful!', { id: toastId })

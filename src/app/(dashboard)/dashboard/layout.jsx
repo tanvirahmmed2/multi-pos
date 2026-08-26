@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function DashboardLayout({ children }) {
   const auth=await isManagementRole()
-  if(!auth.success) redirect('/')
+  if(!auth.success) redirect('/?invalid_session=1')
   return (
     <div className='w-full overflow-x-hidden relative'>
       <Dashboardnavbar/>

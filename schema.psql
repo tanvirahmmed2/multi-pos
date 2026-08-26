@@ -1,6 +1,24 @@
+-- =====================================================
+-- BRANCHES
+-- =====================================================
+CREATE TABLE branches (
+  branch_id SERIAL PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  code VARCHAR(50) UNIQUE,
+  address TEXT,
+  phone VARCHAR(20),
+  email VARCHAR(150),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
 
-CREATE TABLE users (
-  user_id SERIAL PRIMARY KEY,
+-- =====================================================
+-- staffS
+-- =====================================================
+CREATE TABLE staffs (
+  staff_id SERIAL PRIMARY KEY,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
   phone VARCHAR(20),
@@ -9,8 +27,8 @@ CREATE TABLE users (
   varification_token TEXT NULL,
   recover_token TEXT NULL,
   recover_token_expires TIMESTAMP DEFAULT NULL,
-  role TEXT DEFAULT 'user'
-    CHECK (role IN ('admin','manager','sales','user')),
+  role TEXT DEFAULT 'staff'
+    CHECK (role IN ('admin','manager','sales','staff')),
   is_active BOOLEAN DEFAULT TRUE,
   is_banned BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT now(),
@@ -29,73 +47,83 @@ CREATE TABLE customers (
   created_at TIMESTAMP DEFAULT now()
 );
 
+-- =====================================================
+-- CATEGORIES & BRANDS
+-- =====================================================
 CREATE TABLE categories (
   category_id SERIAL PRIMARY KEY,
   parent_id INT REFERENCES categories(category_id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   slug VARCHAR(100) NOT NULL,
-image TEXT NOT NULL,
-image_id TEXT NOT NULL,
+  image TEXT NOT NULL,
+  image_id TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE brands (
   brand_id SERIAL PRIMARY KEY,
-image TEXT NOT NULL,
-image_id TEXT NOT NULL,
+  image TEXT NOT NULL,
+  image_id TEXT NOT NULL,
   name VARCHAR(100) NOT NULL,
   description TEXT,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT now()
 );
 
+-- =====================================================
+-- PRODUCTS & VARIANTS
+-- =====================================================
 CREATE TABLE products (
-    product_id SERIAL PRIMARY KEY,
-
-    category_id INT REFERENCES categories(category_id),
-    brand_id INT REFERENCES brands(brand_id),
-
-    name VARCHAR(150) NOT NULL,
-    slug VARCHAR(150) UNIQUE,
-    description TEXT,
-
-    is_active BOOLEAN DEFAULT TRUE,
-
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+  product_id SERIAL PRIMARY KEY,
+  category_id INT REFERENCES categories(category_id),
+  brand_id INT REFERENCES brands(brand_id),
+  name VARCHAR(150) NOT NULL,
+  slug VARCHAR(150) UNIQUE,
+  description TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE product_variants (
-    variant_id SERIAL PRIMARY KEY,
-    product_id INT NOT NULL
-        REFERENCES products(product_id)
-        ON DELETE CASCADE,
-    variant_name VARCHAR(150) DEFAULT 'Default',
-    barcode VARCHAR(100) UNIQUE,
-    purchase_price NUMERIC(10,2) NOT NULL,
-
-    sale_price NUMERIC(10,2) NOT NULL,
-    discount_price NUMERIC(10,2) DEFAULT 0,
-    wholesale_price NUMERIC(10,2),
-    dealer_price NUMERIC(10,2),
-    retail_price NUMERIC(10,2),
-
-    stock INT DEFAULT 0,
-
-    image TEXT,
-    image_id VARCHAR(255),
-
-    weight NUMERIC(10,2),
-    unit VARCHAR(30),
-
-    is_active BOOLEAN DEFAULT TRUE,
-
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+  variant_id SERIAL PRIMARY KEY,
+  product_id INT NOT NULL
+      REFERENCES products(product_id)
+      ON DELETE CASCADE,
+  variant_name VARCHAR(150) DEFAULT 'Default',
+  barcode VARCHAR(100) UNIQUE,
+  purchase_price NUMERIC(10,2) NOT NULL,
+  sale_price NUMERIC(10,2) NOT NULL,
+  discount_price NUMERIC(10,2) DEFAULT 0,
+  wholesale_price NUMERIC(10,2),
+  dealer_price NUMERIC(10,2),
+  retail_price NUMERIC(10,2),
+  stock INT DEFAULT 0,
+  image TEXT,
+  image_id VARCHAR(255),
+  weight NUMERIC(10,2),
+  unit VARCHAR(30),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
 );
 
+-- =====================================================
+-- STOCKS (Per Variant & Branch)
+-- =====================================================
+CREATE TABLE stocks (
+  stock_id SERIAL PRIMARY KEY,
+  variant_id INT NOT NULL REFERENCES product_variants(variant_id) ON DELETE CASCADE,
+  branch_id INT NOT NULL REFERENCES branches(branch_id) ON DELETE CASCADE,
+  stock INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now(),
+  UNIQUE(variant_id, branch_id)
+);
 
-
+-- =====================================================
+-- SUPPLIERS & PURCHASES
+-- =====================================================
 CREATE TABLE suppliers (
   supplier_id SERIAL PRIMARY KEY,
   name VARCHAR(200) NOT NULL,
@@ -108,10 +136,9 @@ CREATE TABLE suppliers (
   updated_at TIMESTAMP DEFAULT now()
 );
 
-
-
 CREATE TABLE purchases (
   purchase_id SERIAL PRIMARY KEY,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
   supplier_id INT REFERENCES suppliers(supplier_id),
   supplier_name VARCHAR(200),
   supplier_phone VARCHAR(20),
@@ -125,16 +152,14 @@ CREATE TABLE purchases (
   created_at TIMESTAMP DEFAULT now()
 );
 
-
 CREATE TABLE purchase_items (
   id SERIAL PRIMARY KEY,
   purchase_id INT REFERENCES purchases(purchase_id) ON DELETE CASCADE,
   product_id INT REFERENCES products(product_id),
-  variant_id  INT REFERENCES product_variants(variant_id) ON DELETE SET NULL,
+  variant_id INT REFERENCES product_variants(variant_id) ON DELETE SET NULL,
   quantity INT NOT NULL,
   purchase_price NUMERIC(10,2) NOT NULL
 );
-
 
 CREATE TABLE purchase_payments (
   payment_id SERIAL PRIMARY KEY,
@@ -145,80 +170,158 @@ CREATE TABLE purchase_payments (
   payment_date TIMESTAMP DEFAULT now()
 );
 
-
+-- =====================================================
+-- ORDERS & ORDER ITEMS
+-- =====================================================
 CREATE TABLE public.orders (
-    order_id            SERIAL PRIMARY KEY,
-    customer_id         INTEGER REFERENCES public.customers(customer_id),
-    phone               VARCHAR(20) NOT NULL,
-    shipping_address    TEXT NOT NULL,
-    shipping_city       VARCHAR(100),
-    shipping_area       VARCHAR(100),
-    courier_name        VARCHAR(100),
-    courier_tracking_id VARCHAR(100),
-    status              VARCHAR(30) DEFAULT 'pending'
-                        CHECK (status IN (
-                            'pending', 'confirmed', 'processing', 'shipped', 
-                            'out_for_delivery', 'delivered', 'cancelled', 
-                            'returned', 'failed'
-                        )),
-    subtotal_amount       NUMERIC(10, 2) NOT NULL,       -- Sum of products
-    total_discount_amount NUMERIC(10, 2) DEFAULT 0,      -- Coupons/Discounts
-    delivery_charge       NUMERIC(10, 2) DEFAULT 0,      -- Shipping cost
-    total_amount          NUMERIC(10, 2) NOT NULL,       -- (Subtotal + Delivery) - Discount
-    due_amount            NUMERIC(10, 2) DEFAULT 0,      -- Balance to be paid
-    payment_type        VARCHAR(20) DEFAULT 'cod'        -- 'cod' or 'prepaid'
-                    CHECK (payment_type IN ('cod', 'prepaid')),
-    note                TEXT,
-    created_at          TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
-    updated_at          TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
+  order_id            SERIAL PRIMARY KEY,
+  branch_id           INTEGER REFERENCES public.branches(branch_id) ON DELETE SET NULL,
+  customer_id         INTEGER REFERENCES public.customers(customer_id),
+  phone               VARCHAR(20) NOT NULL,
+  shipping_address    TEXT NOT NULL,
+  shipping_city       VARCHAR(100),
+  shipping_area       VARCHAR(100),
+  courier_name        VARCHAR(100),
+  courier_tracking_id VARCHAR(100),
+  status              VARCHAR(30) DEFAULT 'pending'
+                      CHECK (status IN (
+                          'pending', 'confirmed', 'processing', 'shipped', 
+                          'out_for_delivery', 'delivered', 'cancelled', 
+                          'returned', 'failed'
+                      )),
+  subtotal_amount       NUMERIC(10, 2) NOT NULL,
+  total_discount_amount NUMERIC(10, 2) DEFAULT 0,
+  delivery_charge       NUMERIC(10, 2) DEFAULT 0,
+  total_amount          NUMERIC(10, 2) NOT NULL,
+  due_amount            NUMERIC(10, 2) DEFAULT 0,
+  payment_type        VARCHAR(20) DEFAULT 'cod'
+                  CHECK (payment_type IN ('cod', 'prepaid')),
+  note                TEXT,
+  created_at          TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+  updated_at          TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
 );
-
 
 CREATE TABLE order_items (
   order_item_id SERIAL PRIMARY KEY,
   order_id   INT REFERENCES orders(order_id) ON DELETE CASCADE,
   product_id INT REFERENCES products(product_id),
-  variant_id INT REFERENCES product_variants(variant_id) ON DELETE SET NULL,  -- NULL for non-variant items
+  variant_id INT REFERENCES product_variants(variant_id) ON DELETE SET NULL,
   quantity INT NOT NULL,
   price NUMERIC(10,2) NOT NULL
 );
 
-
+-- =====================================================
+-- PAYMENTS
+-- =====================================================
 CREATE TABLE public.payments (
-    payment_id       SERIAL PRIMARY KEY,
-    order_id         INTEGER NOT NULL REFERENCES public.orders(order_id) ON DELETE CASCADE,
-    payment_method   VARCHAR(50),
-    transaction_id   VARCHAR(100), 
-    amount           NUMERIC(10, 2) NOT NULL,
-    amount_received  NUMERIC(10, 2) DEFAULT 0,
-    change_amount    NUMERIC(10, 2) DEFAULT 0,
-    payment_status   VARCHAR(30) DEFAULT 'pending'
-                     CHECK (payment_status IN (
-                        'pending',  
-                        'failed', 
-                        'refunded', 
-                        'partial', 
-                        'completed'
-                     )),
-    paid_at          TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
-    note             TEXT
+  payment_id       SERIAL PRIMARY KEY,
+  order_id         INTEGER NOT NULL REFERENCES public.orders(order_id) ON DELETE CASCADE,
+  payment_method   VARCHAR(50),
+  transaction_id   VARCHAR(100), 
+  amount           NUMERIC(10, 2) NOT NULL,
+  amount_received  NUMERIC(10, 2) DEFAULT 0,
+  change_amount    NUMERIC(10, 2) DEFAULT 0,
+  payment_status   VARCHAR(30) DEFAULT 'pending'
+                   CHECK (payment_status IN (
+                      'pending',  
+                      'failed', 
+                      'refunded', 
+                      'partial', 
+                      'completed'
+                   )),
+  paid_at          TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+  note             TEXT
+);
+
+-- =====================================================
+-- DAMAGES & DAMAGE ITEMS
+-- =====================================================
+CREATE TABLE damages (
+  damage_id SERIAL PRIMARY KEY,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  damage_date TIMESTAMP DEFAULT now(),
+  total_loss_amount NUMERIC(10,2) DEFAULT 0,
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE damage_items (
+  damage_item_id SERIAL PRIMARY KEY,
+  damage_id INT REFERENCES damages(damage_id) ON DELETE CASCADE,
+  product_id INT REFERENCES products(product_id),
+  variant_id INT REFERENCES product_variants(variant_id) ON DELETE SET NULL,
+  quantity INT NOT NULL,
+  unit_cost NUMERIC(10,2) DEFAULT 0,
+  total_cost NUMERIC(10,2) DEFAULT 0,
+  reason TEXT
+);
+
+-- =====================================================
+-- MONEY WITHDRAWALS
+-- =====================================================
+CREATE TABLE withdrawals (
+  withdrawal_id SERIAL PRIMARY KEY,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  amount NUMERIC(10,2) NOT NULL,
+  payment_method VARCHAR(50) DEFAULT 'cash',
+  account_details TEXT,
+  status VARCHAR(30) DEFAULT 'completed'
+    CHECK (status IN ('pending', 'approved', 'completed', 'rejected', 'cancelled')),
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+-- =====================================================
+-- INVESTMENTS
+-- =====================================================
+CREATE TABLE investments (
+  investment_id SERIAL PRIMARY KEY,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  investor_name VARCHAR(150) NOT NULL,
+  investor_phone VARCHAR(20),
+  investor_email VARCHAR(150),
+  amount NUMERIC(10,2) NOT NULL,
+  payment_method VARCHAR(50) DEFAULT 'bank_transfer',
+  reference_no VARCHAR(100),
+  investment_date TIMESTAMP DEFAULT now(),
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 CREATE INDEX idx_payments_order_id ON public.payments(order_id);
 CREATE INDEX idx_payments_payment_method ON public.payments(payment_method);
+CREATE INDEX idx_stocks_variant_branch ON stocks(variant_id, branch_id);
+CREATE INDEX idx_orders_branch_id ON orders(branch_id);
+CREATE INDEX idx_purchases_branch_id ON purchases(branch_id);
+CREATE INDEX idx_staffs_branch_id ON staffs(branch_id);
+CREATE INDEX idx_damages_branch_id ON damages(branch_id);
+CREATE INDEX idx_damages_staff_id ON damages(staff_id);
+CREATE INDEX idx_damage_items_damage_id ON damage_items(damage_id);
+CREATE INDEX idx_withdrawals_branch_id ON withdrawals(branch_id);
+CREATE INDEX idx_withdrawals_staff_id ON withdrawals(staff_id);
+CREATE INDEX idx_investments_branch_id ON investments(branch_id);
+CREATE INDEX idx_investments_staff_id ON investments(staff_id);
 
-;
-
+-- =====================================================
+-- INVENTORY LOGS & REFUNDS
+-- =====================================================
 CREATE TABLE inventory_logs (
   log_id SERIAL PRIMARY KEY,
   product_id INT REFERENCES products(product_id),
-  type TEXT CHECK (type IN ('purchase','sale','adjustment','return')),
+  variant_id INT REFERENCES product_variants(variant_id) ON DELETE SET NULL,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
+  type TEXT CHECK (type IN ('purchase','sale','adjustment','return','transfer','damage')),
   quantity INT NOT NULL,
   reference_id INT,
   note TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
-
 
 CREATE TABLE refunds (
   refund_id SERIAL PRIMARY KEY,
@@ -230,14 +333,13 @@ CREATE TABLE refunds (
   created_at TIMESTAMP DEFAULT now()
 );
 
-
-
-
-
+-- =====================================================
+-- ISSUES & WEBSITES
+-- =====================================================
 CREATE TABLE issues (
   issue_id SERIAL PRIMARY KEY,
-  sender_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-  receiver_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+  sender_id INT REFERENCES staffs(staff_id) ON DELETE CASCADE,
+  receiver_id INT REFERENCES staffs(staff_id) ON DELETE CASCADE,
   title VARCHAR(200) NOT NULL,
   message TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT now()
@@ -258,23 +360,20 @@ SELECT
   i.message,
   i.created_at
 FROM issues i
-LEFT JOIN users s ON i.sender_id = s.user_id
-LEFT JOIN users r ON i.receiver_id = r.user_id;
+LEFT JOIN staffs s ON i.sender_id = s.staff_id
+LEFT JOIN staffs r ON i.receiver_id = r.staff_id;
 
 CREATE TABLE websites (
   website_id SERIAL PRIMARY KEY,
   logo TEXT,
   logo_id TEXT,
   theme_color TEXT,
-
   hero_title TEXT,
   hero_subtitle TEXT,
-
   address TEXT,
   sociallink TEXT,
   email TEXT,
   phone TEXT,
-
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );

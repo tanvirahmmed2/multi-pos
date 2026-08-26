@@ -3,8 +3,6 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { usePathname } from "next/navigation";
 import { STORE_NAME } from "@/lib/secret";
-
-
 import toast from 'react-hot-toast'
 
 export const Context = createContext()
@@ -13,11 +11,17 @@ const ContextProvider = ({ children }) => {
     const pathname = usePathname()
 
     const [categories, setCategories] = useState([])
-    const [user, setUser] = useState(null)
+    const [staff, setStaff] = useState(null)
+    const [user, setUserState] = useState(null)
     const [loading, setLoading] = useState(true)
 
     const [cart, setCart] = useState({ items: [] })
     const [cartInitialized, setCartInitialized] = useState(false)
+
+    const updateStaffState = (staffData) => {
+        setStaff(staffData);
+        setUserState(staffData);
+    }
 
     useEffect(() => {
         const saved = localStorage.getItem("ecom_cart")
@@ -119,9 +123,9 @@ const ContextProvider = ({ children }) => {
         setCart({ items: [] })
     }
 
-    const [cartbar, setCartbar]=useState(false)
-    const [userSidebar, setUserSidebar]=useState(false)
-    const [dashSidebar, setDashSidebar]=useState(false)
+    const [cartbar, setCartbar] = useState(false)
+    const [userSidebar, setUserSidebar] = useState(false)
+    const [dashSidebar, setDashSidebar] = useState(false)
     const [website, setWebsite] = useState(null)
 
     const fetchWebsite = async () => {
@@ -162,20 +166,20 @@ const ContextProvider = ({ children }) => {
         }
     };
 
+    const fetchStaff = async () => {
+        try {
+            const response = await axios.get('/api/staff');
+            const activeStaff = response.data?.staff || response.data?.user || null;
+            updateStaffState(activeStaff);
+        } catch (error) {
+            console.error("Failed to fetch staff session:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const response = await axios.get('/api/user');
-                if (response.data && response.data.user) {
-                    setUser(response.data.user);
-                }
-            } catch (error) {
-                console.error("Failed to fetch user session:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchUser();
+        fetchStaff();
         fetchWebsite();
         fetchCategories();
     }, []);
@@ -199,13 +203,18 @@ const ContextProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await axios.post('/api/user/logout');
-            
-            window.location.replace('/')
-            setUser(null);
+            await axios.post('/api/staff/logout');
+            updateStaffState(null);
+            window.location.replace('/');
         } catch (error) {
             console.error("Logout failed:", error);
-            throw error;
+            try {
+                await axios.post('/api/user/logout');
+            } catch (e) {
+                // Ignore fallback error
+            }
+            updateStaffState(null);
+            window.location.replace('/');
         }
     };
 
@@ -213,7 +222,9 @@ const ContextProvider = ({ children }) => {
         categories, cart, setCart,
         addToCart, increaseCartQty, decreaseCartQty, removeFromCart, clearCart,
         cartbar, setCartbar, userSidebar, setUserSidebar, dashSidebar, setDashSidebar,
-        user, setUser, loading, logout,
+        staff, setStaff: updateStaffState,
+        user: staff, setUser: updateStaffState,
+        loading, logout,
         website, fetchWebsite
     }
     return (

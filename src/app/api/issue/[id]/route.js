@@ -18,10 +18,11 @@ export async function DELETE(req, { params }) {
       return Response.json({ error: 'Issue log not found' }, { status: 404 });
     }
 
-    const issue = issueRes.rows[0];
+    const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
+    const staffRole = auth.staff ? auth.staff.role : auth.user.role;
 
     // Access control: admins can delete any issue. Others can only delete issues they sent.
-    if (auth.user.role !== 'admin' && issue.sender_id !== auth.user.user_id) {
+    if (staffRole !== 'admin' && issue.sender_id !== currentStaffId) {
       return Response.json({ error: 'Permission denied: You can only delete issues you have sent' }, { status: 403 });
     }
 

@@ -26,7 +26,7 @@ export function verifyToken(token) {
 }
 
 
-export const authenticateUser = async () => {
+export const authenticateStaff = async () => {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('ecom_token')?.value;
@@ -36,75 +36,77 @@ export const authenticateUser = async () => {
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || !decoded.user_id) {
+    const staffId = decoded?.staff_id || decoded?.user_id;
+    if (!decoded || !staffId) {
       return { success: false, message: 'Invalid or expired token' };
     }
 
     const result = await query(
-      'SELECT user_id, name, email, phone, role, is_active, is_banned FROM users WHERE user_id = $1',
-      [decoded.user_id]
+      'SELECT staff_id, branch_id, name, email, phone, role, is_active, is_banned FROM staffs WHERE staff_id = $1',
+      [staffId]
     );
 
     if (result.rows.length === 0) {
-      return { success: false, message: 'User not found' };
+      return { success: false, message: 'Staff member not found' };
     }
 
-    const user = result.rows[0];
-    if (user.is_banned) {
-      return { success: false, message: 'User account is banned' };
+    const staff = result.rows[0];
+    if (staff.is_banned) {
+      return { success: false, message: 'Staff account is banned' };
     }
-    if (!user.is_active) {
-      return { success: false, message: 'User account is deactivated' };
+    if (!staff.is_active) {
+      return { success: false, message: 'Staff account is deactivated' };
     }
 
-    return { success: true, user };
+    return { success: true, staff, user: staff };
   } catch (error) {
     return { success: false, message: error.message };
   }
 };
 
+export const authenticateUser = authenticateStaff;
 
-export const isUser = async () => {
-  const auth = await authenticateUser();
+export const isStaff = async () => {
+  const auth = await authenticateStaff();
   if (!auth.success) return auth;
-  return { success: true, user: auth.user };
+  return { success: true, staff: auth.staff, user: auth.staff };
 };
 
+export const isUser = isStaff;
 
 export const isAdmin = async () => {
-  const auth = await authenticateUser();
+  const auth = await authenticateStaff();
   if (!auth.success) return auth;
-  if (auth.user.role !== 'admin') {
+  if (auth.staff.role !== 'admin') {
     return { success: false, message: 'Access denied: Admin role required' };
   }
-  return { success: true, user: auth.user };
+  return { success: true, staff: auth.staff, user: auth.staff };
 };
-
 
 export const isManager = async () => {
-  const auth = await authenticateUser();
+  const auth = await authenticateStaff();
   if (!auth.success) return auth;
-  if (auth.user.role !== 'manager') {
+  if (auth.staff.role !== 'manager') {
     return { success: false, message: 'Access denied: Manager role required' };
   }
-  return { success: true, user: auth.user };
+  return { success: true, staff: auth.staff, user: auth.staff };
 };
 
-
 export const isSales = async () => {
-  const auth = await authenticateUser();
+  const auth = await authenticateStaff();
   if (!auth.success) return auth;
-  if (auth.user.role !== 'sales') {
+  if (auth.staff.role !== 'sales') {
     return { success: false, message: 'Access denied: Sales role required' };
   }
-  return { success: true, user: auth.user };
+  return { success: true, staff: auth.staff, user: auth.staff };
 };
 
 export const isManagementRole = async () => {
-  const auth = await authenticateUser();
+  const auth = await authenticateStaff();
   if (!auth.success) return auth;
-  if (auth.user.role !== 'manager' && auth.user.role !== 'admin' && auth.user.role!=='sales') {
+  if (auth.staff.role !== 'manager' && auth.staff.role !== 'admin' && auth.staff.role !== 'sales') {
     return { success: false, message: 'Access denied: Management role required' };
   }
-  return { success: true, user: auth.user };
+  return { success: true, staff: auth.staff, user: auth.staff };
 };
+

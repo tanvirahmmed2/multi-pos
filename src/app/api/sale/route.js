@@ -81,16 +81,16 @@ export async function POST(req) {
       if (checkCust.rows.length > 0) {
         customerId = checkCust.rows[0].customer_id;
       } else {
-        // Customer profile not found. Check if a registered user exists with this phone number
-        const checkUser = await client.query('SELECT name, email FROM users WHERE phone = $1 LIMIT 1', [cleanPhone]);
+        // Customer profile not found. Check if a registered staff member exists with this phone number
+        const checkStaff = await client.query('SELECT name, email FROM staffs WHERE phone = $1 LIMIT 1', [cleanPhone]);
         
         let finalName = 'Guest';
         let finalEmail = 'guest@sale.com';
         let finalAddr = 'In-Store POS';
 
-        if (checkUser.rows.length > 0) {
-          finalName = checkUser.rows[0].name || 'Guest';
-          finalEmail = checkUser.rows[0].email || 'guest@sale.com';
+        if (checkStaff.rows.length > 0) {
+          finalName = checkStaff.rows[0].name || 'Guest';
+          finalEmail = checkStaff.rows[0].email || 'guest@sale.com';
         }
 
         const newCust = await client.query(

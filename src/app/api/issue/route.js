@@ -8,27 +8,29 @@ export async function GET(req) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
+    const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
     // Action to fetch possible receivers for issues (other active staff members)
     if (action === 'receivers') {
       const receiversRes = await query(
-        `SELECT user_id, name, email, role 
-         FROM users 
-         WHERE role IN ('admin', 'manager', 'sales') 
+        `SELECT staff_id, staff_id AS user_id, name, email, role 
+         FROM staffs 
+         WHERE role IN ('admin', 'manager', 'sales', 'staff') 
            AND is_active = TRUE 
            AND is_banned = FALSE 
-           AND user_id != $1
+           AND staff_id != $1
          ORDER BY name ASC`,
-        [auth.user.user_id]
+        [currentStaffId]
       );
       return Response.json(receiversRes.rows, { status: 200 });
     }
 
     // Default action: Fetch issue logs
     let result;
-    if (auth.user.role === 'admin') {
+    const staffRole = auth.staff ? auth.staff.role : auth.user.role;
+    if (staffRole === 'admin') {
       // Admins see all issues
       result = await query(`
         SELECT * 
@@ -42,7 +44,7 @@ export async function GET(req) {
          FROM issues_view 
          WHERE sender_id = $1 OR receiver_id = $1 
          ORDER BY issue_id DESC`,
-        [auth.user.user_id]
+        [currentStaffId]
       );
     }
 
@@ -75,11 +77,12 @@ export async function POST(req) {
     }
 
     const receiverId = parseInt(receiver_id, 10);
+    const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
 
     // Verify receiver exists
-    const recCheck = await query('SELECT role FROM users WHERE user_id = $1', [receiverId]);
+    const recCheck = await query('SELECT role FROM staffs WHERE staff_id = $1', [receiverId]);
     if (recCheck.rows.length === 0) {
-      return Response.json({ error: 'Recipient user not found' }, { status: 400 });
+      return Response.json({ error: 'Recipient staff member not found' }, { status: 400 });
     }
 
     // Insert issue
@@ -87,7 +90,7 @@ export async function POST(req) {
       `INSERT INTO issues (sender_id, receiver_id, title, message)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [auth.user.user_id, receiverId, title.trim(), message.trim()]
+      [currentStaffId, receiverId, title.trim(), message.trim()]
     );
 
     return Response.json(result.rows[0], { status: 201 });
@@ -97,3 +100,4 @@ export async function POST(req) {
     return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

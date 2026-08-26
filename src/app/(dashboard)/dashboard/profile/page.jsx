@@ -70,7 +70,7 @@ export default function UserProfilePage() {
     const toastId = toast.loading('Updating profile...')
 
     try {
-      const response = await axios.put('/api/user', {
+      const response = await axios.put('/api/staff', {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -79,8 +79,10 @@ export default function UserProfilePage() {
       })
 
       toast.success(response.data.message || 'Profile updated successfully!', { id: toastId })
-      if (response.data.user) {
-        setUser(response.data.user)
+      const updatedStaff = response.data.staff || response.data.user;
+      if (updatedStaff) {
+        if (setStaff) setStaff(updatedStaff)
+        else if (setUser) setUser(updatedStaff)
       }
       setFormData((prev) => ({
         ...prev,

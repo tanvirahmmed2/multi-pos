@@ -21,8 +21,8 @@ export async function GET(req) {
       catRes,
       brandRes
     ] = await Promise.all([
-      query("SELECT COUNT(*)::int AS count FROM users WHERE role IN ('admin', 'manager', 'sales')"),
-      query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'user'"),
+      query("SELECT COUNT(*)::int AS count FROM staffs WHERE role IN ('admin', 'manager', 'sales', 'staff')"),
+      query("SELECT COUNT(*)::int AS count FROM customers"),
       query("SELECT COUNT(*)::int AS count FROM products"),
       query("SELECT COALESCE(SUM(stock), 0)::int AS count FROM product_variants"),
       query("SELECT COALESCE(SUM(stock * sale_price), 0)::float AS val, COALESCE(SUM(stock * purchase_price), 0)::float AS cost FROM product_variants"),

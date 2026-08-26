@@ -9,33 +9,33 @@ export async function PUT(req, { params }) {
     }
 
     const { id } = await params;
-    const targetUserId = parseInt(id, 10);
+    const targetStaffId = parseInt(id, 10);
+    const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
 
     // Prevent self-modification
-    if (auth.user.user_id === targetUserId) {
+    if (currentStaffId === targetStaffId) {
       return Response.json(
         { error: 'Admins cannot modify their own role, active status, or ban status to prevent lockout' },
         { status: 400 }
       );
     }
 
-    const checkUser = await query('SELECT * FROM users WHERE user_id = $1', [targetUserId]);
-    if (checkUser.rows.length === 0) {
-      return Response.json({ error: 'User not found' }, { status: 404 });
+    const checkStaff = await query('SELECT * FROM staffs WHERE staff_id = $1', [targetStaffId]);
+    if (checkStaff.rows.length === 0) {
+      return Response.json({ error: 'Staff member not found' }, { status: 404 });
     }
 
     const body = await req.json();
     const { role, is_banned, is_active } = body;
 
-    // Build dynamic UPDATE query
     const fieldsToUpdate = [];
     const values = [];
     let placeholderCounter = 1;
 
     if (role !== undefined) {
-      const allowedRoles = ['admin', 'manager', 'sales', 'user'];
+      const allowedRoles = ['admin', 'manager', 'sales', 'staff'];
       if (!allowedRoles.includes(role)) {
-        return Response.json({ error: 'Invalid role specified' }, { status: 400 });
+        return Response.json({ error: 'Invalid staff role specified' }, { status: 400 });
       }
       fieldsToUpdate.push(`role = $${placeholderCounter++}`);
       values.push(role);
@@ -55,20 +55,20 @@ export async function PUT(req, { params }) {
       return Response.json({ error: 'No fields to update' }, { status: 400 });
     }
 
-    // Add user_id as final parameter
-    values.push(targetUserId);
+    values.push(targetStaffId);
     const updateQuery = `
-      UPDATE users 
+      UPDATE staffs 
       SET ${fieldsToUpdate.join(', ')}, updated_at = NOW() 
-      WHERE user_id = $${placeholderCounter} 
-      RETURNING user_id, name, email, phone, role, is_active, is_varified, is_banned, created_at
+      WHERE staff_id = $${placeholderCounter} 
+      RETURNING staff_id, staff_id AS user_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, created_at
     `;
 
     const result = await query(updateQuery, values);
     return Response.json(result.rows[0], { status: 200 });
 
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error('Error updating staff member:', error);
     return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
