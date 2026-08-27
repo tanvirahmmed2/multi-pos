@@ -278,9 +278,8 @@ export default function DashboardSalesPage() {
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+      <div className="w-full flex flex-col gap-8">
         
-        {/* Profile Card Banner */}
         <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-slate-900 text-white text-xl font-bold flex items-center justify-center shadow-sm">

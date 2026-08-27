@@ -30,7 +30,7 @@ import {
   BiKey
 } from 'react-icons/bi'
 
-const MODULE_LINKS = {
+export const MODULE_LINKS = {
   overview: { name: 'Overview', path: '/dashboard/overview', icon: <BiHome /> },
   branches: { name: 'Branches', path: '/dashboard/branches', icon: <BiStoreAlt /> },
   people: { name: 'People (Accounts)', path: '/dashboard/people', icon: <BiUser /> },
