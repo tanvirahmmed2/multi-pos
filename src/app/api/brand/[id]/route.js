@@ -45,11 +45,9 @@ export async function PUT(req, { params }) {
     let imageUrl = brand.image;
     let imageId = brand.image_id;
 
-    // Check if new image is uploaded
     if (imageFile && typeof imageFile !== 'string') {
       const uploadResult = await uploadToCloudinary(imageFile, 'brands');
       if (uploadResult) {
-        // Delete previous image from Cloudinary
         if (brand.image_id) {
           await deleteFromCloudinary(brand.image_id);
         }
@@ -87,7 +85,6 @@ export async function DELETE(req, { params }) {
     }
     const brand = getBrand.rows[0];
 
-    // Delete image from Cloudinary
     if (brand.image_id) {
       try {
         await deleteFromCloudinary(brand.image_id);
@@ -96,7 +93,6 @@ export async function DELETE(req, { params }) {
       }
     }
 
-    // Delete brand from DB
     await query('DELETE FROM brands WHERE brand_id = $1', [id]);
 
     return Response.json({ message: 'Brand deleted successfully' }, { status: 200 });

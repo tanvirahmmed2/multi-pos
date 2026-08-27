@@ -19,7 +19,6 @@ export async function POST(req, { params }) {
       return Response.json({ error: 'Valid payment amount is required' }, { status: 400 });
     }
 
-    // Fetch purchase metadata and calculate due
     const purchaseRes = await query(`
       SELECT 
         p.total_amount, 
@@ -43,11 +42,10 @@ export async function POST(req, { params }) {
       return Response.json({ error: 'This invoice is already fully paid' }, { status: 400 });
     }
 
-    if (amount > due + 0.01) { // Adding small delta for precision
+    if (amount > due + 0.01) { 
       return Response.json({ error: `Payment amount $${amount} exceeds remaining due amount $${due.toFixed(2)}` }, { status: 400 });
     }
 
-    // Insert subsequent payment
     const result = await query(
       `INSERT INTO purchase_payments (purchase_id, payment_method, amount_paid, transaction_id)
        VALUES ($1, $2, $3, $4)

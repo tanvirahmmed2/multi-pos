@@ -108,10 +108,8 @@ export default function AdminOverviewPage() {
           </div>
         </div>
 
-        {/* 8 Clean Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           
-          {/* Card 1: Total Staff */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Staff</p>
@@ -123,7 +121,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 2: Total Product */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Product</p>
@@ -135,7 +132,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 3: Total Sales */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Sales</p>
@@ -149,7 +145,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 4: Total Stock */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Stock</p>
@@ -161,7 +156,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 5: Total Stock Price */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Stock Price</p>
@@ -175,7 +169,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 6: Total Order */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Order</p>
@@ -187,7 +180,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 7: Pending Order */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Pending Order</p>
@@ -199,7 +191,6 @@ export default function AdminOverviewPage() {
             </div>
           </div>
 
-          {/* Card 8: Completed Order */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Completed Order</p>
@@ -213,10 +204,8 @@ export default function AdminOverviewPage() {
 
         </div>
 
-        {/* Quick Navigation and Recent Orders Table */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Recent Orders Panel */}
           <div className="lg:col-span-2 bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-800">Recent Customer Orders</h3>
@@ -265,7 +254,6 @@ export default function AdminOverviewPage() {
             )}
           </div>
 
-          {/* Quick Access Menu */}
           <div className="bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4">
             <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2.5">
               Quick Admin Actions

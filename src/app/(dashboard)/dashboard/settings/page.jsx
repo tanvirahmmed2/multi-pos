@@ -21,7 +21,6 @@ export default function DashboardAdminSettingsPage() {
   const { dashSidebar, fetchWebsite, fetchActiveCurrency } = useContext(Context)
   const themeColor = '#73976A'
   
-  // Form fields
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -29,20 +28,17 @@ export default function DashboardAdminSettingsPage() {
   const [heroTitle, setHeroTitle] = useState('')
   const [heroSubtitle, setHeroSubtitle] = useState('')
   
-  // Currency Management state
   const [dbCurrencies, setDbCurrencies] = useState([])
   const [activatingId, setActivatingId] = useState(null)
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false)
-  const [currencyTab, setCurrencyTab] = useState('select') // 'select' | 'create'
+  const [currencyTab, setCurrencyTab] = useState('select') 
   const [newCurrency, setNewCurrency] = useState({ code: '', name: '', symbol: '' })
   const [addingCurrency, setAddingCurrency] = useState(false)
   
-  // Logo upload state
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
   const [existingLogoUrl, setExistingLogoUrl] = useState('')
 
-  // UI status
   const [fetching, setFetching] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -192,7 +188,6 @@ export default function DashboardAdminSettingsPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="border-b border-slate-200 pb-4">
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
             <BiCog style={{ color: themeColor }} />
@@ -203,16 +198,13 @@ export default function DashboardAdminSettingsPage() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* Main Settings Form Panel */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             
-            {/* General Identity */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiGlobe style={{ color: themeColor }} className="text-base" /> General Identity
               </h2>
               
-              {/* Secret.js Info Box */}
               <div className="p-3.5 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center rounded-xl">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: themeColor }}>Secret Configured</span>
@@ -225,7 +217,6 @@ export default function DashboardAdminSettingsPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Contact Email */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-700">Store Support Email</label>
                   <input 
@@ -236,7 +227,6 @@ export default function DashboardAdminSettingsPage() {
                   />
                 </div>
 
-                {/* Contact Phone */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-700">Store Customer Phone</label>
                   <input 
@@ -248,7 +238,6 @@ export default function DashboardAdminSettingsPage() {
                 </div>
               </div>
 
-              {/* Address */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700">Office Showroom / Warehouse Address</label>
                 <textarea
@@ -259,7 +248,6 @@ export default function DashboardAdminSettingsPage() {
                 />
               </div>
 
-              {/* Social Link */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                   <BiLink className="text-slate-400 text-sm" /> Social Profile Link (e.g. Facebook/Instagram)
@@ -274,7 +262,6 @@ export default function DashboardAdminSettingsPage() {
 
             </div>
 
-            {/* Store Currency Manager Card */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
@@ -298,7 +285,6 @@ export default function DashboardAdminSettingsPage() {
                 </button>
               </div>
 
-              {/* Active Currency Display Card */}
               {(() => {
                 const activeCurr = dbCurrencies.find(c => c.is_active) || dbCurrencies[0] || { symbol: '৳', code: 'BDT', name: 'Bangladeshi Taka' }
                 return (
@@ -327,12 +313,10 @@ export default function DashboardAdminSettingsPage() {
                 )
               })()}
 
-              {/* Change Currency Popup Modal */}
               {isCurrencyModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
                   <div className="bg-white border border-slate-200 w-full max-w-lg p-6 rounded-2xl shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
                     
-                    {/* Modal Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div>
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -349,7 +333,6 @@ export default function DashboardAdminSettingsPage() {
                       </button>
                     </div>
 
-                    {/* Modal Nav Tabs */}
                     <div className="flex border-b border-slate-100 gap-2">
                       <button
                         type="button"
@@ -375,7 +358,6 @@ export default function DashboardAdminSettingsPage() {
                       </button>
                     </div>
 
-                    {/* Tab 1: Select Currency List */}
                     {currencyTab === 'select' && (
                       <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
                         {dbCurrencies.map((curr) => {
@@ -424,7 +406,6 @@ export default function DashboardAdminSettingsPage() {
                       </div>
                     )}
 
-                    {/* Tab 2: Create New Currency */}
                     {currencyTab === 'create' && (
                       <div className="flex flex-col gap-3 pt-1">
                         <div>
@@ -490,13 +471,11 @@ export default function DashboardAdminSettingsPage() {
 
             </div>
 
-            {/* Layout Settings & Hero Banner */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiLayout style={{ color: themeColor }} className="text-base" /> Landing Hero Section
               </h2>
 
-              {/* Hero Banner Title */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700">Hero Main Title Banner</label>
                 <input 
@@ -507,7 +486,6 @@ export default function DashboardAdminSettingsPage() {
                 />
               </div>
 
-              {/* Hero Banner Subtitle */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700">Hero Subtitle Banner</label>
                 <textarea
@@ -521,16 +499,13 @@ export default function DashboardAdminSettingsPage() {
 
           </div>
 
-          {/* Right Column: Visual Elements & Logo Upload */}
           <div className="flex flex-col gap-6">
             
-            {/* Visual Branding & Logo */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiUpload style={{ color: themeColor }} className="text-base" /> Website Logo (Cloudinary)
               </h2>
 
-              {/* Logo Upload */}
               <div className="flex flex-col gap-2.5">
                 <label className="text-xs font-bold text-slate-700">Website Logo File</label>
                 
@@ -562,7 +537,6 @@ export default function DashboardAdminSettingsPage() {
                 </div>
               </div>
 
-              {/* Save Controls */}
               <div className="border-t border-slate-100 pt-4 mt-1 flex flex-col gap-2">
                 <button
                   type="submit"
@@ -585,14 +559,12 @@ export default function DashboardAdminSettingsPage() {
 
             </div>
 
-            {/* Banner Live Rendering Card */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiShow style={{ color: themeColor }} className="text-base" /> Live Preview
               </h2>
 
               <div className="w-full p-5 border border-slate-200 relative min-h-[160px] flex flex-col justify-center gap-2 rounded-xl bg-slate-50">
-                {/* Logo mock */}
                 {logoPreview && (
                   <div className="w-12 h-12 bg-white p-1 w-fit mb-1 border border-slate-200 rounded-lg">
                     <img src={logoPreview} alt="mock" className="object-contain w-full h-full" />

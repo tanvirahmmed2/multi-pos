@@ -3,7 +3,6 @@ import { authenticateUser } from '@/lib/auth';
 
 export async function GET(req) {
   try {
-    // Authenticate user
     const auth = await authenticateUser();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 401 });

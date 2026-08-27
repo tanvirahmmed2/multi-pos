@@ -43,7 +43,6 @@ export async function GET(req, { params }) {
       return Response.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // Fetch its variants
     const variantsRes = await query(
       'SELECT * FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC',
       [product.product_id]
@@ -92,7 +91,7 @@ export async function PUT(req, { params }) {
     const unit = formData.get('unit') || 'Pcs';
     let barcode = formData.get('barcode') || '';
     const stock = formData.get('stock') ? parseInt(formData.get('stock'), 10) : 0;
-    const variantsStr = formData.get('variants'); // JSON string array
+    const variantsStr = formData.get('variants'); 
 
     let variants = [];
     if (variantsStr) {
@@ -121,7 +120,6 @@ export async function PUT(req, { params }) {
       }];
     }
 
-    // Pre-populate barcodes and validate barcode uniqueness against OTHER products
     let lastGeneratedBarcode = null;
     for (const variant of variants) {
       if (!variant.barcode) {
@@ -149,10 +147,8 @@ export async function PUT(req, { params }) {
     const slug = slugify(name) + '-' + product.product_id;
     const is_active = isActiveVal === 'false' ? false : true;
 
-    // Begin DB transaction
     await query('BEGIN');
 
-    // Update Product details
     const updateResult = await query(
       `UPDATE products 
        SET category_id = $1, brand_id = $2, name = $3, slug = $4, description = $5, is_active = $6, updated_at = NOW()
@@ -166,7 +162,6 @@ export async function PUT(req, { params }) {
 
     const updatedProduct = updateResult.rows[0];
 
-    // Get list of existing variant IDs in DB
     const existingVariantsRes = await query(
       'SELECT variant_id FROM product_variants WHERE product_id = $1',
       [product.product_id]
@@ -175,22 +170,18 @@ export async function PUT(req, { params }) {
 
     const incomingIds = variants.map(v => v.variant_id).filter(id => id !== undefined && id !== null);
 
-    // Delete variants that are no longer present
     const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
     if (idsToDelete.length > 0) {
-      // Fetch image_ids of variants to be deleted so we can clean them up in Cloudinary
       const varsToDeleteRes = await query(
         'SELECT image_id, variant_id FROM product_variants WHERE variant_id = ANY($1::int[])',
         [idsToDelete]
       );
 
-      // Perform DB delete
       await query(
         'DELETE FROM product_variants WHERE variant_id = ANY($1::int[])',
         [idsToDelete]
       );
 
-      // Clean up Cloudinary images if they are variant-specific and not used elsewhere
       for (const row of varsToDeleteRes.rows) {
         if (row.image_id) {
           const checkUsage = await query('SELECT count(*)::int as count FROM product_variants WHERE image_id = $1', [row.image_id]);
@@ -201,7 +192,6 @@ export async function PUT(req, { params }) {
       }
     }
 
-    // Insert or update incoming variants
     let index = 0;
     for (const variant of variants) {
       const vName = variant.variant_name || 'Default';
@@ -220,12 +210,10 @@ export async function PUT(req, { params }) {
       let vImage = variant.image || null;
       let vImageId = variant.image_id || null;
 
-      // Check if there is a new image file uploaded for this variant index
       const varImageFile = formData.get(`variant_image_${index}`);
       if (varImageFile && typeof varImageFile !== 'string') {
         const varUploadResult = await uploadToCloudinary(varImageFile, 'products');
         if (varUploadResult) {
-          // If we had a variant-specific image before, delete it if it is not used elsewhere
           if (variant.image_id) {
             const checkUsage = await query('SELECT count(*)::int as count FROM product_variants WHERE image_id = $1 AND variant_id != $2', [variant.image_id, variant.variant_id || 0]);
             if (checkUsage.rows[0].count === 0) {
@@ -238,7 +226,6 @@ export async function PUT(req, { params }) {
       }
 
       if (variant.variant_id) {
-        // Update existing variant
         await query(
           `UPDATE product_variants 
            SET variant_name = $1, barcode = $2, purchase_price = $3, sale_price = $4, 
@@ -252,7 +239,6 @@ export async function PUT(req, { params }) {
           ]
         );
       } else {
-        // Insert new variant
         await query(
           `INSERT INTO product_variants (
             product_id, variant_name, barcode, purchase_price, sale_price, 
@@ -315,7 +301,6 @@ export async function DELETE(req, { params }) {
       return Response.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    // Fetch all variants to delete their images from Cloudinary
     const variantsRes = await query('SELECT image_id FROM product_variants WHERE product_id = $1', [product.product_id]);
     for (const v of variantsRes.rows) {
       if (v.image_id) {
@@ -327,7 +312,6 @@ export async function DELETE(req, { params }) {
       }
     }
 
-    // Delete product from DB (variants will cascade delete)
     await query('DELETE FROM products WHERE product_id = $1', [product.product_id]);
 
     return Response.json({ message: 'Product deleted successfully' }, { status: 200 });

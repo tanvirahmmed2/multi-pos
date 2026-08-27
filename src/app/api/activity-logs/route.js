@@ -9,7 +9,7 @@ export async function GET(req) {
     }
 
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type') || 'activity'; // 'activity' or 'login'
+    const type = searchParams.get('type') || 'activity'; 
 
     if (type === 'login') {
       const result = await query(`

@@ -12,7 +12,6 @@ export function getClientIp(req) {
       return xRealIp.trim();
     }
   } catch (err) {
-    // Fallback
   }
   return '127.0.0.1';
 }

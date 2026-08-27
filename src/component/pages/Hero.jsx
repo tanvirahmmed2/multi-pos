@@ -21,7 +21,6 @@ const Hero = () => {
     setActiveIdx((prev) => (prev - 1 + bgImages.length) % bgImages.length)
   }, [bgImages.length])
 
-  // Autoplay
   useEffect(() => {
     if (isHovered) return
     const timer = setInterval(() => {
@@ -48,13 +47,11 @@ const Hero = () => {
             style={{ backgroundImage: `url(${img})` }}
           />
         ))}
-        {/* Simple dark overlay */}
         <div className="absolute inset-0 bg-black/20" />
       </div>
 
       <div className="relative z-10 px-4 sm:px-8 max-w-2xl mx-auto text-center flex flex-col items-center justify-center gap-3 sm:gap-4 md:gap-6">
         
-        {/* Shop Header Info */}
         <div className="flex flex-col items-center gap-1 sm:gap-2">
           <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight uppercase text-white drop-shadow-md">
             {STORE_NAME}
@@ -64,10 +61,8 @@ const Hero = () => {
           </p>
         </div>
 
-        {/* Divider line */}
         <div className="w-12 sm:w-16 h-0.5 bg-white/30" />
 
-        {/* Navigation Links to Shop and Offers */}
         <div className="flex items-center gap-3 sm:gap-4 justify-center mt-1 sm:mt-2">
           <Link
             href="/products"
@@ -85,7 +80,6 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Slider navigation buttons */}
       <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 hidden md:block z-20">
         <button
           onClick={handlePrev}
@@ -105,7 +99,6 @@ const Hero = () => {
         </button>
       </div>
 
-      {/* Simple indicators */}
       <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
         {bgImages.map((_, idx) => (
           <button

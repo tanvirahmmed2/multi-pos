@@ -8,7 +8,6 @@ export async function GET(req) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
-    // 1. Top Selling Products (Limit to top 8)
     const topProductsRes = await query(`
       SELECT p.name AS name, 
              SUM(oi.quantity)::int AS quantity, 
@@ -22,7 +21,6 @@ export async function GET(req) {
       LIMIT 8
     `);
 
-    // 2. Sales by Category
     const categorySalesRes = await query(`
       SELECT c.name AS name, 
              SUM(oi.quantity)::int AS quantity, 
@@ -36,7 +34,6 @@ export async function GET(req) {
       ORDER BY revenue DESC
     `);
 
-    // 3. Sales History Trends (Last 30 days)
     const salesTrendRes = await query(`
       SELECT DATE(created_at) AS date, 
              COUNT(*)::int AS count, 
@@ -48,7 +45,6 @@ export async function GET(req) {
       ORDER BY date ASC
     `);
 
-    // 4. Payment Types Breakdown
     const paymentBreakdownRes = await query(`
       SELECT payment_type AS type, 
              COUNT(*)::int AS count, 

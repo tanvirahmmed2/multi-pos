@@ -105,7 +105,6 @@ export default function ManagerReturnDeskPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="border-b border-slate-200 pb-4">
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Returns Processing Desk</h1>
           <p className="text-xs text-slate-500 mt-1">Audit returns, refund clients, restore inventory levels, and check order validity.</p>
@@ -113,10 +112,8 @@ export default function ManagerReturnDeskPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Left panel - Search & Process */}
           <div className="flex flex-col gap-5 lg:col-span-1">
             
-            {/* Search Card */}
             <div className="bg-white border border-slate-200 p-6 shadow-sm flex flex-col gap-4">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Lookup Order for Return</h3>
               <form onSubmit={handleSearchOrder} className="flex gap-2">
@@ -137,7 +134,6 @@ export default function ManagerReturnDeskPage() {
               </form>
             </div>
 
-            {/* Found Order Card */}
             {searchedOrder && (
               <div className="bg-white border border-slate-200 p-6 shadow-sm flex flex-col gap-4">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
@@ -199,7 +195,6 @@ export default function ManagerReturnDeskPage() {
 
           </div>
 
-          {/* Right panel - Return logs list */}
           <div className="bg-white border border-slate-200 p-6 shadow-sm flex flex-col gap-4 lg:col-span-2">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide border-b border-slate-100 pb-2">Returned Transactions Register</h3>
             

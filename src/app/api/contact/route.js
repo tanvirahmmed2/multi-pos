@@ -1,7 +1,6 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 
-// Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function GET(req) {
@@ -51,7 +50,6 @@ export async function POST(req) {
     const body = await req.json();
     const { name, email, subject, message } = body;
 
-    // Validation
     if (!name || !name.trim()) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
     }

@@ -26,17 +26,15 @@ import RichTextEditor from '@/component/helper/RichTextEditor'
 import toast from 'react-hot-toast'
 
 export default function ProductForm({ initialData, onSubmit, loading }) {
-  // Core states
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [brandId, setBrandId] = useState('')
-  const [productType, setProductType] = useState('simple') // 'simple' or 'variable'
+  const [productType, setProductType] = useState('simple') 
   const [isActive, setIsActive] = useState(true)
   const [image, setImage] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
 
-  // Simple pricing states
   const [purchasePrice, setPurchasePrice] = useState(0)
   const [salePrice, setSalePrice] = useState(0)
   const [discountPrice, setDiscountPrice] = useState(0)
@@ -48,14 +46,12 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
   const [stock, setStock] = useState(0)
   const [weight, setWeight] = useState(0)
 
-  // Variants list state
   const [variants, setVariants] = useState([])
 
-  // New variant configuration states
   const [newVarName, setNewVarName] = useState('')
   const [newVarBarcode, setNewVarBarcode] = useState('')
   const [newVarPurchasePrice, setNewVarPurchasePrice] = useState(0)
-  const [newVarPrice, setNewVarPrice] = useState(0) // Sale price
+  const [newVarPrice, setNewVarPrice] = useState(0) 
   const [newVarDiscountPrice, setNewVarDiscountPrice] = useState(0)
   const [newVarWholesalePrice, setNewVarWholesalePrice] = useState(0)
   const [newVarDealerPrice, setNewVarDealerPrice] = useState(0)
@@ -67,15 +63,12 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
   const [newVarImageFile, setNewVarImageFile] = useState(null)
   const [newVarImagePreview, setNewVarImagePreview] = useState('')
 
-  // Selection list states
   const [categories, setCategories] = useState([])
   const [brands, setBrands] = useState([])
   const [fetchingOptions, setFetchingOptions] = useState(true)
 
-  // Scanner state
   const [scannerActive, setScannerActive] = useState(false)
 
-  // Category modal states
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const [newCatParentId, setNewCatParentId] = useState('')
@@ -83,7 +76,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
   const [newCatImagePreview, setNewCatImagePreview] = useState('')
   const [creatingCategory, setCreatingCategory] = useState(false)
 
-  // Brand modal states
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false)
   const [newBrandName, setNewBrandName] = useState('')
   const [newBrandDesc, setNewBrandDesc] = useState('')
@@ -92,7 +84,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
   const [newBrandIsActive, setNewBrandIsActive] = useState(true)
   const [creatingBrand, setCreatingBrand] = useState(false)
 
-  // Populate options
   useEffect(() => {
     const fetchOptions = async () => {
       try {
@@ -111,7 +102,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
     fetchOptions()
   }, [])
 
-  // Populate edit data
   useEffect(() => {
     if (initialData) {
       setName(initialData.name || '')
@@ -133,7 +123,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
           imageFile: null,
           imagePreview: ''
         })))
-        // Reset simple product fields
         setPurchasePrice(0)
         setSalePrice(0)
         setDiscountPrice(0)
@@ -192,7 +181,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       imageFile: newVarImageFile,
       imagePreview: newVarImagePreview
     }])
-    // Clear new variant states
     setNewVarName('')
     setNewVarPrice(0)
     setNewVarPurchasePrice(0)
@@ -243,14 +231,11 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       const newCat = res.data
       toast.success('Category created successfully')
       
-      // Re-fetch all categories to get parent names populated
       const catRes = await axios.get('/api/category')
       setCategories(catRes.data)
       
-      // Auto select newly created category
       setCategoryId(newCat.category_id)
       
-      // Reset and close
       setNewCatName('')
       setNewCatParentId('')
       setNewCatImage(null)
@@ -289,14 +274,11 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       const newBrand = res.data
       toast.success('Brand created successfully')
       
-      // Re-fetch all brands
       const brandRes = await axios.get('/api/brand')
       setBrands(brandRes.data)
       
-      // Auto select newly created brand
       setBrandId(newBrand.brand_id)
       
-      // Reset and close
       setNewBrandName('')
       setNewBrandDesc('')
       setNewBrandImage(null)
@@ -341,7 +323,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       }]
     } else {
       finalVariants = [...variants]
-      // Auto-append un-added values if option name is filled
       if (newVarName.trim()) {
         finalVariants.push({
           variant_name: newVarName.trim(),
@@ -367,7 +348,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         return
       }
 
-      // Check validation
       for (const v of finalVariants) {
         if (!v.variant_name || !v.variant_name.trim()) {
           toast.error('All variants must have a name.')
@@ -391,21 +371,18 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
     formData.append('brand_id', brandId)
     formData.append('is_active', isActive)
 
-    // Strip client helper objects
     const cleanedVariants = finalVariants.map(v => {
       const { imageFile, imagePreview, ...rest } = v
       return rest
     })
     formData.append('variants', JSON.stringify(cleanedVariants))
 
-    // Append variant image files if any
     finalVariants.forEach((v, idx) => {
       if (v.imageFile) {
         formData.append(`variant_image_${idx}`, v.imageFile)
       }
     })
 
-    // Legacy parameters compatibility
     if (finalVariants.length > 0) {
       const mainVar = finalVariants[0]
       formData.append('purchase_price', mainVar.purchase_price)
@@ -426,7 +403,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
     <>
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6 animate-fade-in text-slate-800">
       
-      {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-100 shadow-sm rounded-2xl p-4 md:p-6">
         <div className="flex items-center gap-3">
           <Link href="/dashboard/product" className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-850 rounded-xl transition duration-200">
@@ -466,10 +442,8 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         </div>
       </div>
 
-      {/* Form Content Container */}
       <div className="w-full mx-auto flex flex-col gap-6">
           
-          {/* Card 1: Core Details */}
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 flex flex-col gap-5">
             <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
               <BiListUl className="text-emerald-600 text-lg" />
@@ -549,7 +523,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
             </div>
           </div>
 
-          {/* Card 2: Configuration Options (Simple / Variable Switch) */}
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 flex flex-col gap-5">
             <div className="flex items-center justify-between border-b border-slate-50 pb-3">
               <div className="flex items-center gap-2">
@@ -582,11 +555,9 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
               </div>
             </div>
 
-            {/* Simple Product Configuration Form */}
             {productType === 'simple' ? (
               <div className="flex flex-col gap-5">
                 
-                {/* Pricing sub-grid */}
                 <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase">Cost Price *</label>
@@ -664,7 +635,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                   </div>
                 </div>
 
-                {/* Inventory specs sub-grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-655 uppercase">Unit</label>
@@ -746,15 +716,12 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                 )}
               </div>
             ) : (
-              // Variable Product Block
               <div className="flex flex-col gap-5">
                 
-                {/* Variant configure area */}
                 <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/50 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Configure New Variant Option</h4>
                     
-                    {/* Variant toggle active button */}
                     <button
                       type="button"
                       onClick={() => setNewVarIsActive(!newVarIsActive)}
@@ -937,7 +904,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                   </button>
                 </div>
 
-                {/* Table for variants */}
                 {variants.length > 0 ? (
                   <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm overflow-x-auto">
                     <table className="w-full text-left text-xs min-w-[1250px]">
@@ -1126,7 +1092,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
             )}
           </div>
           
-          {/* Card 3: Product Image */}
           {productType === 'simple' ? (
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 flex flex-col gap-5">
               <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
@@ -1179,7 +1144,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
             </div>
           )}
 
-          {/* Card 4: Product Status */}
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
               <BiCheck className="text-emerald-600 text-lg" />
@@ -1209,7 +1173,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
 
       </form>
 
-      {/* Category Creation Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white w-full max-w-md rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex flex-col">
@@ -1338,7 +1301,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         </div>
       )}
 
-      {/* Brand Creation Modal */}
       {isBrandModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white w-full max-w-md rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex flex-col">

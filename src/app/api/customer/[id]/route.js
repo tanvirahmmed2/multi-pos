@@ -15,7 +15,6 @@ export async function GET(req, { params }) {
 
     const { id } = await params;
 
-    // Fetch customer details
     const customerRes = await query(
       `SELECT * FROM customers WHERE customer_id = $1`,
       [id]
@@ -27,7 +26,6 @@ export async function GET(req, { params }) {
 
     const customer = customerRes.rows[0];
 
-    // Fetch customer orders (by customer_id or phone matching)
     const ordersRes = await query(
       `SELECT o.*,
               (SELECT JSON_AGG(JSON_BUILD_OBJECT(
@@ -51,7 +49,6 @@ export async function GET(req, { params }) {
 
     const orders = ordersRes.rows;
 
-    // Calculate customer metrics
     const stats = {
       totalOrders: orders.length,
       totalSpent: orders.reduce((sum, ord) => sum + parseFloat(ord.total_amount || 0), 0),

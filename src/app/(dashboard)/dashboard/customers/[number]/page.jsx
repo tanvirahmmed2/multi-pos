@@ -170,7 +170,6 @@ export default function CustomerProfilePage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Navigation & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div className="flex items-center gap-3">
             <Link 
@@ -199,10 +198,8 @@ export default function CustomerProfilePage() {
           </div>
         </div>
 
-        {/* Top Summary Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* Total Spent */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Gross Purchases</p>
@@ -213,7 +210,6 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
-          {/* Total Orders */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Orders</p>
@@ -224,7 +220,6 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
-          {/* Outstanding Due */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Outstanding Due</p>
@@ -237,7 +232,6 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
-          {/* Delivered vs Returned */}
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Fulfillment Rate</p>
@@ -254,10 +248,8 @@ export default function CustomerProfilePage() {
 
         </div>
 
-        {/* Customer Information & Order Details Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* Left Side: Profile Card */}
           <div className="lg:col-span-4 bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-5">
             <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
               <BiUser className="text-primary text-base" /> Profile Specifications
@@ -314,7 +306,6 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
-          {/* Right Side: Order Transactions Ledger */}
           <div className="lg:col-span-8 bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -413,7 +404,6 @@ export default function CustomerProfilePage() {
                             </td>
                           </tr>
 
-                          {/* Expanded Items Sub-row */}
                           {isExpanded && (
                             <tr className="bg-slate-50/80">
                               <td colSpan={6} className="p-4 border-b border-slate-200">
@@ -442,7 +432,6 @@ export default function CustomerProfilePage() {
                                     </div>
                                   )}
 
-                                  {/* Shipping Details */}
                                   {(ord.shipping_address || ord.shipping_city) && (
                                     <div className="mt-2 text-[11px] text-slate-600 bg-white p-2.5 border border-slate-200">
                                       <span className="font-bold text-slate-800">Shipping Destination: </span>

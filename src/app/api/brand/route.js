@@ -34,7 +34,6 @@ export async function POST(req) {
 
     const is_active = isActiveVal === 'false' ? false : true;
 
-    // Upload to Cloudinary
     const uploadResult = await uploadToCloudinary(imageFile, 'brands');
     if (!uploadResult) {
       return Response.json({ error: 'Failed to upload logo image' }, { status: 500 });

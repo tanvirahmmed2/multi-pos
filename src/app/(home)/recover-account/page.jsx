@@ -11,18 +11,15 @@ const RecoverAccountForm = () => {
     const router = useRouter()
     const token = searchParams.get('token')
 
-    // Request Stage State
     const [email, setEmail] = useState('')
     
-    // Reset Stage State
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
 
     const [submitting, setSubmitting] = useState(false)
-    const [status, setStatus] = useState('idle') // idle, success
+    const [status, setStatus] = useState('idle') 
     const [message, setMessage] = useState('')
 
-    // Stage 1: Request reset link
     const handleRequestLink = async (e) => {
         e.preventDefault()
         if (submitting) return
@@ -44,7 +41,6 @@ const RecoverAccountForm = () => {
         }
     }
 
-    // Stage 2: Reset password
     const handleResetPassword = async (e) => {
         e.preventDefault()
         if (submitting) return
@@ -63,7 +59,6 @@ const RecoverAccountForm = () => {
             setMessage(response.data.message || 'Password reset successful.')
             toast.success(response.data.message || 'Password reset successful!', { id: toastId })
             
-            // Redirect to login after 3 seconds
             setTimeout(() => {
                 router.push('/')
             }, 3000)
@@ -94,7 +89,6 @@ const RecoverAccountForm = () => {
             )}
 
             {token ? (
-                /* Stage 2: Password Reset Form */
                 <form onSubmit={handleResetPassword} suppressHydrationWarning className='flex flex-col gap-4'>
                     <div className='w-full flex flex-col gap-1.5'>
                         <label htmlFor="password" className='text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5'>
@@ -131,7 +125,6 @@ const RecoverAccountForm = () => {
                     </button>
                 </form>
             ) : (
-                /* Stage 1: Request Link Form */
                 <form onSubmit={handleRequestLink} suppressHydrationWarning className='flex flex-col gap-4'>
                     <div className='w-full flex flex-col gap-1.5'>
                         <label htmlFor="email" className='text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5'>

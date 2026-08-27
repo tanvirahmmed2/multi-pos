@@ -20,8 +20,8 @@ export default function ReviewsModerationPage() {
   
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('pending') // 'pending', 'approved', 'all'
-  const [actionId, setActionId] = useState(null) // ID of review currently updating
+  const [activeTab, setActiveTab] = useState('pending') 
+  const [actionId, setActionId] = useState(null) 
 
   const fetchReviews = async (silent = false) => {
     if (!silent) setLoading(true)
@@ -95,7 +95,6 @@ export default function ReviewsModerationPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -113,7 +112,6 @@ export default function ReviewsModerationPage() {
           </button>
         </div>
 
-        {/* Tab Selection */}
         <div className="flex bg-white border border-slate-200 p-1 shadow-sm shrink-0 max-w-md w-full">
           {['pending', 'approved', 'all'].map((tab) => (
             <button
@@ -131,7 +129,6 @@ export default function ReviewsModerationPage() {
           ))}
         </div>
 
-        {/* Reviews List */}
         <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4">
           {loading && reviews.length === 0 ? (
             <div className="w-full h-64 flex items-center justify-center text-slate-500 gap-2">
@@ -173,7 +170,6 @@ export default function ReviewsModerationPage() {
                       </div>
                     </div>
 
-                    {/* Actions Panel */}
                     <div className="flex justify-between items-center border-t border-slate-200 pt-3">
                       <span className="text-[10px] font-mono text-slate-400">ID: #{rev.review_id}</span>
                       

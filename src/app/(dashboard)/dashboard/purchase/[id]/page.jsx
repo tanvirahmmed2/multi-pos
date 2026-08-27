@@ -28,7 +28,6 @@ export default function PurchaseDetailPage() {
   const [fetching, setFetching] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
-  // Subsequent payment states
   const [amountPaid, setAmountPaid] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [transactionId, setTransactionId] = useState('')
@@ -39,7 +38,6 @@ export default function PurchaseDetailPage() {
     try {
       const res = await axios.get(`/api/purchase/${id}`)
       setPurchase(res.data)
-      // Pre-fill next payment with remaining due
       const due = parseFloat(res.data.due_amount) || 0
       setAmountPaid(due > 0 ? String(due) : '')
     } catch (err) {
@@ -105,7 +103,6 @@ export default function PurchaseDetailPage() {
     }
   }
 
-  // Format currency
   const formatCurrency = (val) => {
     const num = parseFloat(val) || 0
     return `৳${num.toFixed(2)}`
@@ -139,7 +136,6 @@ export default function PurchaseDetailPage() {
     } print:bg-white print:p-0 print:pt-0`}>
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
         
-        {/* Actions bar (hidden in print) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 print:hidden">
           <div className="flex items-center gap-4">
             <Link href="/dashboard/purchase" className="p-2 bg-white hover:bg-slate-55 border border-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800">
@@ -176,10 +172,8 @@ export default function PurchaseDetailPage() {
           </div>
         </div>
 
-        {/* Invoice Printable Layout */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col gap-6 relative overflow-hidden print:shadow-none print:border-none">
           
-          {/* Status Overlay Ribbon (hidden in print) */}
           <div className="absolute top-4 right-4 print:hidden">
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
               isFullyPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -188,7 +182,6 @@ export default function PurchaseDetailPage() {
             </span>
           </div>
 
-          {/* Corporate Header */}
           <div className="flex flex-col md:flex-row justify-between gap-4 border-b border-slate-100 pb-6">
             <div>
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">E-COMMERCE SYSTEM</h2>
@@ -206,7 +199,6 @@ export default function PurchaseDetailPage() {
             </div>
           </div>
 
-          {/* Supplier & Staff Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 print:bg-white print:border-slate-100 print:p-2">
             <div>
               <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Billing From (Supplier)</h4>
@@ -231,7 +223,6 @@ export default function PurchaseDetailPage() {
             </div>
           </div>
 
-          {/* Line Items Table */}
           <div>
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Line Items</h4>
             <div className="overflow-x-auto">
@@ -267,7 +258,6 @@ export default function PurchaseDetailPage() {
             </div>
           </div>
 
-          {/* Totals Summary */}
           <div className="flex justify-end pt-4 border-t border-slate-100">
             <div className="w-full md:w-80 flex flex-col gap-2.5 text-sm text-slate-650">
               <div className="flex justify-between">
@@ -299,7 +289,6 @@ export default function PurchaseDetailPage() {
             </div>
           </div>
 
-          {/* Payments Ledger */}
           <div className="border-t border-slate-100 pt-6 mt-2">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Payments Ledger</h4>
             {purchase.payments && purchase.payments.length > 0 ? (
@@ -340,7 +329,6 @@ export default function PurchaseDetailPage() {
 
         </div>
 
-        {/* Subsequent Payment Logging Form (hidden in print) */}
         {!isFullyPaid && (
           <form onSubmit={handleLogPayment} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4 print:hidden animate-fade-in">
             <div className="border-b border-slate-50 pb-2 flex items-center gap-1.5">
@@ -353,7 +341,6 @@ export default function PurchaseDetailPage() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-              {/* Payment Amount */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">Payment Amount *</label>
                 <div className="relative">
@@ -370,7 +357,6 @@ export default function PurchaseDetailPage() {
                 </div>
               </div>
 
-              {/* Payment Method */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">Payment Method</label>
                 <select
@@ -384,7 +370,6 @@ export default function PurchaseDetailPage() {
                 </select>
               </div>
 
-              {/* Transaction ID */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">Transaction ID</label>
                 <input className="input-style"

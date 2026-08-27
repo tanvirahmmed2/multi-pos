@@ -17,7 +17,6 @@ export default function SameCategory({ categoryId, excludeProductId }) {
     const fetchRelated = async () => {
       try {
         const res = await axios.get(`/api/product?category=${categoryId}`)
-        // Filter out the current product and inactive products
         const filtered = res.data.filter(
           (p) => p.product_id !== excludeProductId && p.is_active !== false
         )

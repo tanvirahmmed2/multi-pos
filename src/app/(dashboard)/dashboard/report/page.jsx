@@ -258,7 +258,6 @@ export default function ManagerReportPage() {
     )
   }
 
-  // Calculate aggregates
   const totalQtySold = reportData.topProducts.reduce((acc, curr) => acc + curr.quantity, 0)
   const totalRevenue = reportData.categorySales.reduce((acc, curr) => acc + curr.revenue, 0)
 
@@ -266,7 +265,6 @@ export default function ManagerReportPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Analytics Reports</h1>
@@ -281,7 +279,6 @@ export default function ManagerReportPage() {
           </button>
         </div>
 
-        {/* Aggregate Overview Widgets */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
@@ -312,10 +309,8 @@ export default function ManagerReportPage() {
           </div>
         </div>
 
-        {/* Top selling & Categories distribution */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Top Selling Products */}
           <div className="bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5 uppercase tracking-wider">
               <BiTrendingUp style={{ color: themeColor }} /> Top Selling Products
@@ -348,7 +343,6 @@ export default function ManagerReportPage() {
             )}
           </div>
 
-          {/* Sales by Category */}
           <div className="bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5 uppercase tracking-wider">
               <BiCategory style={{ color: themeColor }} /> Sales by Category
@@ -381,10 +375,8 @@ export default function ManagerReportPage() {
 
         </div>
 
-        {/* 30 day daily sales & Payment splits */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* 30 Day daily trends */}
           <div className="bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4 lg:col-span-2">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5 uppercase tracking-wider">
               <BiTrendingUp style={{ color: themeColor }} /> Daily Revenue (Last 30 Days)
@@ -415,7 +407,6 @@ export default function ManagerReportPage() {
             )}
           </div>
 
-          {/* Payment Type Splits */}
           <div className="bg-white border border-slate-200 p-5 md:p-6 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5 uppercase tracking-wider">
               <BiCreditCard style={{ color: themeColor }} /> Payment Methods Share
@@ -443,7 +434,6 @@ export default function ManagerReportPage() {
 
         </div>
 
-        {/* Data Export Hub */}
         <div className="bg-white border border-slate-200 p-5 md:p-8 shadow-sm flex flex-col gap-6">
           <div>
             <h2 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2">

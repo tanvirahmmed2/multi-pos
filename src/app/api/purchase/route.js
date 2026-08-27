@@ -56,7 +56,6 @@ export async function POST(req) {
       return Response.json({ error: 'At least one purchase item is required' }, { status: 400 });
     }
 
-    // Resolve supplier details
     let sName = 'Walk-in Supplier';
     let sPhone = 'N/A';
     const parsedSupplierId = supplier_id ? parseInt(supplier_id, 10) : null;
@@ -69,10 +68,8 @@ export async function POST(req) {
       }
     }
 
-    // Begin Database Transaction
     await query('BEGIN');
 
-    // Calculate subtotal
     let subtotal = 0;
     for (const item of items) {
       const q = parseInt(item.quantity, 10) || 0;
@@ -82,7 +79,6 @@ export async function POST(req) {
 
     const total = subtotal - parseFloat(extra_discount);
 
-    // Insert purchase with staff_id tracking
     const purchaseRes = await query(
       `INSERT INTO purchases (
         supplier_id, staff_id, supplier_name, supplier_phone, invoice_no, 
@@ -98,21 +94,18 @@ export async function POST(req) {
     const purchase = purchaseRes.rows[0];
     const purchaseId = purchase.purchase_id;
 
-    // Insert line items & update stock
     for (const item of items) {
       const prodId = parseInt(item.product_id, 10);
       const varId = item.variant_id ? parseInt(item.variant_id, 10) : null;
       const q = parseInt(item.quantity, 10);
       const price = parseFloat(item.purchase_price);
 
-      // Insert purchase item
       await query(
         `INSERT INTO purchase_items (purchase_id, product_id, variant_id, quantity, purchase_price)
          VALUES ($1, $2, $3, $4, $5)`,
         [purchaseId, prodId, varId, q, price]
       );
 
-      // Increment variant stock
       let targetVarId = varId;
       if (!targetVarId) {
         const defaultVarRes = await query(
@@ -133,7 +126,6 @@ export async function POST(req) {
         );
       }
 
-      // Log inventory log
       await query(
         `INSERT INTO inventory_logs (product_id, type, quantity, reference_id, note)
          VALUES ($1, 'purchase', $2, $3, $4)`,
@@ -141,7 +133,6 @@ export async function POST(req) {
       );
     }
 
-    // Insert initial payment if amount_paid > 0
     const initialPaid = parseFloat(amount_paid) || 0;
     if (initialPaid > 0) {
       await query(
@@ -153,7 +144,6 @@ export async function POST(req) {
 
     await query('COMMIT');
 
-    // Record activity log
     await recordActivityLog(req, {
       staffId,
       action: 'CREATE_PURCHASE_INVOICE',

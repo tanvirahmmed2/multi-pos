@@ -56,10 +56,8 @@ export async function PUT(req, { params }) {
       return Response.json({ error: 'Invalid or missing status value' }, { status: 400 });
     }
 
-    // Start Transaction
     await client.query('BEGIN');
 
-    // 1. Fetch current order details
     const orderRes = await client.query(
       `SELECT status, total_amount, due_amount FROM public.orders WHERE order_id = $1 FOR UPDATE`,
       [orderId]
@@ -74,7 +72,6 @@ export async function PUT(req, { params }) {
     const oldStatus = order.status;
     const newStatus = status;
 
-    // Helper functions for stock adjustments
     const deductStock = async () => {
       const itemsRes = await client.query(
         `SELECT product_id, variant_id, quantity FROM order_items WHERE order_id = $1`,
@@ -147,21 +144,17 @@ export async function PUT(req, { params }) {
       }
     };
 
-    // State machine logic
     let stockWasReduced = ['confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered'].includes(oldStatus);
     let stockShouldBeReduced = ['confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered'].includes(newStatus);
 
-    // If transitioning from un-reduced state to reduced state: deduct stock
     if (!stockWasReduced && stockShouldBeReduced) {
       await deductStock();
     }
 
-    // If transitioning from reduced state to un-reduced state: add stock back
     if (stockWasReduced && !stockShouldBeReduced) {
       await addStockBack();
     }
 
-    // Special behavior for returns & cancellations (always ensure stock is restored)
     if (newStatus === 'returned' || newStatus === 'cancelled') {
       if (!stockWasReduced) {
         await addStockBack();
@@ -169,7 +162,6 @@ export async function PUT(req, { params }) {
       stockShouldBeReduced = false;
     }
 
-    // Payment registration
     let updateDueAmount = parseFloat(order.due_amount || 0);
 
     if (newStatus === 'returned' || newStatus === 'cancelled') {
@@ -200,7 +192,6 @@ export async function PUT(req, { params }) {
       updateDueAmount = 0;
     }
 
-    // Update order status and courier info
     await client.query(
       `UPDATE public.orders 
        SET status = $1::text, 

@@ -115,7 +115,6 @@ export default function DashboardAdminPeoplePage() {
     return b ? `${b.name} (${b.code || `ID:${b.branch_id}`})` : `Branch #${branchId}`
   }
 
-  // Filter users based on search
   const filteredUsers = users.filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -123,7 +122,6 @@ export default function DashboardAdminPeoplePage() {
     u.role.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Compute stats
   const stats = {
     total: users.length,
     active: users.filter((u) => u.is_active && !u.is_banned).length,
@@ -134,7 +132,6 @@ export default function DashboardAdminPeoplePage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -154,7 +151,6 @@ export default function DashboardAdminPeoplePage() {
           </Link>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
           <div className="bg-white p-5 border border-slate-200 shadow-sm flex items-center justify-between">
             <div className="flex flex-col gap-0.5">
@@ -187,7 +183,6 @@ export default function DashboardAdminPeoplePage() {
           </div>
         </div>
 
-        {/* Actions bar */}
         <div className="flex items-center gap-3 bg-white p-4 border border-slate-200 shadow-sm">
           <div className="flex-1 max-w-md flex items-center gap-2 bg-slate-50 px-3 py-2 border border-slate-200">
             <BiSearch className="text-slate-400 text-base shrink-0" />
@@ -201,7 +196,6 @@ export default function DashboardAdminPeoplePage() {
           </div>
         </div>
 
-        {/* Table content */}
         {loading ? (
           <div className="w-full h-64 bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 gap-2">
             <BiLoaderAlt className="animate-spin text-xl text-slate-800" />
@@ -227,7 +221,6 @@ export default function DashboardAdminPeoplePage() {
                   return (
                     <tr key={u.staff_id} className={`hover:bg-slate-50 transition ${isSelf ? 'bg-amber-50/40' : ''}`}>
                       
-                      {/* Name & Contact */}
                       <td className="px-3 md:px-4 py-3.5">
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
@@ -243,7 +236,6 @@ export default function DashboardAdminPeoplePage() {
                         </div>
                       </td>
 
-                      {/* Branch Selection / Badge */}
                       <td className="px-3 md:px-4 py-3.5">
                         {isSelf || u.role === 'admin' ? (
                           <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
@@ -267,7 +259,6 @@ export default function DashboardAdminPeoplePage() {
                         )}
                       </td>
 
-                      {/* Dropdown Role Promotion */}
                       <td className="px-3 md:px-4 py-3.5">
                         {isSelf ? (
                           <span className="px-2 py-1 text-[10px] font-bold bg-slate-900 text-white uppercase border border-slate-900 rounded">
@@ -288,7 +279,6 @@ export default function DashboardAdminPeoplePage() {
                         )}
                       </td>
 
-                      {/* Verified Badges */}
                       <td className="hidden sm:table-cell px-3 md:px-4 py-3.5">
                         <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase border ${
                           u.is_varified ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -297,7 +287,6 @@ export default function DashboardAdminPeoplePage() {
                         </span>
                       </td>
 
-                      {/* Banned Toggles */}
                       <td className="hidden md:table-cell px-3 md:px-4 py-3.5 text-center">
                         <button
                           type="button"
@@ -311,7 +300,6 @@ export default function DashboardAdminPeoplePage() {
                         </button>
                       </td>
 
-                      {/* Active States toggles */}
                       <td className="hidden md:table-cell px-3 md:px-4 py-3.5 text-center">
                         <button
                           type="button"
@@ -325,7 +313,6 @@ export default function DashboardAdminPeoplePage() {
                         </button>
                       </td>
 
-                      {/* Extra stats/timestamps */}
                       <td className="hidden lg:table-cell px-3 md:px-4 py-3.5 text-right">
                         <span className="text-[10px] text-slate-400 font-mono">
                           {new Date(u.created_at).toLocaleDateString()}

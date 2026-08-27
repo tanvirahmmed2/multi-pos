@@ -43,7 +43,6 @@ export default function BrandForm({ initialData, onSubmit, loading }) {
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-xl bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col gap-6 animate-fade-in">
       
-      {/* Title */}
       <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
         <Link href="/dashboard/brands" className="p-2 hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition">
           <BiChevronLeft className="text-xl" />
@@ -58,10 +57,8 @@ export default function BrandForm({ initialData, onSubmit, loading }) {
         </div>
       </div>
 
-      {/* Inputs */}
       <div className="flex flex-col gap-5">
         
-        {/* Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-semibold text-slate-700">Brand Name</label>
           <input className="input-style"
@@ -73,7 +70,6 @@ export default function BrandForm({ initialData, onSubmit, loading }) {
           />
         </div>
 
-        {/* Description */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-semibold text-slate-700">Description</label>
           <RichTextEditor
@@ -83,7 +79,6 @@ export default function BrandForm({ initialData, onSubmit, loading }) {
           />
         </div>
 
-        {/* Active Status Toggle */}
         <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200/60">
           <div>
             <label className="text-sm font-semibold text-slate-800">Active Status</label>
@@ -104,7 +99,6 @@ export default function BrandForm({ initialData, onSubmit, loading }) {
           </button>
         </div>
 
-        {/* Image Upload */}
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold text-slate-700">Brand Logo</label>
           
@@ -135,7 +129,6 @@ export default function BrandForm({ initialData, onSubmit, loading }) {
 
       </div>
 
-      {/* Buttons */}
       <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-2">
         <Link
           href="/dashboard/brands"

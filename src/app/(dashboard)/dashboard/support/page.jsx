@@ -29,12 +29,11 @@ export default function DashboardManagerSupportPage() {
   const [tickets, setTickets] = useState([])
   const [activeTicket, setActiveTicket] = useState(null)
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState('all') // 'all', 'pending', 'active', 'resolved'
+  const [activeTab, setActiveTab] = useState('all') 
   const [ticketsLoading, setTicketsLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
 
-  // Reply compose states
   const [replyMessage, setReplyMessage] = useState('')
   const [submittingMessage, setSubmittingMessage] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -74,12 +73,10 @@ export default function DashboardManagerSupportPage() {
     }
   }, [user])
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [activeTicket?.messages])
 
-  // Poll for updates every 10 seconds if active ticket is set
   useEffect(() => {
     if (!activeTicket) return
     const interval = setInterval(() => {
@@ -102,7 +99,7 @@ export default function DashboardManagerSupportPage() {
       setReplyMessage('')
       toast.success('Reply submitted and email dispatched!')
       await fetchTicketDetails(ticketId, true)
-      fetchTickets(true) // Refresh listing for updated_at / status changes
+      fetchTickets(true) 
     } catch (err) {
       toast.error('Failed to send message response')
       console.error(err)
@@ -169,14 +166,11 @@ export default function DashboardManagerSupportPage() {
     }
   }
 
-  // Filter and search logic
   const filteredTickets = tickets.filter((ticket) => {
-    // 1. Tab filter
     if (activeTab === 'pending' && ticket.status !== 'pending') return false
     if (activeTab === 'active' && !['open', 'in_progress'].includes(ticket.status)) return false
     if (activeTab === 'resolved' && !['resolved', 'closed'].includes(ticket.status)) return false
 
-    // 2. Search query filter
     const term = search.toLowerCase()
     return (
       ticket.subject.toLowerCase().includes(term) ||
@@ -219,7 +213,6 @@ export default function DashboardManagerSupportPage() {
     }
   }
 
-  // Auth states
   if (userLoading) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center bg-slate-50">
@@ -232,7 +225,6 @@ export default function DashboardManagerSupportPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-7xl mx-auto flex flex-col gap-6 h-[calc(100vh-8.5rem)] min-h-[500px]">
         
-        {/* Header section */}
         <div className="flex items-center justify-between shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -250,13 +242,10 @@ export default function DashboardManagerSupportPage() {
           </button>
         </div>
 
-        {/* Dashboard layout */}
         <div className="flex-1 flex gap-6 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-0">
           
-          {/* Left panel: Ticket List & Filters */}
           <div className={`w-full md:w-96 border-r border-slate-100 flex flex-col min-h-0 shrink-0 ${activeTicket ? 'hidden md:flex' : 'flex'}`}>
             
-            {/* Filter Tabs */}
             <div className="p-4 border-b border-slate-100 flex flex-col gap-3 shrink-0">
               <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                 {['all', 'pending', 'active', 'resolved'].map((tab) => (
@@ -274,7 +263,6 @@ export default function DashboardManagerSupportPage() {
                 ))}
               </div>
 
-              {/* Search Bar */}
               <div className="relative">
                 <BiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
                 <input className="input-style"
@@ -286,7 +274,6 @@ export default function DashboardManagerSupportPage() {
               </div>
             </div>
 
-            {/* Scrollable list */}
             <div className="flex-1 p-3 flex flex-col gap-2 bg-slate-50/20">
               {ticketsLoading && tickets.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-slate-400 text-xs gap-1.5">
@@ -336,15 +323,12 @@ export default function DashboardManagerSupportPage() {
 
           </div>
 
-          {/* Right panel: Chat interface / detail controls */}
           <div className={`flex-1 flex flex-col min-h-0 bg-slate-50/10 ${!activeTicket ? 'hidden md:flex items-center justify-center text-slate-400 p-8' : 'flex'}`}>
             {activeTicket ? (
               <div className="flex-1 flex flex-col min-h-0">
                 
-                {/* Active Chat Header Controls */}
                 <div className="p-4 bg-white border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 shrink-0 shadow-xs">
                   
-                  {/* Title & Customer Profile Card */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <button 
@@ -369,10 +353,8 @@ export default function DashboardManagerSupportPage() {
                     </div>
                   </div>
 
-                  {/* Settings Widget (Status, Priority, Delete) */}
                   <div className="flex items-center gap-3 shrink-0 flex-wrap">
                     
-                    {/* Status Select */}
                     <div className="flex items-center gap-1.5">
                       <span className="text-xxs font-bold text-slate-450 uppercase">Status:</span>
                       <div className="relative">
@@ -392,7 +374,6 @@ export default function DashboardManagerSupportPage() {
                       </div>
                     </div>
 
-                    {/* Priority Select */}
                     <div className="flex items-center gap-1.5">
                       <span className="text-xxs font-bold text-slate-450 uppercase">Priority:</span>
                       <div className="relative">
@@ -411,7 +392,6 @@ export default function DashboardManagerSupportPage() {
                       </div>
                     </div>
 
-                    {/* Delete Option for Manager/Admin */}
                     {['admin', 'manager'].includes(user.role) && (
                       <button
                         onClick={() => handleDelete(activeTicket.ticket.support_id)}
@@ -429,10 +409,8 @@ export default function DashboardManagerSupportPage() {
                   </div>
                 </div>
 
-                {/* Chat timelines */}
                 <div className="flex-1 p-4 flex flex-col gap-3.5 bg-slate-50/40">
                   
-                  {/* Initial Description Card */}
                   <div className="bg-white p-4 rounded-xl border border-slate-205 shadow-sm max-w-3xl mx-auto w-full flex flex-col gap-2">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                       <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest">Initial Ticket Description</span>
@@ -466,7 +444,6 @@ export default function DashboardManagerSupportPage() {
                     activeTicket.messages.map((msg) => {
                       const isCustomer = msg.sender_id === activeTicket.ticket.user_id
                       const isSupportRole = ['admin', 'manager', 'sales'].includes(msg.sender_role)
-                      // Staff is the logged-in agent, so we show staff messages on the right and customer on left
                       const isMe = msg.sender_id === user.user_id
 
                       return (
@@ -505,7 +482,6 @@ export default function DashboardManagerSupportPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Reply bar composer */}
                 <div className="p-4 bg-white border-t border-slate-100 shrink-0">
                   <form onSubmit={handleSendMessage} className="flex flex-col gap-3">
                     <div className="flex gap-2 items-end">

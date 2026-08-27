@@ -71,14 +71,11 @@ export async function POST(req) {
       return Response.json({ error: 'Phone and items are required' }, { status: 400 });
     }
 
-    // Optional: Get logged in staff user who created this sale/order
     const auth = await authenticateUser();
     const staffId = auth.success && auth.user ? (auth.user.staff_id || auth.user.user_id) : null;
 
-    // Start Transaction
     await client.query('BEGIN');
 
-    // 1. Customer profile upsert
     let customerId = null;
     const cleanPhone = phone.trim();
     const cleanAddr = shipping_address ? shipping_address.trim() : 'In-Store POS';
@@ -88,7 +85,6 @@ export async function POST(req) {
       if (checkCust.rows.length > 0) {
         customerId = checkCust.rows[0].customer_id;
       } else {
-        // Customer profile not found. Check if a registered staff member exists with this phone number
         const checkStaff = await client.query('SELECT name, email FROM staffs WHERE phone = $1 LIMIT 1', [cleanPhone]);
         
         let finalName = 'Guest';
@@ -132,14 +128,12 @@ export async function POST(req) {
       }
     }
 
-    // 2. Server-side price verification and stock checks
     let subtotal = 0;
     let totalDiscount = 0;
     const verifiedItems = [];
 
     for (const item of items) {
       if (item.variant_id) {
-        // Variant item details lookup
         const varRes = await client.query(
           `SELECT v.sale_price, v.discount_price, v.stock, p.name, p.product_id
            FROM product_variants v
@@ -168,7 +162,6 @@ export async function POST(req) {
           price: finalPrice
         });
       } else {
-        // Simple item details lookup - resolve from default variant
         const prodRes = await client.query(
           `SELECT v.sale_price, v.discount_price, v.stock, p.name
            FROM product_variants v
@@ -201,12 +194,10 @@ export async function POST(req) {
       }
     }
 
-    // Calculate delivery charge (70 BDT in Dhaka, 130 BDT everywhere else. POS is 0 BDT)
     const isDhaka = shipping_city && shipping_city.trim().toLowerCase() === 'dhaka';
     const deliveryCharge = is_pos ? 0 : (isDhaka ? 70 : 130);
     const totalAmount = subtotal + deliveryCharge;
 
-    // 3. Create order with staff_id tracking
     const orderRes = await client.query(
       `INSERT INTO public.orders (
         customer_id, staff_id, phone, shipping_address, shipping_city, shipping_area,
@@ -226,14 +217,13 @@ export async function POST(req) {
         totalDiscount,
         deliveryCharge,
         totalAmount,
-        is_pos ? 0 : totalAmount, // POS is fully paid (due = 0), COD has full due until delivery
+        is_pos ? 0 : totalAmount, 
         is_pos ? 'prepaid' : 'cod',
         note || null
       ]
     );
     const orderId = orderRes.rows[0].order_id;
 
-    // 4. Create order items and decrement stock immediately if POS
     for (const vItem of verifiedItems) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, variant_id, quantity, price)
@@ -254,7 +244,6 @@ export async function POST(req) {
             throw new Error(`Insufficient stock for variant "${updateRes.rows[0].variant_name}"`);
           }
         } else {
-          // Find default variant
           const defaultVarRes = await client.query(
             `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
             [vItem.product_id]
@@ -278,7 +267,6 @@ export async function POST(req) {
       }
     }
 
-    // 5. Create payment record
     if (is_pos) {
       await client.query(
         `INSERT INTO public.payments (order_id, payment_method, amount, amount_received, change_amount, payment_status, note)
@@ -293,10 +281,8 @@ export async function POST(req) {
       );
     }
 
-    // Commit Transaction
     await client.query('COMMIT');
 
-    // Record activity log
     await recordActivityLog(req, {
       staffId,
       action: is_pos ? 'CREATE_POS_SALE' : 'CREATE_ONLINE_ORDER',
@@ -305,7 +291,6 @@ export async function POST(req) {
       details: `Order #${orderId} created for customer ${cleanPhone} (Total: BDT ${totalAmount})`
     });
 
-    // Fetch customer details to return to the frontend
     const customerRes = await client.query(
       'SELECT name, phone, email, address FROM customers WHERE customer_id = $1',
       [customerId]

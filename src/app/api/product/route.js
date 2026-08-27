@@ -66,7 +66,6 @@ export async function GET(req) {
     sql += ` ORDER BY p.product_id DESC, v.variant_id ASC`;
     const result = await query(sql, params);
     
-    // For simple integration, return stock mapped to total_stock
     const mappedRows = result.rows.map(r => ({
       ...r,
       stock: r.total_stock
@@ -135,7 +134,6 @@ export async function POST(req) {
       }];
     }
 
-    // Pre-populate barcodes and validate uniqueness
     let lastGeneratedBarcode = null;
     for (const variant of variants) {
       if (!variant.barcode) {
@@ -159,10 +157,8 @@ export async function POST(req) {
     const slug = slugify(name) + '-' + Math.floor(1000 + Math.random() * 9000);
     const is_active = formData.get('is_active') === 'false' ? false : true;
 
-    // Begin DB transaction
     await query('BEGIN');
 
-    // Insert Product into Database
     const productResult = await query(
       `INSERT INTO products (
         category_id, brand_id, name, slug, description, is_active
@@ -173,7 +169,6 @@ export async function POST(req) {
 
     const product = productResult.rows[0];
 
-    // Insert all variants
     let index = 0;
     let firstVariantInserted = null;
     for (const variant of variants) {
@@ -193,7 +188,6 @@ export async function POST(req) {
       let vImage = null;
       let vImageId = null;
 
-      // Check if there is a variant-specific image uploaded
       const varImageFile = formData.get(`variant_image_${index}`);
       if (varImageFile && typeof varImageFile !== 'string') {
         const varUploadResult = await uploadToCloudinary(varImageFile, 'products');

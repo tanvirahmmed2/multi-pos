@@ -105,10 +105,8 @@ export default function POSOrderDetailPage() {
         ) : order ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             
-            {/* LEFT: Order items list & summary (2 columns) */}
             <div className="md:col-span-2 flex flex-col gap-6">
               
-              {/* Product Listing Card */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-4">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-2">
                   Items Summary
@@ -120,7 +118,6 @@ export default function POSOrderDetailPage() {
                       key={idx}
                       className="flex items-center gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0"
                     >
-                      {/* Product Image */}
                       <div className="w-12 h-12 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
                         <img 
                           src={item.product_image || '/product.jpeg'} 
@@ -129,7 +126,6 @@ export default function POSOrderDetailPage() {
                         />
                       </div>
 
-                      {/* Info */}
                       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                         <h4 className="font-semibold text-slate-800 text-xs truncate leading-tight">
                           {item.product_name}
@@ -144,7 +140,6 @@ export default function POSOrderDetailPage() {
                         </div>
                       </div>
 
-                      {/* Quantity & line total */}
                       <div className="text-right shrink-0">
                         <span className="text-xs font-bold text-slate-900 block font-mono">
                           ৳{(parseFloat(item.price) * item.quantity).toFixed(2)}
@@ -158,7 +153,6 @@ export default function POSOrderDetailPage() {
                 </div>
               </div>
 
-              {/* Order Calculations Summary */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-2">
                   Invoice Breakdown
@@ -202,10 +196,8 @@ export default function POSOrderDetailPage() {
               </div>
             </div>
 
-            {/* RIGHT: Customer details & action sidebar (1 column) */}
             <div className="flex flex-col gap-6">
               
-              {/* Customer Info Card */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-4">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-2">
                   Client Attributes
@@ -260,7 +252,6 @@ export default function POSOrderDetailPage() {
                 </div>
               </div>
 
-              {/* Order Status & Actions */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col gap-4">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-2">
                   Staff Actions
@@ -288,7 +279,6 @@ export default function POSOrderDetailPage() {
                 </div>
               </div>
               
-              {/* Order Note */}
               {order.note && (
                 <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 text-xxs text-amber-800 leading-normal italic font-medium">
                   Note: "{order.note}"

@@ -11,7 +11,6 @@ export async function DELETE(req, { params }) {
     const { id } = await params;
     const issueId = parseInt(id, 10);
 
-    // Fetch issue details to verify existence and check permissions
     const issueRes = await query('SELECT sender_id FROM issues WHERE issue_id = $1', [issueId]);
     
     if (issueRes.rows.length === 0) {
@@ -21,7 +20,6 @@ export async function DELETE(req, { params }) {
     const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
     const staffRole = auth.staff ? auth.staff.role : auth.user.role;
 
-    // Access control: admins can delete any issue. Others can only delete issues they sent.
     if (staffRole !== 'admin' && issue.sender_id !== currentStaffId) {
       return Response.json({ error: 'Permission denied: You can only delete issues you have sent' }, { status: 403 });
     }

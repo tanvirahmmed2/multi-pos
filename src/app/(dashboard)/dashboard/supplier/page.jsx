@@ -70,7 +70,6 @@ export default function DashboardManagerSupplierPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -88,7 +87,6 @@ export default function DashboardManagerSupplierPage() {
           </Link>
         </div>
 
-        {/* Actions bar */}
         <div className="flex items-center gap-3 bg-white p-4 border border-slate-200 shadow-sm">
           <div className="flex-1 max-w-md flex items-center gap-2 bg-slate-50 px-3 py-2 border border-slate-200">
             <BiSearch className="text-slate-400 text-base shrink-0" />
@@ -102,7 +100,6 @@ export default function DashboardManagerSupplierPage() {
           </div>
         </div>
 
-        {/* Table content */}
         {loading ? (
           <div className="w-full h-64 bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 gap-2">
             <BiLoaderAlt className="animate-spin text-xl text-slate-800" />

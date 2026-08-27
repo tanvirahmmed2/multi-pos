@@ -20,7 +20,6 @@ export async function PATCH(req, { params }) {
       return Response.json({ error: 'Invalid review ID' }, { status: 400 });
     }
 
-    // Verify review exists
     const reviewRes = await query('SELECT * FROM reviews WHERE review_id = $1', [reviewId]);
     if (reviewRes.rows.length === 0) {
       return Response.json({ error: 'Review not found' }, { status: 404 });

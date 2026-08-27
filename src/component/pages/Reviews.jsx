@@ -37,7 +37,6 @@ const Reviews = () => {
 
   const displayReviews = reviews
 
-  // Duplicate items for infinite marquee loop
   const marqueeItems = [...displayReviews, ...displayReviews, ...displayReviews]
 
   return (
@@ -67,7 +66,6 @@ const Reviews = () => {
         </h2>
       </div>
 
-      {/* Marquee Ticker */}
       <div className="w-full overflow-hidden relative py-4 bg-white border-y border-slate-100">
         <div className="marquee-inner-reviews flex gap-6 px-4">
           {marqueeItems.map((rev, idx) => (

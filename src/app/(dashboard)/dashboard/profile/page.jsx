@@ -117,7 +117,6 @@ export default function UserProfilePage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
             <BiUser style={{ color: themeColor }} />
@@ -126,7 +125,6 @@ export default function UserProfilePage() {
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Manage your personal account information and login security credentials.</p>
         </div>
 
-        {/* Profile Card Banner */}
         <div className="bg-white border border-slate-200 shadow-sm p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl text-white text-xl font-bold flex items-center justify-center shadow-md shrink-0" style={{ backgroundColor: themeColor }}>
@@ -160,10 +158,8 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* Edit Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           
-          {/* Personal Information */}
           <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col gap-5">
             <div className="pb-4 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Personal Information</h3>
@@ -218,7 +214,6 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* Change Password */}
           <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col gap-5">
             <div className="pb-4 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-800">Security & Password</h3>
@@ -273,7 +268,6 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* Submit button */}
           <div className="flex items-center justify-end">
             <button
               type="submit"

@@ -49,7 +49,6 @@ export async function POST(req) {
     const slug = slugify(name);
     const parent_id = parentIdVal && parentIdVal !== 'null' && parentIdVal !== '' ? parseInt(parentIdVal, 10) : null;
 
-    // Upload to Cloudinary
     const uploadResult = await uploadToCloudinary(imageFile, 'categories');
     if (!uploadResult) {
       return Response.json({ error: 'Failed to upload image' }, { status: 500 });

@@ -308,7 +308,6 @@ export default function DashboardSalesPage() {
           </div>
         </div>
 
-        {/* Available Modules */}
         <div>
           <h2 className="text-base font-bold text-slate-800 mb-6">{centerName}</h2>
           

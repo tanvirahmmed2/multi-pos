@@ -49,7 +49,6 @@ export default function AdminPaymentsPage() {
     <div className={`w-full min-h-screen bg-[#F1F5F9] pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Admin Payments Desk</h1>
@@ -64,7 +63,6 @@ export default function AdminPaymentsPage() {
           </button>
         </div>
 
-        {/* Search */}
         <div className="flex justify-end">
           <div className="flex items-center gap-2 bg-white px-3 py-2 border border-slate-200 rounded-xl w-full sm:w-80 shadow-xs">
             <BiSearch className="text-slate-400 text-lg shrink-0" />
@@ -77,7 +75,6 @@ export default function AdminPaymentsPage() {
           </div>
         </div>
 
-        {/* Payments List */}
         {loading ? (
           <div className="w-full py-20 flex flex-col items-center justify-center gap-2">
             <BiLoaderAlt className="animate-spin text-4xl text-[#73976A]" />

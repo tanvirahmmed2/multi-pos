@@ -39,7 +39,6 @@ export default function ProductCard({ product }) {
     e.preventDefault()
     e.stopPropagation()
 
-    // Fetch variants on-demand if we haven't done so and they are not present
     if (variants.length === 0 && !loadingVariants) {
       setLoadingVariants(true)
       try {
@@ -57,7 +56,7 @@ export default function ProductCard({ product }) {
       } catch (err) {
         console.error('Failed to load variants:', err)
         toast.error('Failed to check variant options')
-        addToCart(product) // fallback to add base
+        addToCart(product) 
       } finally {
         setLoadingVariants(false)
       }

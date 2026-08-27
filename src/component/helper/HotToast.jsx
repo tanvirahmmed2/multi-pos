@@ -11,7 +11,7 @@ const HotToast = () => {
       toastOptions={{
         duration: 4000,
         style: {
-          background: '#1e293b', // Slate 800
+          background: '#1e293b', 
           color: '#ffffff',
           borderRadius: '12px',
           fontSize: '14px',
@@ -23,13 +23,13 @@ const HotToast = () => {
         success: {
           duration: 3000,
           style: {
-            background: '#10b981', // Emerald 500
+            background: '#10b981', 
           },
         },
         error: {
           duration: 4000,
           style: {
-            background: '#f43f5e', // Rose 500
+            background: '#f43f5e', 
           },
         },
       }}

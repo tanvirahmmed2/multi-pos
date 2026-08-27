@@ -83,7 +83,6 @@ export default function OrderPreviewPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
         
-        {/* Header bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
           <div className="flex items-center gap-3">
             <button 
@@ -129,10 +128,8 @@ export default function OrderPreviewPage() {
         ) : order ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* Left 8 columns: Items & Breakdown */}
             <div className="lg:col-span-8 flex flex-col gap-6">
               
-              {/* Product Listing Card */}
               <div className="bg-white border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2">
@@ -181,7 +178,6 @@ export default function OrderPreviewPage() {
                 </div>
               </div>
 
-              {/* Invoice Calculations Summary */}
               <div className="bg-white border border-slate-200 shadow-sm p-5 flex flex-col gap-3">
                 <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
                   <BiDollarCircle className="text-primary text-base" /> Invoice Financial Breakdown
@@ -230,7 +226,6 @@ export default function OrderPreviewPage() {
 
             </div>
 
-            {/* Right 4 columns: Customer Information */}
             <div className="lg:col-span-4 flex flex-col gap-6">
               
               <div className="bg-white border border-slate-200 shadow-sm p-5 flex flex-col gap-4">

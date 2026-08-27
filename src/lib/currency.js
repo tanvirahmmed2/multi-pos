@@ -16,12 +16,6 @@ export const CURRENCY_OPTIONS = [
 export const DEFAULT_CURRENCY_SYMBOL = '৳';
 export const DEFAULT_CURRENCY_CODE = 'BDT';
 
-/**
- * Formats a numeric value into a currency formatted string.
- * @param {number|string} val - The amount to format.
- * @param {string} [symbol] - Currency symbol (defaults to '৳').
- * @returns {string} Formatted currency string.
- */
 export function formatCurrency(val, symbol = DEFAULT_CURRENCY_SYMBOL) {
   const num = parseFloat(val) || 0;
   const formatted = num.toLocaleString('en-US', {
@@ -31,20 +25,10 @@ export function formatCurrency(val, symbol = DEFAULT_CURRENCY_SYMBOL) {
   return `${symbol || DEFAULT_CURRENCY_SYMBOL}${formatted}`;
 }
 
-/**
- * Extract currency symbol from website settings object.
- * @param {object} [website] - Website settings object.
- * @returns {string} Currency symbol.
- */
 export function getCurrencySymbol(website) {
   return website?.currency_symbol || DEFAULT_CURRENCY_SYMBOL;
 }
 
-/**
- * Extract currency code from website settings object.
- * @param {object} [website] - Website settings object.
- * @returns {string} Currency code.
- */
 export function getCurrencyCode(website) {
   return website?.currency_code || DEFAULT_CURRENCY_CODE;
 }

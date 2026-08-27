@@ -66,7 +66,6 @@ export default function DashboardManagerPurchasePage() {
     )
   })
 
-  // Format currency
   const formatCurrency = (val) => {
     const num = parseFloat(val) || 0
     return `৳${num.toFixed(2)}`
@@ -76,7 +75,6 @@ export default function DashboardManagerPurchasePage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 animate-fade-in">
@@ -93,7 +91,6 @@ export default function DashboardManagerPurchasePage() {
           </Link>
         </div>
 
-        {/* Search bar */}
         <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-slate-100 shadow-sm animate-fade-in">
           <div className="flex-1 max-w-md relative">
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
@@ -106,7 +103,6 @@ export default function DashboardManagerPurchasePage() {
           </div>
         </div>
 
-        {/* Table Content */}
         {loading ? (
           <div className="w-full h-64 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 gap-2">
             <BiLoaderAlt className="animate-spin text-xl text-emerald-600" />

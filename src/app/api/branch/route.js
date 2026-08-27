@@ -47,7 +47,6 @@ export async function POST(req) {
       return Response.json({ error: 'Branch name is required' }, { status: 400 });
     }
 
-    // Auto-generate code by slugifying the name
     let generatedCode = slugify(name.trim());
     let counter = 1;
     while (true) {

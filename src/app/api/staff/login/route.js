@@ -67,7 +67,6 @@ export async function POST(req) {
       path: '/',
     });
 
-    // Record login log and activity log
     await recordLoginLog(req, { staffId: staff.staff_id, email: staff.email, role: staff.role, status: 'success' });
     await recordActivityLog(req, {
       staffId: staff.staff_id,

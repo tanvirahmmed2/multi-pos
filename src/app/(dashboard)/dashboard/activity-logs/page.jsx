@@ -67,7 +67,6 @@ export default function DashboardActivityLogsPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
 
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
@@ -94,7 +93,6 @@ export default function DashboardActivityLogsPage() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div className="relative w-full md:w-96">
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
@@ -111,7 +109,6 @@ export default function DashboardActivityLogsPage() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">

@@ -137,7 +137,6 @@ export default function DashboardInvestorPage() {
     )
   })
 
-  // Calculate overall metrics
   const totalInvestors = investors.length
   const grandTotalInvestment = investors.reduce((sum, inv) => sum + parseFloat(inv.total_investment || 0), 0)
   const grandTotalWithdrawal = investors.reduce((sum, inv) => sum + parseFloat(inv.total_withdrawal || 0), 0)
@@ -147,7 +146,6 @@ export default function DashboardInvestorPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
 
-        {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
@@ -175,7 +173,6 @@ export default function DashboardInvestorPage() {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl font-bold border border-blue-100">
@@ -218,7 +215,6 @@ export default function DashboardInvestorPage() {
           </div>
         </div>
 
-        {/* Search Bar */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4">
           <div className="relative w-full md:w-96">
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
@@ -235,7 +231,6 @@ export default function DashboardInvestorPage() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -343,7 +338,6 @@ export default function DashboardInvestorPage() {
           )}
         </div>
 
-        {/* Modal Form */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-fade-in flex flex-col gap-5">

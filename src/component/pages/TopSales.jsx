@@ -18,7 +18,6 @@ const TopSales = () => {
       try {
         const res = await axios.get('/api/product')
         const activeProducts = res.data.filter(p => p.is_active !== false)
-        // Sort by stock quantity descending to represent popular items
         const sortedProducts = activeProducts.sort(
           (a, b) => (parseInt(b.total_stock || b.stock, 10) - parseInt(a.total_stock || a.stock, 10))
         )

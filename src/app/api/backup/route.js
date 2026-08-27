@@ -18,7 +18,6 @@ export async function GET(req) {
         sql += `SET statement_timeout = 0;\n`;
         sql += `SET client_encoding = 'UTF8';\n\n`;
 
-        // 1. Get all public base tables
         const tablesRes = await pool.query(`
             SELECT table_name 
             FROM information_schema.tables 
@@ -30,7 +29,6 @@ export async function GET(req) {
         for (const table of tables) {
             sql += `\n--\n-- Data dump for table "${table}"\n--\n\n`;
             
-            // 2. Fetch columns
             const colsRes = await pool.query(`
                 SELECT column_name
                 FROM information_schema.columns
@@ -42,7 +40,6 @@ export async function GET(req) {
 
             const colNames = colsRes.rows.map(c => `"${c.column_name}"`);
 
-            // 3. Fetch Data for INSERT
             const dataRes = await pool.query(`SELECT * FROM "${table}"`);
             if (dataRes.rows.length > 0) {
                 sql += `-- Dumping ${dataRes.rows.length} rows for "${table}"\n`;

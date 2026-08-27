@@ -20,7 +20,6 @@ export async function POST(req, { params }) {
       return Response.json({ error: 'Reply message content is required' }, { status: 400 });
     }
 
-    // Check contact query status and details
     const contactRes = await query('SELECT name, email, subject, status FROM contacts WHERE contact_id = $1', [contactId]);
     if (contactRes.rows.length === 0) {
       return Response.json({ error: 'Contact inquiry not found' }, { status: 404 });
@@ -31,10 +30,8 @@ export async function POST(req, { params }) {
       return Response.json({ error: 'This contact inquiry has already been replied to and cannot receive another reply.' }, { status: 400 });
     }
 
-    // Begin database transaction to store reply and update status
     await query('BEGIN');
 
-    // 1. Insert into contact_replies
     const replyRes = await query(
       `INSERT INTO contact_replies (contact_id, user_id, message)
        VALUES ($1, $2, $3)
@@ -42,7 +39,6 @@ export async function POST(req, { params }) {
       [contactId, auth.user.user_id, message.trim()]
     );
 
-    // 2. Update status of the contact query to 'replied'
     await query(
       `UPDATE contacts 
        SET status = 'replied' 
@@ -50,7 +46,6 @@ export async function POST(req, { params }) {
       [contactId]
     );
 
-    // 3. Send email to client via Mailer
     try {
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
@@ -79,7 +74,6 @@ export async function POST(req, { params }) {
       });
 
     } catch (mailErr) {
-      // Log the mail error but do not fail the database save, as standard robust fallback
       console.error('Failed to send contact reply email:', mailErr.message);
     }
 

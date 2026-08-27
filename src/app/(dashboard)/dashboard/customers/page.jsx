@@ -62,7 +62,6 @@ export default function ManagerCustomersDirectoryPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">Clients Directory</h1>
@@ -70,7 +69,6 @@ export default function ManagerCustomersDirectoryPage() {
           </div>
         </div>
 
-        {/* Search Panel */}
         <form onSubmit={handleSearchSubmit} className="flex gap-2 items-center bg-white px-3 py-2 border border-slate-200 w-full md:w-80 shadow-sm">
           <BiSearch className="text-slate-400 text-lg" />
           <input 
@@ -83,7 +81,6 @@ export default function ManagerCustomersDirectoryPage() {
           <button type="submit" className="hidden">Search</button>
         </form>
 
-        {/* Customers Table */}
         {loading ? (
           <div className="w-full py-20 flex flex-col items-center justify-center gap-2">
             <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />

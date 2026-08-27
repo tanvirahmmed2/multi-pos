@@ -29,12 +29,10 @@ export default function AdminBranchesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 
-  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingBranch, setEditingBranch] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -189,7 +187,6 @@ export default function AdminBranchesPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
         
-        {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-4">
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
@@ -217,7 +214,6 @@ export default function AdminBranchesPage() {
           </div>
         </div>
 
-        {/* Overview Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Branches</p>
@@ -237,7 +233,6 @@ export default function AdminBranchesPage() {
           </div>
         </div>
 
-        {/* Filter Controls */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-2xl shadow-sm">
           <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 border border-slate-200 rounded-xl w-full sm:w-80">
             <BiSearch className="text-slate-400 text-lg" />
@@ -264,7 +259,6 @@ export default function AdminBranchesPage() {
           </div>
         </div>
 
-        {/* Branches Table */}
         {loading ? (
           <div className="w-full py-20 flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-slate-200">
             <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />
@@ -355,12 +349,10 @@ export default function AdminBranchesPage() {
           </div>
         )}
 
-        {/* Create/Edit Branch Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
               
-              {/* Modal Header */}
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
                   <BiStoreAlt style={{ color: themeColor }} />
@@ -374,7 +366,6 @@ export default function AdminBranchesPage() {
                 </button>
               </div>
 
-              {/* Modal Body */}
               <form onSubmit={handleSubmitForm} className="p-6 flex flex-col gap-4">
                 
                 <div className="flex flex-col gap-1.5">
@@ -454,7 +445,6 @@ export default function AdminBranchesPage() {
                   </label>
                 </div>
 
-                {/* Modal Actions */}
                 <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
                   <button
                     type="button"

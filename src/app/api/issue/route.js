@@ -12,7 +12,6 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
-    // Action to fetch possible receivers for issues (other active staff members)
     if (action === 'receivers') {
       const receiversRes = await query(
         `SELECT staff_id, staff_id AS user_id, name, email, role 
@@ -27,18 +26,15 @@ export async function GET(req) {
       return Response.json(receiversRes.rows, { status: 200 });
     }
 
-    // Default action: Fetch issue logs
     let result;
     const staffRole = auth.staff ? auth.staff.role : auth.user.role;
     if (staffRole === 'admin') {
-      // Admins see all issues
       result = await query(`
         SELECT * 
         FROM issues_view 
         ORDER BY issue_id DESC
       `);
     } else {
-      // Managers and Sales see issues they sent or received
       result = await query(
         `SELECT * 
          FROM issues_view 
@@ -79,13 +75,11 @@ export async function POST(req) {
     const receiverId = parseInt(receiver_id, 10);
     const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
 
-    // Verify receiver exists
     const recCheck = await query('SELECT role FROM staffs WHERE staff_id = $1', [receiverId]);
     if (recCheck.rows.length === 0) {
       return Response.json({ error: 'Recipient staff member not found' }, { status: 400 });
     }
 
-    // Insert issue
     const result = await query(
       `INSERT INTO issues (sender_id, receiver_id, title, message)
        VALUES ($1, $2, $3, $4)

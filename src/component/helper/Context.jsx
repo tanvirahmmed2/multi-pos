@@ -225,7 +225,6 @@ const ContextProvider = ({ children }) => {
             try {
                 await axios.post('/api/user/logout');
             } catch (e) {
-                // Ignore fallback error
             }
             updateStaffState(null);
             window.location.replace('/');

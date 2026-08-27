@@ -52,7 +52,6 @@ export default function AdminBackupPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
             <BiData style={{ color: themeColor }} />
@@ -61,7 +60,6 @@ export default function AdminBackupPage() {
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Export a full .sql dump of all tables, schema structures, and store data.</p>
         </div>
 
-        {/* Info & Download Card */}
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col gap-6">
           <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
             <div className="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-3xl font-bold shadow-md shrink-0" style={{ backgroundColor: themeColor }}>

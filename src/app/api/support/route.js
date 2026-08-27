@@ -39,7 +39,6 @@ export async function GET(req) {
       }
       return Response.json(result.rows, { status: 200 });
     } catch (tableError) {
-      // Return empty array if supports table does not exist
       return Response.json([], { status: 200 });
     }
   } catch (error) {

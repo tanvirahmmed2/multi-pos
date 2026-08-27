@@ -28,12 +28,10 @@ const Navbar = () => {
   const role = user?.role || 'staff'
   const allowedKeys = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.staff
 
-  // Filter allowed module links by user role
   const allowedModules = allowedKeys
     .map(key => ({ key, ...MODULE_LINKS[key] }))
     .filter(item => item && item.name && item.path)
 
-  // Filter matching results based on search query
   const searchResults = query.trim() === ''
     ? []
     : allowedModules.filter(item => {
@@ -44,7 +42,6 @@ const Navbar = () => {
       return nameMatch || pathMatch || keyMatch
     })
 
-  // Keyboard shortcut Ctrl+K to focus search
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -60,7 +57,6 @@ const Navbar = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -96,7 +92,6 @@ const Navbar = () => {
   return (
     <header className="w-full h-14 fixed top-0 z-40 bg-primary text-white flex items-center justify-between px-3 md:px-5 border-b border-black/10 shadow-md">
 
-      {/* Left: Sidebar Toggle & App Title */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => setDashSidebar(!dashSidebar)}
@@ -110,7 +105,6 @@ const Navbar = () => {
         </Link>
       </div>
 
-      {/* Middle: Role-Aware Global Search Bar */}
       <div ref={searchRef} className="relative w-full max-w-xs sm:max-w-md mx-2">
         <div className="relative flex items-center">
           <BiSearch className="absolute left-3 text-white/70 text-base pointer-events-none" />
@@ -145,7 +139,6 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Search Results Dropdown */}
         {isOpen && query.trim().length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white text-slate-800 border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-50 animate-fadeIn flex flex-col">
             <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">

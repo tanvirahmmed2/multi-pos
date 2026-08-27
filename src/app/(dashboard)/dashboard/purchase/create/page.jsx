@@ -23,7 +23,6 @@ export default function PurchaseCreatePage() {
   const [suppliers, setSuppliers] = useState([])
   const [products, setProducts] = useState([])
   
-  // Form invoice states
   const [supplierId, setSupplierId] = useState('')
   const [invoiceNo, setInvoiceNo] = useState('')
   const [note, setNote] = useState('')
@@ -32,8 +31,6 @@ export default function PurchaseCreatePage() {
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [transactionId, setTransactionId] = useState('')
   
-  // Rows state
-  // { product_id, variant_id, variants: [], quantity, purchase_price }
   const [rows, setRows] = useState([
     { product_id: '', variant_id: '', variants: [], quantity: 1, purchase_price: 0 }
   ])
@@ -41,7 +38,6 @@ export default function PurchaseCreatePage() {
   const [fetchingOptions, setFetchingOptions] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  // Fetch suppliers and products
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -49,7 +45,6 @@ export default function PurchaseCreatePage() {
           axios.get('/api/supplier'),
           axios.get('/api/product')
         ])
-        // Filter only active suppliers for selecting
         setSuppliers(supRes.data.filter(s => s.is_active !== false))
         setProducts(prodRes.data.filter(p => p.is_active !== false))
       } catch (err) {
@@ -85,7 +80,6 @@ export default function PurchaseCreatePage() {
     }
 
     try {
-      // Fetch details of product to get variants & base purchase price
       const res = await axios.get(`/api/product/${productId}`)
       const prod = res.data
       
@@ -112,20 +106,17 @@ export default function PurchaseCreatePage() {
     toast.success(`Product scanned: ${matched.name}`);
 
     try {
-      // Fetch details of product to get variants & base purchase price
       const res = await axios.get(`/api/product/${matched.product_id}`);
       const prod = res.data;
       
       const defaultVariantId = prod.variants && prod.variants.length > 0 ? prod.variants[0].variant_id : '';
 
-      // Check if product is already in our rows
       const existingRowIndex = rows.findIndex(r => 
         r.product_id === matched.product_id.toString() && 
         (r.variant_id === defaultVariantId || (!r.variant_id && !defaultVariantId))
       );
 
       if (existingRowIndex > -1) {
-        // Increment quantity
         const currentQty = parseInt(rows[existingRowIndex].quantity, 10) || 0;
         updateRow(existingRowIndex, { quantity: currentQty + 1 });
       } else {
@@ -150,7 +141,6 @@ export default function PurchaseCreatePage() {
     }
   };
 
-  // Calculations
   const subtotal = rows.reduce((acc, row) => {
     const qty = parseInt(row.quantity, 10) || 0
     const price = parseFloat(row.purchase_price) || 0
@@ -163,7 +153,6 @@ export default function PurchaseCreatePage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validations
     if (rows.some(r => !r.product_id)) {
       toast.error('Please select a product for all rows')
       return
@@ -235,7 +224,6 @@ export default function PurchaseCreatePage() {
       <BarScanner onScan={handleBarcodeScan} />
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
           <Link href="/dashboard/purchase" className="p-2 hover:bg-white text-slate-500 hover:text-slate-800 rounded-xl transition border border-transparent hover:border-slate-200">
             <BiChevronLeft className="text-xl" />
@@ -248,15 +236,12 @@ export default function PurchaseCreatePage() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* Main Invoicing Panel */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             
-            {/* Invoice Info */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-50 pb-2">Invoice Info</h2>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Supplier */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase">Supplier</label>
                   <div className="flex gap-2">
@@ -283,7 +268,6 @@ export default function PurchaseCreatePage() {
                   </div>
                 </div>
 
-                {/* Bill Reference # */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase">Invoice/Bill No</label>
                   <input className="input-style"
@@ -295,7 +279,6 @@ export default function PurchaseCreatePage() {
                 </div>
               </div>
 
-              {/* Note */}
               <div className="flex flex-col gap-1.5 mt-2">
                 <label className="text-xs font-bold text-slate-700 uppercase">Purchase Annotation / Note</label>
                 <textarea
@@ -308,7 +291,6 @@ export default function PurchaseCreatePage() {
               </div>
             </div>
 
-            {/* Line Items */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
               <div className="flex justify-between items-center border-b border-slate-50 pb-2">
                 <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Purchase Line Items</h2>
@@ -321,7 +303,6 @@ export default function PurchaseCreatePage() {
                 </button>
               </div>
 
-              {/* Items Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
@@ -336,7 +317,6 @@ export default function PurchaseCreatePage() {
                   <tbody className="divide-y divide-slate-50">
                     {rows.map((row, index) => (
                       <tr key={index} className="align-middle">
-                        {/* Product Dropdown */}
                         <td className="py-3 pr-4">
                           <select
                             value={row.product_id}
@@ -353,7 +333,6 @@ export default function PurchaseCreatePage() {
                           </select>
                         </td>
 
-                        {/* Variant Dropdown */}
                         <td className="py-3 pr-4">
                           {row.variants && row.variants.length > 0 ? (
                             <select
@@ -383,7 +362,6 @@ export default function PurchaseCreatePage() {
                           )}
                         </td>
 
-                        {/* Quantity */}
                         <td className="py-3 pr-4">
                           <input className="input-style"
                             type="number"
@@ -394,7 +372,6 @@ export default function PurchaseCreatePage() {
                           />
                         </td>
 
-                        {/* Purchase Price */}
                         <td className="py-3 pr-4">
                           <input className="input-style"
                             type="number"
@@ -406,7 +383,6 @@ export default function PurchaseCreatePage() {
                           />
                         </td>
 
-                        {/* Delete Row */}
                         <td className="py-3 text-right">
                           <button
                             type="button"
@@ -425,21 +401,17 @@ export default function PurchaseCreatePage() {
 
           </div>
 
-          {/* Right Column: Financial Summary & Actions */}
           <div className="flex flex-col gap-6">
             
-            {/* Payment & Financials */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-50 pb-2">Financial Breakdown</h2>
               
-              {/* Financial Metrics */}
               <div className="flex flex-col gap-3 text-sm text-slate-600">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
                   <span className="font-semibold text-slate-800">${subtotal.toFixed(2)}</span>
                 </div>
                 
-                {/* Extra Discount */}
                 <div className="flex items-center justify-between gap-4">
                   <span>Extra Discount:</span>
                   <input className="input-style"
@@ -459,11 +431,9 @@ export default function PurchaseCreatePage() {
                 </div>
               </div>
 
-              {/* Initial Payment details */}
               <div className="flex flex-col gap-4 mt-2 border-t border-slate-50 pt-4">
                 <h3 className="text-xs font-bold text-slate-700 uppercase">Payment Logging</h3>
 
-                {/* Amount Paid */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">Amount Paid Now</label>
                   <div className="relative">
@@ -481,7 +451,6 @@ export default function PurchaseCreatePage() {
 
                 {amountPaid > 0 && (
                   <>
-                    {/* Payment Method */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-slate-600">Payment Method</label>
                       <select
@@ -495,7 +464,6 @@ export default function PurchaseCreatePage() {
                       </select>
                     </div>
 
-                    {/* Transaction ID */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-slate-600">Transaction ID</label>
                       <input className="input-style"
@@ -508,7 +476,6 @@ export default function PurchaseCreatePage() {
                   </>
                 )}
 
-                {/* Dues */}
                 <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/60 mt-1">
                   <div>
                     <span className="text-xs font-semibold text-slate-600 block">Remaining Due</span>
@@ -520,7 +487,6 @@ export default function PurchaseCreatePage() {
                 </div>
               </div>
 
-              {/* Submit Buttons */}
               <div className="flex flex-col gap-2 mt-2 border-t border-slate-100 pt-4">
                 <button
                   type="submit"

@@ -32,20 +32,17 @@ export async function POST(req) {
     const email = formData.get('email') || '';
     const phone = formData.get('phone') || '';
     
-    const logoFile = formData.get('logo'); // File object or string
+    const logoFile = formData.get('logo'); 
 
-    // Fetch existing settings
     const checkRes = await query('SELECT * FROM websites ORDER BY website_id ASC LIMIT 1');
     const existing = checkRes.rows.length > 0 ? checkRes.rows[0] : null;
 
     let logoUrl = existing ? existing.logo : null;
     let logoId = existing ? existing.logo_id : null;
 
-    // Handle new logo upload
     if (logoFile && typeof logoFile !== 'string' && logoFile.name) {
       const uploadResult = await uploadToCloudinary(logoFile, 'settings');
       if (uploadResult) {
-        // Delete old logo from Cloudinary if existing logo_id exists
         if (existing && existing.logo_id) {
           try {
             await deleteFromCloudinary(existing.logo_id);
@@ -60,7 +57,6 @@ export async function POST(req) {
 
     let result;
     if (existing) {
-      // Update existing record
       result = await query(
         `UPDATE websites 
          SET logo = $1, logo_id = $2, hero_title = $3, hero_subtitle = $4,
@@ -71,7 +67,6 @@ export async function POST(req) {
         [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, existing.website_id]
       );
     } else {
-      // Insert new record
       result = await query(
         `INSERT INTO websites (logo, logo_id, hero_title, hero_subtitle, address, sociallink, email, phone)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

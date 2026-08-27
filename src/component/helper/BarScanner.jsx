@@ -17,8 +17,6 @@ const BarScanner = ({ onScan }) => {
           activeEl.isContentEditable
         );
 
-      // If the user is currently typing in an input/textarea/select,
-      // let the browser handle it normally unless it's the barcode field itself.
       if (isUserBusy) return;
 
       const currentTime = Date.now();
@@ -31,8 +29,6 @@ const BarScanner = ({ onScan }) => {
         }
         buffer.current = ''; 
       } else if (e.key.length === 1) {
-        // Barcode scanners input characters very rapidly (< 50ms between keystrokes).
-        // If the gap is longer, treat it as the start of a new scan or manual typing.
         if (timeDiff > 50) {
           buffer.current = e.key;
         } else {

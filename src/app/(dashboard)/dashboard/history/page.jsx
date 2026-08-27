@@ -29,7 +29,6 @@ export default function SalesHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
-  // 3-dot dropdown menu state
   const [openMenuId, setOpenMenuId] = useState(null)
 
   const fetchOrders = async () => {
@@ -54,7 +53,6 @@ export default function SalesHistoryPage() {
     }
   }, [user, userLoading, statusFilter])
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!e.target.closest('.action-menu-container')) {
@@ -102,7 +100,6 @@ export default function SalesHistoryPage() {
     )
   }
 
-  // Filter orders by search
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.order_id.toString().includes(search) ||
@@ -120,7 +117,6 @@ export default function SalesHistoryPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Sales Orders History</h1>
@@ -136,7 +132,6 @@ export default function SalesHistoryPage() {
           </button>
         </div>
 
-        {/* Filters and Search */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             {['all', 'pending', 'confirmed', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].map(status => (
@@ -166,7 +161,6 @@ export default function SalesHistoryPage() {
           </div>
         </div>
 
-        {/* Orders List Table */}
         {loading ? (
           <div className="w-full py-20 flex flex-col items-center justify-center gap-2">
             <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />
@@ -241,7 +235,6 @@ export default function SalesHistoryPage() {
                       </td>
                       <td className="px-2 sm:px-3 py-3.5 text-center relative action-menu-container">
                         
-                        {/* 3-Dot Action Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -253,7 +246,6 @@ export default function SalesHistoryPage() {
                           <BiDotsVerticalRounded className="text-lg" />
                         </button>
 
-                        {/* Dropdown Menu */}
                         {isMenuOpen && (
                           <div className="absolute right-2 top-11 w-44 bg-white border border-slate-200 shadow-lg z-30 flex flex-col divide-y divide-slate-100 py-1 text-left">
                             <button
@@ -307,7 +299,6 @@ export default function SalesHistoryPage() {
               </tbody>
             </table>
 
-            {/* Simple Pagination Bar */}
             {filteredOrders.length > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50/50 text-xs">
                 <div className="text-slate-500">

@@ -56,7 +56,6 @@ export default function ManagerStockInventoryPage() {
     )
   }
 
-  // Filter products by category & search
   const filteredProducts = products.filter(prod => {
     const matchesCategory = selectedCategory === 'all' || prod.category_id?.toString() === selectedCategory
     const matchesSearch = 
@@ -65,7 +64,6 @@ export default function ManagerStockInventoryPage() {
     return matchesCategory && matchesSearch
   })
 
-  // Stock counters
   const totalItems = products.length
   const outOfStockCount = products.filter(p => (p.total_stock || p.stock || 0) === 0).length
   const lowStockCount = products.filter(p => {
@@ -77,7 +75,6 @@ export default function ManagerStockInventoryPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Stock Inventory</h1>
@@ -90,7 +87,6 @@ export default function ManagerStockInventoryPage() {
           </div>
         </div>
 
-        {/* Inventory Analytics Widgets */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
@@ -121,7 +117,6 @@ export default function ManagerStockInventoryPage() {
           </div>
         </div>
 
-        {/* Filters Panel */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex gap-2 items-center bg-white px-3 py-2 border border-slate-200 w-full md:w-80 shadow-sm">
             <BiSearch className="text-slate-400 text-lg shrink-0" />
@@ -149,7 +144,6 @@ export default function ManagerStockInventoryPage() {
           </div>
         </div>
 
-        {/* Stock Ledger Grid */}
         {filteredProducts.length === 0 ? (
           <div className="bg-white border border-slate-200 py-16 px-6 text-center shadow-sm">
             <h3 className="font-bold text-slate-800 text-base">No Products Found</h3>

@@ -29,10 +29,8 @@ export default function OutForDeliveryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
-  // 3-dot dropdown menu state
   const [openMenuId, setOpenMenuId] = useState(null)
 
-  // Payment modal state
   const [paymentModalOrder, setPaymentModalOrder] = useState(null)
   const [paymentTargetStatus, setPaymentTargetStatus] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
@@ -58,7 +56,6 @@ export default function OutForDeliveryPage() {
     fetchOutForDeliveryOrders()
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!e.target.closest('.action-menu-container')) {
@@ -149,7 +146,6 @@ export default function OutForDeliveryPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="w-full flex flex-col gap-6">
         
-        {/* Header section */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Out for Delivery Desk</h1>
@@ -165,7 +161,6 @@ export default function OutForDeliveryPage() {
           </button>
         </div>
 
-        {/* Orders list container */}
         {loading ? (
           <div className="w-full py-20 flex flex-col items-center justify-center gap-2">
             <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />
@@ -245,7 +240,6 @@ export default function OutForDeliveryPage() {
                       </td>
                       <td className="px-2 sm:px-3 py-3.5 text-center relative action-menu-container">
                         
-                        {/* 3-Dot Action Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -257,7 +251,6 @@ export default function OutForDeliveryPage() {
                           <BiDotsVerticalRounded className="text-lg" />
                         </button>
 
-                        {/* Dropdown Menu */}
                         {isMenuOpen && (
                           <div className="absolute right-2 top-11 w-44 bg-white border border-slate-200 shadow-lg z-30 flex flex-col divide-y divide-slate-100 py-1 text-left">
                             <button
@@ -326,7 +319,6 @@ export default function OutForDeliveryPage() {
               </tbody>
             </table>
 
-            {/* Simple Pagination Bar */}
             {orders.length > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50/50 text-xs">
                 <div className="text-slate-500">
@@ -379,12 +371,10 @@ export default function OutForDeliveryPage() {
         )}
       </div>
 
-      {/* PAYMENT MODAL */}
       {paymentModalOrder && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white w-full max-w-md border border-slate-200 shadow-xl flex flex-col">
             
-            {/* Modal Header */}
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
                 <BiDollarCircle className="text-primary text-xl" />
@@ -400,10 +390,8 @@ export default function OutForDeliveryPage() {
               </button>
             </div>
 
-            {/* Modal Form */}
             <form onSubmit={handlePaymentSubmit} className="p-5 flex flex-col gap-4">
               
-              {/* Order Info Summary */}
               <div className="bg-slate-50 border border-slate-200 p-3.5 flex flex-col gap-1.5 text-xs text-slate-700">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Customer:</span>
@@ -419,7 +407,6 @@ export default function OutForDeliveryPage() {
                 </div>
               </div>
 
-              {/* Payment Amount Input */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">
                   Payment Received Amount (৳)
@@ -437,7 +424,6 @@ export default function OutForDeliveryPage() {
                 <span className="text-[10px] text-slate-400">Leave at 0 if no payment collected at this stage.</span>
               </div>
 
-              {/* Payment Method Select */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">
                   Payment Method
@@ -456,7 +442,6 @@ export default function OutForDeliveryPage() {
                 </select>
               </div>
 
-              {/* Optional Payment Note */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">
                   Payment Note (Optional)
@@ -470,7 +455,6 @@ export default function OutForDeliveryPage() {
                 />
               </div>
 
-              {/* Modal Buttons */}
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
                 <button
                   type="button"

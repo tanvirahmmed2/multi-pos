@@ -11,7 +11,6 @@ export async function GET(req, { params }) {
     const { id } = await params;
     const purchaseId = parseInt(id, 10);
 
-    // Fetch purchase metadata with sum of paid amount
     const purchaseRes = await query(`
       SELECT 
         p.*, 
@@ -33,7 +32,6 @@ export async function GET(req, { params }) {
 
     const purchase = purchaseRes.rows[0];
 
-    // Fetch items
     const itemsRes = await query(`
       SELECT 
         pi.*, 
@@ -46,7 +44,6 @@ export async function GET(req, { params }) {
       ORDER BY pi.id ASC
     `, [purchaseId]);
 
-    // Fetch payments
     const paymentsRes = await query(`
       SELECT * 
       FROM purchase_payments 
@@ -76,20 +73,16 @@ export async function DELETE(req, { params }) {
     const { id } = await params;
     const purchaseId = parseInt(id, 10);
 
-    // Fetch purchase items to reverse stock
     const itemsRes = await query('SELECT * FROM purchase_items WHERE purchase_id = $1', [purchaseId]);
     if (itemsRes.rows.length === 0) {
-      // Check if purchase exists at all
       const checkRes = await query('SELECT * FROM purchases WHERE purchase_id = $1', [purchaseId]);
       if (checkRes.rows.length === 0) {
         return Response.json({ error: 'Purchase invoice not found' }, { status: 404 });
       }
     }
 
-    // Begin Database Transaction
     await query('BEGIN');
 
-    // Reverse stocks
     for (const item of itemsRes.rows) {
       let targetVarId = item.variant_id;
       if (!targetVarId) {
@@ -112,16 +105,12 @@ export async function DELETE(req, { params }) {
       }
     }
 
-    // Delete inventory logs
     await query('DELETE FROM inventory_logs WHERE reference_id = $1 AND type = \'purchase\'', [purchaseId]);
 
-    // Delete purchase payments
     await query('DELETE FROM purchase_payments WHERE purchase_id = $1', [purchaseId]);
 
-    // Delete purchase items
     await query('DELETE FROM purchase_items WHERE purchase_id = $1', [purchaseId]);
 
-    // Delete purchase record
     await query('DELETE FROM purchases WHERE purchase_id = $1', [purchaseId]);
 
     await query('COMMIT');

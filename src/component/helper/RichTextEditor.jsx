@@ -37,7 +37,6 @@ export default function RichTextEditor({ value, onChange, placeholder = '' }) {
     },
   });
 
-  // Sync editor content with external value changes (e.g. initial data loading)
   useEffect(() => {
     if (editor && value !== undefined && value !== editor.getHTML()) {
       editor.commands.setContent(value);
@@ -55,7 +54,6 @@ export default function RichTextEditor({ value, onChange, placeholder = '' }) {
   return (
     <div className="w-full border border-slate-200 rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition flex flex-col min-h-[150px]">
       
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 bg-slate-50 border-b border-slate-200 p-1.5 text-slate-600">
         <button
           type="button"
@@ -161,7 +159,6 @@ export default function RichTextEditor({ value, onChange, placeholder = '' }) {
         </button>
       </div>
 
-      {/* Editor Content Area */}
       <div 
         onClick={() => editor.chain().focus().run()}
         className="flex-1 p-3 text-slate-800 text-sm cursor-text min-h-[120px]"

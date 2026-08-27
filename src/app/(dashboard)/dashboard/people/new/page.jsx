@@ -98,7 +98,6 @@ export default function CreateNewUserPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full max-w-2xl mx-auto flex flex-col gap-6">
         
-        {/* Back navigation & header */}
         <div className="flex items-center justify-between">
           <Link 
             href="/dashboard/people"
@@ -108,7 +107,6 @@ export default function CreateNewUserPage() {
           </Link>
         </div>
 
-        {/* Card Form */}
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl">
           <div className="flex items-center gap-3 pb-6 border-b border-slate-100 mb-6">
             <div className="w-12 h-12 rounded-xl text-white flex items-center justify-center text-2xl font-bold shadow-sm" style={{ backgroundColor: themeColor }}>
@@ -121,7 +119,6 @@ export default function CreateNewUserPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* Full Name */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <BiUser className="text-sm" /> Full Name *
@@ -138,7 +135,6 @@ export default function CreateNewUserPage() {
               />
             </div>
 
-            {/* Email & Phone */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -172,7 +168,6 @@ export default function CreateNewUserPage() {
               </div>
             </div>
 
-            {/* Role & Branch Selection */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="role" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -220,7 +215,6 @@ export default function CreateNewUserPage() {
               </div>
             </div>
 
-            {/* Password & Confirm Password */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -255,7 +249,6 @@ export default function CreateNewUserPage() {
               </div>
             </div>
 
-            {/* Checkbox Toggles */}
             <div className="flex flex-wrap items-center gap-6 pt-2">
               <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
                 <input
@@ -280,7 +273,6 @@ export default function CreateNewUserPage() {
               </label>
             </div>
 
-            {/* Submit Button */}
             <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 mt-2">
               <Link
                 href="/dashboard/people"

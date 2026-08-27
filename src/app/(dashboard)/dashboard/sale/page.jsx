@@ -25,9 +25,8 @@ import Image from 'next/image'
 export default function POSPageClean() {
   const router = useRouter()
   const { user, loading: userLoading, dashSidebar, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#0f172a' // fallback to slate-900
+  const themeColor = website?.theme_color || '#0f172a' 
 
-  // POS State
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -35,7 +34,6 @@ export default function POSPageClean() {
   const [searchTerm, setSearchTerm] = useState('')
   const [barcodeSearch, setBarcodeSearch] = useState('')
   
-  // Cart & checkout
   const [cart, setCart] = useState([])
   const [discount, setDiscount] = useState(0)
   const [deliveryCharge, setDeliveryCharge] = useState(0)
@@ -44,17 +42,14 @@ export default function POSPageClean() {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Customer State
   const [customerPhone, setCustomerPhone] = useState('')
 
-  // Variant selector
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [productVariants, setProductVariants] = useState([])
   const [loadingVariants, setLoadingVariants] = useState(false)
 
   const barcodeInputRef = useRef(null)
 
-  // Fetch products & categories
   const fetchData = async () => {
     setLoading(true)
     try {
@@ -80,7 +75,6 @@ export default function POSPageClean() {
 
 
 
-  // Handle barcode submit
   const handleBarcodeSubmit = (e) => {
     e.preventDefault()
     if (!barcodeSearch.trim()) return
@@ -98,7 +92,6 @@ export default function POSPageClean() {
     }
   }
 
-  // Handle adding product
   const triggerAddProduct = async (product) => {
     const availStock = product.total_stock !== undefined ? parseInt(product.total_stock, 10) : parseInt(product.stock, 10)
     if (availStock <= 0) {
@@ -184,7 +177,6 @@ export default function POSPageClean() {
     setCart(cart.filter(item => item.cartKey !== key))
   }
 
-  // Calculation details
   const totalProductDiscount = cart.reduce((sum, item) => sum + ((item.discount || 0) * item.quantity), 0)
   const extraDiscountVal = parseFloat(discount) || 0
   const totalDiscount = totalProductDiscount + extraDiscountVal
@@ -194,7 +186,6 @@ export default function POSPageClean() {
   const receivedVal = parseFloat(amountReceived) || 0
   const changeAmount = paymentType === 'cash' && receivedVal > totalAmount ? receivedVal - totalAmount : 0
 
-  // Filter products
   const filteredProducts = products.filter(p => {
     const matchesCategory = activeCategory === 'all' || p.category_id === parseInt(activeCategory, 10) || String(p.category_id) === String(activeCategory) || p.category_slug === activeCategory
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -202,7 +193,6 @@ export default function POSPageClean() {
     return matchesCategory && matchesSearch
   })
 
-  // Submit checkout
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty')
@@ -236,7 +226,6 @@ export default function POSPageClean() {
       const res = await axios.post('/api/sale', payload)
       toast.success('Sale Completed!')
 
-      // Reset fields
       setCart([])
       setDiscount(0)
       setDeliveryCharge(0)
@@ -244,7 +233,6 @@ export default function POSPageClean() {
       setNote('')
       setCustomerPhone('')
 
-      // Redirect to dynamic order details page
       router.push(`/dashboard/sale/${res.data.order_id}`)
 
     } catch (err) {
@@ -353,7 +341,6 @@ export default function POSPageClean() {
                     <tbody className="divide-y divide-slate-100 text-xs">
                       {cart.map((item) => (
                         <tr key={item.cartKey} className="hover:bg-slate-50/50 transition-colors group">
-                          {/* 1. Image */}
                           <td className="py-2 px-2 text-center">
                             <div className="w-8 h-8 rounded-md border border-slate-100 bg-slate-50 flex items-center justify-center mx-auto overflow-hidden relative">
                               <Image width={80} height={80}
@@ -364,14 +351,12 @@ export default function POSPageClean() {
                             </div>
                           </td>
 
-                          {/* 2. Title */}
                           <td className="py-2.5 px-2.5">
                             <span className="font-semibold text-slate-800 text-xs truncate max-w-[120px] sm:max-w-[150px] block leading-tight" title={item.name}>
                               {item.name}
                             </span>
                           </td>
 
-                          {/* 3. Variant */}
                           <td className="py-2.5 px-2 text-center">
                             {item.variant_name ? (
                               <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded leading-none inline-block whitespace-nowrap">
@@ -382,12 +367,10 @@ export default function POSPageClean() {
                             )}
                           </td>
 
-                          {/* 4. Single Price */}
                           <td className="py-2.5 px-2 text-center font-mono text-slate-600 text-xs whitespace-nowrap">
                             ৳{item.price.toFixed(2)}
                           </td>
 
-                          {/* 5. Discount */}
                           <td className="py-2.5 px-2 text-center font-mono text-xs whitespace-nowrap">
                             {item.discount > 0 ? (
                               <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-1 py-0.5 rounded">
@@ -398,7 +381,6 @@ export default function POSPageClean() {
                             )}
                           </td>
 
-                          {/* 6. Quantity */}
                           <td className="py-2.5 px-2 text-center">
                             <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-lg p-0.5">
                               <button
@@ -421,12 +403,10 @@ export default function POSPageClean() {
                             </div>
                           </td>
 
-                          {/* 7. Total Price */}
                           <td className="py-2.5 px-2 text-right font-mono font-bold text-slate-900 text-xs whitespace-nowrap">
                             ৳{(item.price * item.quantity).toFixed(2)}
                           </td>
 
-                          {/* 8. Delete Option */}
                           <td className="py-2.5 px-2 text-center">
                             <button
                               onClick={() => removeCartItem(item.cartKey)}
@@ -448,9 +428,7 @@ export default function POSPageClean() {
                 </div>
               )}
 
-              {/* Price summary */}
               <div className="border-t border-slate-100 pt-3 mt-auto flex flex-col gap-2">
-                {/* 1. Discount per product (Sum of item discounts) */}
                 <div className="flex justify-between items-center text-xs font-medium text-slate-500">
                   <span>Product Discounts</span>
                   <span className="font-mono text-emerald-600 font-bold">
@@ -458,7 +436,6 @@ export default function POSPageClean() {
                   </span>
                 </div>
 
-                {/* Extra Discount & Delivery Charge Inputs */}
                 <div className="grid grid-cols-2 gap-3.5 my-1">
                   <div>
                     <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Extra Discount (৳)</label>
@@ -480,13 +457,11 @@ export default function POSPageClean() {
                   </div>
                 </div>
 
-                {/* 2. Total Discount */}
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-600 border-t border-slate-100 pt-2">
                   <span>Total Discount</span>
                   <span className="font-mono text-emerald-600 font-bold">-৳{totalDiscount.toFixed(2)}</span>
                 </div>
 
-                {/* 3. Sub Total */}
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
                   <span>Sub Total</span>
                   <span className="font-mono text-slate-800">৳{subtotal.toFixed(2)}</span>
@@ -499,7 +474,6 @@ export default function POSPageClean() {
                   </div>
                 )}
 
-                {/* 4. Total Price */}
                 <div className="flex justify-between items-center border-t border-slate-200 pt-3 mt-1">
                   <span className="text-sm font-bold text-slate-900">Total Price</span>
                   <span className="font-mono text-slate-900 font-extrabold text-lg">৳{totalAmount.toFixed(2)}</span>
@@ -508,7 +482,6 @@ export default function POSPageClean() {
 
             </div>
 
-            {/* Payment & Checkout Block */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b border-slate-100 pb-1.5">Payment Method</span>
 
@@ -685,7 +658,6 @@ export default function POSPageClean() {
 
       </div>
 
-      {/* MODAL 1: Variant Selector */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xxs flex items-center justify-center z-50 p-4">
           <div className="bg-white border border-slate-200 rounded-xl max-w-sm w-full shadow-lg p-5 flex flex-col gap-4 animate-in fade-in duration-100">

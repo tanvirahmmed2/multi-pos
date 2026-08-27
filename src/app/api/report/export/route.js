@@ -4,7 +4,6 @@ import * as XLSX from 'xlsx';
 
 export async function GET(req) {
   try {
-    // 1. Authenticate user
     const auth = await authenticateUser();
     if (!auth.success || !auth.user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -100,7 +99,6 @@ export async function GET(req) {
           ORDER BY o.order_id DESC
         `);
 
-        // Format items array into readable string for Excel
         rows = result.rows.map(r => {
           const itemsStr = r.items
             ? r.items.map(item => `${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''} x${item.quantity}`).join('; ')

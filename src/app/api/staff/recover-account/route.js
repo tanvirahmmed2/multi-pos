@@ -20,7 +20,7 @@ export async function POST(req) {
 
     const staff = result.rows[0];
     const recoverToken = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); 
 
     await query(
       'UPDATE staffs SET recover_token = $1, recover_token_expires = $2 WHERE email = $3',

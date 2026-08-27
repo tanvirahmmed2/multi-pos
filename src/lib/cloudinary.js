@@ -11,7 +11,6 @@ cloudinary.config({
 export async function uploadToCloudinary(file, folder = 'ecom') {
   if (!file) return null;
   
-  // File can be a File object or Blob. Get its Buffer.
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 

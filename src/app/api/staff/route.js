@@ -73,7 +73,6 @@ export async function POST(req) {
 
     const newStaff = result.rows[0];
 
-    // Sync customer profile if phone is provided
     if (phone && phone.trim()) {
       const cleanPhone = phone.trim();
       const checkCust = await query('SELECT customer_id FROM customers WHERE phone = $1', [cleanPhone]);

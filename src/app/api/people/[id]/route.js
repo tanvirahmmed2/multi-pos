@@ -12,7 +12,6 @@ export async function PUT(req, { params }) {
     const targetStaffId = parseInt(id, 10);
     const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
 
-    // Prevent self-modification
     if (currentStaffId === targetStaffId) {
       return Response.json(
         { error: 'Admins cannot modify their own role, active status, or ban status to prevent lockout' },

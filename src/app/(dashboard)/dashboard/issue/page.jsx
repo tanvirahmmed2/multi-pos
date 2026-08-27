@@ -21,17 +21,14 @@ export default function AdminIssueLogPage() {
   const [receivers, setReceivers] = useState([])
   const [issues, setIssues] = useState([])
   
-  // Filtering states
-  const [filterType, setFilterType] = useState('all') // 'all', 'sent', 'received'
-  const [filterRole, setFilterRole] = useState('all') // 'all', 'admin', 'manager', 'sales'
+  const [filterType, setFilterType] = useState('all') 
+  const [filterRole, setFilterRole] = useState('all') 
   const [search, setSearch] = useState('')
 
-  // Form compose states
   const [receiverId, setReceiverId] = useState('')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   
-  // UI states
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
@@ -80,7 +77,6 @@ export default function AdminIssueLogPage() {
       setTitle('')
       setMessage('')
       setReceiverId('')
-      // Reload issues
       const res = await axios.get('/api/issue')
       setIssues(res.data)
     } catch (err) {
@@ -108,20 +104,16 @@ export default function AdminIssueLogPage() {
     }
   }
 
-  // Filter issue logs
   const displayIssues = issues.filter(i => {
-    // 1. Filter Type: all, sent, received
     if (filterType === 'sent' && i.sender_id !== user?.user_id) return false
     if (filterType === 'received' && i.receiver_id !== user?.user_id) return false
 
-    // 2. Filter Role: all, admin, manager, sales
     if (filterRole !== 'all') {
       const isSenderRoleMatch = i.sender_role === filterRole
       const isReceiverRoleMatch = i.receiver_role === filterRole
       if (!isSenderRoleMatch && !isReceiverRoleMatch) return false
     }
 
-    // 3. Search Keyword
     const term = search.toLowerCase()
     return (
       i.title.toLowerCase().includes(term) ||
@@ -139,7 +131,6 @@ export default function AdminIssueLogPage() {
     <div className={`w-full min-h-screen bg-[#F1F5F9] pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
             <BiShieldQuarter className="text-[#73976A]" />
@@ -150,13 +141,11 @@ export default function AdminIssueLogPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* Left: Broadcast Form */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 md:p-6 flex flex-col gap-5">
             <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Broadcast Message</h2>
             
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               
-              {/* Recipient */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700">Recipient Staff <span className="text-[#BD4444]">*</span></label>
                 <select
@@ -174,7 +163,6 @@ export default function AdminIssueLogPage() {
                 </select>
               </div>
 
-              {/* Title */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700">Subject / Title <span className="text-[#BD4444]">*</span></label>
                 <input className="input-style border border-slate-200 focus:border-[#73976A]"
@@ -185,13 +173,11 @@ export default function AdminIssueLogPage() {
                 />
               </div>
 
-              {/* Message */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700">Message Description <span className="text-[#BD4444]">*</span></label>
                 <RichTextEditor value={message} onChange={setMessage} placeholder="Details of notification or directive..." />
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={submitting}
@@ -212,13 +198,10 @@ export default function AdminIssueLogPage() {
             </form>
           </div>
 
-          {/* Right: Master Audit Trail list */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             
-            {/* Search and Filters Card */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 flex flex-col sm:flex-row items-center gap-4 justify-between">
               
-              {/* Type Filter Tabs */}
               <div className="flex gap-1.5 border-b sm:border-b-0 border-slate-100 pb-2 sm:pb-0 w-full sm:w-auto">
                 <button
                   onClick={() => setFilterType('all')}
@@ -246,9 +229,7 @@ export default function AdminIssueLogPage() {
                 </button>
               </div>
 
-              {/* Advanced Filtering */}
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {/* Role Filter */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   <BiFilterAlt className="text-slate-400 text-sm" />
                   <select
@@ -263,7 +244,6 @@ export default function AdminIssueLogPage() {
                   </select>
                 </div>
 
-                {/* Keyword Search */}
                 <div className="relative max-w-[180px] w-full">
                   <BiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
                   <input className="input-style pl-7 text-xs border border-slate-200 focus:border-[#73976A]"
@@ -277,7 +257,6 @@ export default function AdminIssueLogPage() {
 
             </div>
 
-            {/* Audit Logs list card */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 md:p-6 flex flex-col gap-4">
               
               {loading ? (
@@ -295,7 +274,6 @@ export default function AdminIssueLogPage() {
                         key={issue.issue_id} 
                         className="border border-slate-200 rounded-xl hover:border-[#73976A]/40 transition overflow-hidden bg-[#F1F5F9]/30"
                       >
-                        {/* Header Summary */}
                         <div 
                           onClick={() => toggleExpand(issue.issue_id)}
                           className="p-4 flex items-center justify-between gap-4 cursor-pointer select-none"
@@ -328,7 +306,6 @@ export default function AdminIssueLogPage() {
                           </div>
                         </div>
 
-                        {/* Collapsible Content */}
                         {isExpanded && (
                           <div className="px-4 pb-4 pt-2 border-t border-slate-200 bg-white flex flex-col gap-3">
                             <div 

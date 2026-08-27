@@ -25,10 +25,8 @@ export default function DashboardManagerContactPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   
-  // Tabs: 'pending' or 'replied'
   const [activeTab, setActiveTab] = useState('pending')
   
-  // Reply compose states
   const [replyMessage, setReplyMessage] = useState('')
   const [submittingReplyId, setSubmittingReplyId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
@@ -66,7 +64,7 @@ export default function DashboardManagerContactPage() {
       toast.success('Reply submitted and email dispatched to customer!')
       setReplyMessage('')
       setExpandedId(null)
-      fetchContacts() // Refresh list to move to replied tab
+      fetchContacts() 
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to submit reply.')
       console.error(err)
@@ -92,7 +90,6 @@ export default function DashboardManagerContactPage() {
     }
   }
 
-  // Filters contacts by tab and search
   const filteredContacts = contacts.filter((c) => {
     const isTabMatch = c.status === activeTab
     if (!isTabMatch) return false
@@ -115,7 +112,6 @@ export default function DashboardManagerContactPage() {
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
         
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 animate-fade-in">
             <BiConversation className="text-emerald-600" />
@@ -124,10 +120,8 @@ export default function DashboardManagerContactPage() {
           <p className="text-slate-500 text-sm mt-0.5 animate-fade-in">Answer customer inquiries, dispatch responses via mailer, and review reply histories.</p>
         </div>
 
-        {/* Tab & Search Control Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-2xl border border-slate-100 p-3 shadow-sm animate-fade-in">
           
-          {/* Tabs */}
           <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
@@ -157,7 +151,6 @@ export default function DashboardManagerContactPage() {
             </button>
           </div>
 
-          {/* Search bar */}
           <div className="relative max-w-sm w-full">
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
             <input className="input-style"
@@ -170,7 +163,6 @@ export default function DashboardManagerContactPage() {
 
         </div>
 
-        {/* Master List Card */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4 animate-fade-in">
           
           {loading ? (
@@ -192,7 +184,6 @@ export default function DashboardManagerContactPage() {
                     }`}
                   >
                     
-                    {/* Summary Header */}
                     <div 
                       onClick={() => toggleExpand(contact.contact_id)}
                       className="p-5 flex items-center justify-between gap-4 cursor-pointer select-none"
@@ -224,11 +215,9 @@ export default function DashboardManagerContactPage() {
 
                     </div>
 
-                    {/* Collapsible Panel */}
                     {isExpanded && (
                       <div className="px-5 pb-5 pt-2 border-t border-slate-100/50 bg-white flex flex-col gap-5">
                         
-                        {/* Client Inquiry Message */}
                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 flex flex-col gap-1.5">
                           <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest">Customer Message</span>
                           <div 
@@ -237,7 +226,6 @@ export default function DashboardManagerContactPage() {
                           />
                         </div>
 
-                        {/* Existing Responses conversation log */}
                         {contact.replies && contact.replies.length > 0 && (
                           <div className="flex flex-col gap-3">
                             <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest">Responses History</span>
@@ -264,7 +252,6 @@ export default function DashboardManagerContactPage() {
                           </div>
                         )}
 
-                        {/* Reply Composer Form / Status Block */}
                         <div className="border-t border-slate-100 pt-4 mt-2">
                           {isReplied ? (
                             <div className="bg-emerald-50 text-emerald-800 border border-emerald-200 p-4 rounded-xl flex items-center gap-2 text-xs font-semibold">
@@ -303,7 +290,6 @@ export default function DashboardManagerContactPage() {
                           )}
                         </div>
 
-                        {/* Audit Details & Delete Option */}
                         <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-1">
                           <span className="text-xxs text-slate-400 font-mono">Inquiry Log ID: #{contact.contact_id}</span>
                           <button

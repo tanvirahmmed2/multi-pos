@@ -12,7 +12,6 @@ function slugify(text) {
     .replace(/\-\-+/g, '-');
 }
 
-// Helper to find category by either integer ID or slug string
 async function getCategoryByIdOrSlug(idOrSlug) {
   const isNumeric = /^\d+$/.test(idOrSlug);
   const sql = isNumeric 
@@ -62,7 +61,6 @@ export async function PUT(req, { params }) {
     const slug = slugify(name);
     const parent_id = parentIdVal && parentIdVal !== 'null' && parentIdVal !== '' ? parseInt(parentIdVal, 10) : null;
 
-    // Prevent cyclic relationship (category cannot be its own parent)
     if (parent_id && parent_id === category.category_id) {
       return Response.json({ error: 'A category cannot be its own parent' }, { status: 400 });
     }
@@ -70,11 +68,9 @@ export async function PUT(req, { params }) {
     let imageUrl = category.image;
     let imageId = category.image_id;
 
-    // If new image file is uploaded
     if (imageFile && typeof imageFile !== 'string') {
       const uploadResult = await uploadToCloudinary(imageFile, 'categories');
       if (uploadResult) {
-        // Delete previous image from Cloudinary
         if (category.image_id) {
           await deleteFromCloudinary(category.image_id);
         }
@@ -111,7 +107,6 @@ export async function DELETE(req, { params }) {
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
 
-    // Delete image from Cloudinary
     if (category.image_id) {
       try {
         await deleteFromCloudinary(category.image_id);
@@ -120,7 +115,6 @@ export async function DELETE(req, { params }) {
       }
     }
 
-    // Delete category from DB
     await query('DELETE FROM categories WHERE category_id = $1', [category.category_id]);
 
     return Response.json({ message: 'Category deleted successfully' }, { status: 200 });

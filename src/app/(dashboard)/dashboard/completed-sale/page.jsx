@@ -25,7 +25,6 @@ export default function CompletedSalesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
-  // 3-dot dropdown menu state
   const [openMenuId, setOpenMenuId] = useState(null)
 
   const fetchCompletedOrders = async () => {
@@ -46,7 +45,6 @@ export default function CompletedSalesPage() {
     fetchCompletedOrders()
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!e.target.closest('.action-menu-container')) {
@@ -185,7 +183,6 @@ export default function CompletedSalesPage() {
                       </td>
                       <td className="px-2 sm:px-3 py-3.5 text-center relative action-menu-container">
                         
-                        {/* 3-Dot Action Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -197,7 +194,6 @@ export default function CompletedSalesPage() {
                           <BiDotsVerticalRounded className="text-lg" />
                         </button>
 
-                        {/* Dropdown Menu */}
                         {isMenuOpen && (
                           <div className="absolute right-2 top-11 w-44 bg-white border border-slate-200 shadow-lg z-30 flex flex-col divide-y divide-slate-100 py-1 text-left">
                             <button
@@ -249,7 +245,6 @@ export default function CompletedSalesPage() {
               </tbody>
             </table>
 
-            {/* Simple Pagination Bar */}
             {orders.length > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50/50 text-xs">
                 <div className="text-slate-500">

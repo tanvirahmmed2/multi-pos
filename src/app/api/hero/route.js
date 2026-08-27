@@ -2,11 +2,9 @@ import { query } from '@/lib/db';
 
 export async function GET(req) {
   try {
-    // 1. Fetch website settings
     const settingsRes = await query('SELECT * FROM websites ORDER BY website_id ASC LIMIT 1');
     const settings = settingsRes.rows[0] || {};
 
-    // 2. Fetch top 4 best-selling / popular products
     const popularRes = await query(`
       WITH ranked_products AS (
         SELECT 

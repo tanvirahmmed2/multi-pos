@@ -84,10 +84,8 @@ export async function PATCH(req) {
       return Response.json({ error: 'Currency ID is required' }, { status: 400 });
     }
 
-    // Deactivate all currencies
     await query('UPDATE currencies SET is_active = FALSE');
 
-    // Activate selected currency
     const result = await query(
       'UPDATE currencies SET is_active = TRUE WHERE currency_id = $1 RETURNING *',
       [currency_id]
