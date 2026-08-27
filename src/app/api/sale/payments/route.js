@@ -12,13 +12,14 @@ export async function GET(req) {
     const isStaff = ['admin', 'manager', 'sales'].includes(user.role);
 
     let sql = `
-      SELECT py.*, o.phone AS order_phone, o.customer_id, c.name AS customer_name,
+      SELECT py.*, o.phone AS order_phone, o.customer_id, c.name AS customer_name, s.name AS staff_name, s.role AS staff_role,
              (SELECT p.name FROM order_items oi 
               JOIN products p ON oi.product_id = p.product_id 
               WHERE oi.order_id = o.order_id LIMIT 1) AS sample_product_name
       FROM public.payments py
       JOIN public.orders o ON py.order_id = o.order_id
       LEFT JOIN customers c ON o.customer_id = c.customer_id
+      LEFT JOIN staffs s ON o.staff_id = s.staff_id
     `;
     let params = [];
 

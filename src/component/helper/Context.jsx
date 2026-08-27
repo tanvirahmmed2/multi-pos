@@ -4,6 +4,7 @@ import axios from "axios";
 import { usePathname } from "next/navigation";
 import { STORE_NAME } from "@/lib/secret";
 import toast from 'react-hot-toast'
+import { formatCurrency as formatCurrencyHelper, getCurrencySymbol, getCurrencyCode } from "@/lib/currency";
 
 export const Context = createContext()
 
@@ -127,6 +128,18 @@ const ContextProvider = ({ children }) => {
     const [userSidebar, setUserSidebar] = useState(false)
     const [dashSidebar, setDashSidebar] = useState(false)
     const [website, setWebsite] = useState(null)
+    const [activeCurrency, setActiveCurrency] = useState({ symbol: '৳', code: 'BDT' })
+
+    const fetchActiveCurrency = async () => {
+        try {
+            const res = await axios.get('/api/currencies?active=true');
+            if (res.data && res.data.symbol) {
+                setActiveCurrency(res.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch active currency:", error);
+        }
+    };
 
     const fetchWebsite = async () => {
         try {
@@ -182,6 +195,7 @@ const ContextProvider = ({ children }) => {
         fetchStaff();
         fetchWebsite();
         fetchCategories();
+        fetchActiveCurrency();
     }, []);
 
     useEffect(() => {
@@ -218,6 +232,10 @@ const ContextProvider = ({ children }) => {
         }
     };
 
+    const currencySymbol = activeCurrency?.symbol || '৳';
+    const currencyCode = activeCurrency?.code || 'BDT';
+    const formatCurrency = (val) => formatCurrencyHelper(val, currencySymbol);
+
     const contextValue = {
         categories, cart, setCart,
         addToCart, increaseCartQty, decreaseCartQty, removeFromCart, clearCart,
@@ -225,7 +243,9 @@ const ContextProvider = ({ children }) => {
         staff, setStaff: updateStaffState,
         user: staff, setUser: updateStaffState,
         loading, logout,
-        website, fetchWebsite
+        website, fetchWebsite,
+        activeCurrency, fetchActiveCurrency,
+        currencySymbol, currencyCode, formatCurrency
     }
     return (
         <Context.Provider value={contextValue}>

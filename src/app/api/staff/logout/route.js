@@ -1,7 +1,21 @@
 import { cookies } from 'next/headers';
+import { authenticateUser } from '@/lib/auth';
+import { recordActivityLog } from '@/lib/logger';
 
-export async function POST() {
+export async function POST(req) {
   try {
+    const auth = await authenticateUser();
+    if (auth.success && auth.user) {
+      const staffId = auth.user.staff_id || auth.user.user_id;
+      await recordActivityLog(req, {
+        staffId,
+        action: 'STAFF_LOGOUT',
+        entity: 'staffs',
+        entityId: staffId,
+        details: `Staff member ${auth.user.name || auth.user.email} signed out`
+      });
+    }
+
     const cookieStore = await cookies();
     cookieStore.set('ecom_token', '', {
       httpOnly: true,

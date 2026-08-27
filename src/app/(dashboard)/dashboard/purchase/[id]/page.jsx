@@ -108,7 +108,7 @@ export default function PurchaseDetailPage() {
   // Format currency
   const formatCurrency = (val) => {
     const num = parseFloat(val) || 0
-    return `$${num.toFixed(2)}`
+    return `৳${num.toFixed(2)}`
   }
 
   if (fetching) {
@@ -206,7 +206,7 @@ export default function PurchaseDetailPage() {
             </div>
           </div>
 
-          {/* Supplier Info */}
+          {/* Supplier & Staff Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 print:bg-white print:border-slate-100 print:p-2">
             <div>
               <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Billing From (Supplier)</h4>
@@ -219,12 +219,16 @@ export default function PurchaseDetailPage() {
               )}
             </div>
             
-            {purchase.note && (
-              <div>
-                <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Internal Annotations</h4>
-                <p className="text-xs text-slate-650 mt-1 leading-relaxed italic">{purchase.note}</p>
-              </div>
-            )}
+            <div>
+              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Created & Processed By (Staff)</h4>
+              <p className="font-bold text-slate-800 mt-1 flex items-center gap-1.5 text-xs">
+                <BiUser className="text-emerald-600" />
+                {purchase.staff_name ? `${purchase.staff_name} (${purchase.staff_role || 'Staff'})` : 'System Administrator'}
+              </p>
+              {purchase.staff_email && (
+                <p className="text-xs text-slate-500 mt-0.5 font-mono">{purchase.staff_email}</p>
+              )}
+            </div>
           </div>
 
           {/* Line Items Table */}

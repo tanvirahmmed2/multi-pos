@@ -7,19 +7,18 @@ import Navbar from '@/component/bars/Navbar'
 import Sidebar from '@/component/bars/Sidebar'
 import { BiShieldX, BiLoaderAlt, BiHome } from 'react-icons/bi'
 
-const ROLE_PERMISSIONS = {
+export const ROLE_PERMISSIONS = {
   admin: [
     'branches', 'people', 'category', 'brands', 'product', 'stock',
     'purchase', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals'
   ],
   manager: [
-    'category', 'brands', 'product', 'stock', 'purchase', 'supplier',
-    'customers', 'support', 'contact', 'reviews', 'payments', 'return',
-    'report', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
-    'completed-sale', 'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview'
+    'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
+    'profile', 'orders', 'overview', 'purchase', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals'
   ],
   sales: [
     'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',

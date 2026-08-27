@@ -15,12 +15,16 @@ export async function GET(req, { params }) {
     const purchaseRes = await query(`
       SELECT 
         p.*, 
+        s.name AS staff_name,
+        s.email AS staff_email,
+        s.role AS staff_role,
         COALESCE(SUM(pm.amount_paid), 0)::numeric AS total_paid,
         (p.total_amount - COALESCE(SUM(pm.amount_paid), 0))::numeric AS due_amount
       FROM purchases p
       LEFT JOIN purchase_payments pm ON p.purchase_id = pm.purchase_id
+      LEFT JOIN staffs s ON p.staff_id = s.staff_id
       WHERE p.purchase_id = $1
-      GROUP BY p.purchase_id
+      GROUP BY p.purchase_id, s.staff_id
     `, [purchaseId]);
 
     if (purchaseRes.rows.length === 0) {

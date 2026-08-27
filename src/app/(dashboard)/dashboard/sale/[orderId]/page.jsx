@@ -247,6 +247,16 @@ export default function POSOrderDetailPage() {
                       </span>
                     </div>
                   </div>
+
+                  <div className="flex items-start gap-2 text-xs border-t border-slate-100 pt-3">
+                    <BiShieldQuarter className="text-emerald-600 mt-0.5 text-base shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Processed By (Staff)</span>
+                      <span className="font-bold text-slate-800 mt-0.5">
+                        {order.staff_name ? `${order.staff_name} (${order.staff_role || 'Staff'})` : 'Storefront POS / Online'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

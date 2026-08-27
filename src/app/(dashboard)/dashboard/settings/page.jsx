@@ -12,11 +12,13 @@ import {
   BiShow,
   BiGlobe,
   BiLayout,
-  BiLink
+  BiLink,
+  BiDollarCircle,
+  BiRefresh
 } from 'react-icons/bi'
 
 export default function DashboardAdminSettingsPage() {
-  const { dashSidebar, fetchWebsite } = useContext(Context)
+  const { dashSidebar, fetchWebsite, fetchActiveCurrency } = useContext(Context)
   const themeColor = '#73976A'
   
   // Form fields
@@ -27,6 +29,14 @@ export default function DashboardAdminSettingsPage() {
   const [heroTitle, setHeroTitle] = useState('')
   const [heroSubtitle, setHeroSubtitle] = useState('')
   
+  // Currency Management state
+  const [dbCurrencies, setDbCurrencies] = useState([])
+  const [activatingId, setActivatingId] = useState(null)
+  const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false)
+  const [currencyTab, setCurrencyTab] = useState('select') // 'select' | 'create'
+  const [newCurrency, setNewCurrency] = useState({ code: '', name: '', symbol: '' })
+  const [addingCurrency, setAddingCurrency] = useState(false)
+  
   // Logo upload state
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
@@ -36,11 +46,28 @@ export default function DashboardAdminSettingsPage() {
   const [fetching, setFetching] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  const fetchCurrenciesList = async () => {
+    try {
+      const res = await axios.get('/api/currencies')
+      if (res.data && Array.isArray(res.data)) {
+        setDbCurrencies(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to load currencies list:', err)
+    }
+  }
+
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchSettingsAndCurrencies = async () => {
       try {
-        const res = await axios.get('/api/settings')
-        const data = res.data
+        const [settingsRes, currRes] = await Promise.all([
+          axios.get('/api/settings'),
+          axios.get('/api/currencies')
+        ])
+        if (currRes.data && Array.isArray(currRes.data)) {
+          setDbCurrencies(currRes.data)
+        }
+        const data = settingsRes.data
         if (data) {
           setEmail(data.email || '')
           setPhone(data.phone || '')
@@ -58,8 +85,46 @@ export default function DashboardAdminSettingsPage() {
         setFetching(false)
       }
     }
-    fetchSettings()
+    fetchSettingsAndCurrencies()
   }, [])
+
+  const handleActivateCurrency = async (currencyId, name) => {
+    setActivatingId(currencyId)
+    try {
+      await axios.patch('/api/currencies', { currency_id: currencyId })
+      toast.success(`Store currency switched to ${name}!`)
+      await fetchCurrenciesList()
+      if (fetchActiveCurrency) {
+        await fetchActiveCurrency()
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to activate currency')
+      console.error(err)
+    } finally {
+      setActivatingId(null)
+    }
+  }
+
+  const handleAddCurrencySubmit = async (e) => {
+    e.preventDefault()
+    if (!newCurrency.code || !newCurrency.name || !newCurrency.symbol) {
+      toast.error('Please fill in all currency fields')
+      return
+    }
+    setAddingCurrency(true)
+    try {
+      await axios.post('/api/currencies', newCurrency)
+      toast.success(`Currency ${newCurrency.name} added successfully!`)
+      setNewCurrency({ code: '', name: '', symbol: '' })
+      setCurrencyTab('select')
+      await fetchCurrenciesList()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to add new currency')
+      console.error(err)
+    } finally {
+      setAddingCurrency(false)
+    }
+  }
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0]
@@ -80,6 +145,11 @@ export default function DashboardAdminSettingsPage() {
     formData.append('sociallink', sociallink)
     formData.append('hero_title', heroTitle)
     formData.append('hero_subtitle', heroSubtitle)
+    formData.append('currency_symbol', currencySymbol)
+    formData.append('currency_code', currencyCode)
+    if (currencyId) {
+      formData.append('currency_id', currencyId)
+    }
     
     if (logoFile) {
       formData.append('logo', logoFile)
@@ -201,6 +271,222 @@ export default function DashboardAdminSettingsPage() {
                   className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition"
                 />
               </div>
+
+            </div>
+
+            {/* Store Currency Manager Card */}
+            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <BiDollarCircle style={{ color: themeColor }} className="text-base" /> Store Currency Manager
+                  </h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Active currency currently used across prices, orders, purchases, and receipts.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrencyTab('select')
+                    setIsCurrencyModalOpen(true)
+                  }}
+                  className="px-3.5 py-2 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 shrink-0 select-none cursor-pointer hover:opacity-95"
+                  style={{ backgroundColor: themeColor }}
+                >
+                  <BiRefresh className="text-base" /> Change Currency
+                </button>
+              </div>
+
+              {/* Active Currency Display Card */}
+              {(() => {
+                const activeCurr = dbCurrencies.find(c => c.is_active) || dbCurrencies[0] || { symbol: '৳', code: 'BDT', name: 'Bangladeshi Taka' }
+                return (
+                  <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-800 text-base shadow-xs shrink-0">
+                        {activeCurr.symbol}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-black text-slate-800 tracking-tight">{activeCurr.name}</h4>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold rounded-md uppercase font-mono">
+                            {activeCurr.code}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                          Sample format: <span className="font-bold text-slate-700 font-mono">{activeCurr.symbol}1,250.00</span>
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <span className="px-3 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1 shrink-0">
+                      ✓ Active System Currency
+                    </span>
+                  </div>
+                )
+              })()}
+
+              {/* Change Currency Popup Modal */}
+              {isCurrencyModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+                  <div className="bg-white border border-slate-200 w-full max-w-lg p-6 rounded-2xl shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+                    
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                          <BiDollarCircle style={{ color: themeColor }} className="text-lg" /> Store Currency Setup
+                        </h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Select an active store currency or register a new currency.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsCurrencyModalOpen(false)}
+                        className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Modal Nav Tabs */}
+                    <div className="flex border-b border-slate-100 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCurrencyTab('select')}
+                        className={`pb-2 px-3 text-xs font-bold transition border-b-2 cursor-pointer ${
+                          currencyTab === 'select'
+                            ? 'border-emerald-600 text-emerald-800'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Select Active Currency ({dbCurrencies.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrencyTab('create')}
+                        className={`pb-2 px-3 text-xs font-bold transition border-b-2 cursor-pointer ${
+                          currencyTab === 'create'
+                            ? 'border-emerald-600 text-emerald-800'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        + Create New Currency
+                      </button>
+                    </div>
+
+                    {/* Tab 1: Select Currency List */}
+                    {currencyTab === 'select' && (
+                      <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
+                        {dbCurrencies.map((curr) => {
+                          const isActive = curr.is_active
+                          const isActivating = activatingId === curr.currency_id
+
+                          return (
+                            <div
+                              key={curr.currency_id || curr.code}
+                              className={`p-3.5 border rounded-xl transition flex items-center justify-between gap-3 ${
+                                isActive
+                                  ? 'border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-500/20'
+                                  : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-800 text-sm font-mono shrink-0">
+                                  {curr.symbol}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="text-xs font-bold text-slate-800">{curr.name}</h5>
+                                    <span className="text-[10px] font-bold text-slate-500 font-mono">({curr.code})</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 mt-0.5">Preview: {curr.symbol}1,250.00</p>
+                                </div>
+                              </div>
+
+                              {isActive ? (
+                                <span className="px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-full uppercase tracking-wider shrink-0">
+                                  ✓ Active
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={isActivating}
+                                  onClick={() => handleActivateCurrency(curr.currency_id, curr.name)}
+                                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 cursor-pointer shrink-0"
+                                >
+                                  {isActivating ? 'Activating...' : 'Activate'}
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Tab 2: Create New Currency */}
+                    {currencyTab === 'create' && (
+                      <div className="flex flex-col gap-3 pt-1">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Currency Code (e.g. JPY, EUR, USD) *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newCurrency.code}
+                            onChange={(e) => setNewCurrency({ ...newCurrency, code: e.target.value.toUpperCase() })}
+                            placeholder="e.g. JPY"
+                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-slate-400 font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Full Currency Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newCurrency.name}
+                            onChange={(e) => setNewCurrency({ ...newCurrency, name: e.target.value })}
+                            placeholder="e.g. Japanese Yen"
+                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-slate-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Currency Symbol *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newCurrency.symbol}
+                            onChange={(e) => setNewCurrency({ ...newCurrency, symbol: e.target.value })}
+                            placeholder="e.g. ¥, $, ৳, €"
+                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-slate-400 font-mono"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => setCurrencyTab('select')}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                          >
+                            Back to Select
+                          </button>
+                          <button
+                            type="button"
+                            disabled={addingCurrency}
+                            onClick={handleAddCurrencySubmit}
+                            className="px-4 py-2 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                            style={{ backgroundColor: themeColor }}
+                          >
+                            {addingCurrency ? 'Saving Currency...' : 'Save & Register Currency'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              )}
 
             </div>
 

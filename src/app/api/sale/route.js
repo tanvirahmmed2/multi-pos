@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import pool from '@/lib/db';
 import { authenticateUser } from '@/lib/auth';
+import { recordActivityLog } from '@/lib/logger';
 
 export async function GET(req) {
   try {
@@ -8,7 +9,12 @@ export async function GET(req) {
     const status = url.searchParams.get('status');
 
     let sql = `
-      SELECT o.*, c.name AS customer_name, c.email AS customer_email,
+      SELECT o.*, 
+             c.name AS customer_name, 
+             c.email AS customer_email,
+             s.name AS staff_name,
+             s.email AS staff_email,
+             s.role AS staff_role,
              (SELECT JSON_AGG(JSON_BUILD_OBJECT(
                 'order_item_id', oi.order_item_id,
                 'product_id', oi.product_id,
@@ -24,6 +30,7 @@ export async function GET(req) {
              WHERE oi.order_id = o.order_id) AS items
       FROM public.orders o
       LEFT JOIN customers c ON o.customer_id = c.customer_id
+      LEFT JOIN staffs s ON o.staff_id = s.staff_id
     `;
     let params = [];
 
@@ -64,9 +71,9 @@ export async function POST(req) {
       return Response.json({ error: 'Phone and items are required' }, { status: 400 });
     }
 
-    // Optional: Get logged in user if any
+    // Optional: Get logged in staff user who created this sale/order
     const auth = await authenticateUser();
-    const userId = auth.success ? auth.user.user_id : null;
+    const staffId = auth.success && auth.user ? (auth.user.staff_id || auth.user.user_id) : null;
 
     // Start Transaction
     await client.query('BEGIN');
@@ -199,16 +206,17 @@ export async function POST(req) {
     const deliveryCharge = is_pos ? 0 : (isDhaka ? 70 : 130);
     const totalAmount = subtotal + deliveryCharge;
 
-    // 3. Create order
+    // 3. Create order with staff_id tracking
     const orderRes = await client.query(
       `INSERT INTO public.orders (
-        customer_id, phone, shipping_address, shipping_city, shipping_area,
+        customer_id, staff_id, phone, shipping_address, shipping_city, shipping_area,
         status, subtotal_amount, total_discount_amount, delivery_charge,
         total_amount, due_amount, payment_type, note
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING order_id`,
       [
         customerId,
+        staffId,
         cleanPhone,
         cleanAddr,
         is_pos ? 'In-Store' : (shipping_city || 'Dhaka'),
@@ -287,6 +295,15 @@ export async function POST(req) {
 
     // Commit Transaction
     await client.query('COMMIT');
+
+    // Record activity log
+    await recordActivityLog(req, {
+      staffId,
+      action: is_pos ? 'CREATE_POS_SALE' : 'CREATE_ONLINE_ORDER',
+      entity: 'orders',
+      entityId: orderId,
+      details: `Order #${orderId} created for customer ${cleanPhone} (Total: BDT ${totalAmount})`
+    });
 
     // Fetch customer details to return to the frontend
     const customerRes = await client.query(

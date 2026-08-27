@@ -2,6 +2,7 @@
 import React, { useContext } from 'react'
 import Link from 'next/link'
 import { Context } from '@/component/helper/Context'
+import { ROLE_PERMISSIONS } from './layout'
 import { 
   BiCart,
   BiTime,
@@ -10,11 +11,242 @@ import {
   BiHistory,
   BiMessageSquareDetail,
   BiChevronRight,
-  BiShieldQuarter,
   BiLoaderAlt,
   BiSolidTruck,
-  BiUndo
+  BiUndo,
+  BiHome,
+  BiStoreAlt,
+  BiUser,
+  BiCategory,
+  BiTag,
+  BiPackage,
+  BiFile,
+  BiCloudDownload,
+  BiCog,
+  BiUserVoice,
+  BiListUl,
+  BiShieldQuarter
 } from 'react-icons/bi'
+
+const ROLE_TITLES = {
+  admin: 'Administrator Console',
+  manager: 'Manager Console',
+  sales: 'Sales Desk Console',
+  staff: 'Staff Console'
+}
+
+const ROLE_CENTER_NAMES = {
+  admin: 'Administrator Navigation Center',
+  manager: 'Manager Navigation Center',
+  sales: 'Sales Agent Navigation Center',
+  staff: 'Staff Navigation Center'
+}
+
+const ALL_MODULE_CARDS = {
+  overview: {
+    key: 'overview',
+    name: 'System Overview',
+    description: 'View real-time analytics, overall revenue statistics, order metrics, and business summaries.',
+    path: '/dashboard/overview',
+    icon: <BiHome />
+  },
+  branches: {
+    key: 'branches',
+    name: 'Branch Outlets',
+    description: 'Manage store branches, outlet locations, contact info, and operational settings.',
+    path: '/dashboard/branches',
+    icon: <BiStoreAlt />
+  },
+  people: {
+    key: 'people',
+    name: 'People & Accounts',
+    description: 'Manage staff user accounts, role assignments, access permissions, and user profiles.',
+    path: '/dashboard/people',
+    icon: <BiUser />
+  },
+  category: {
+    key: 'category',
+    name: 'Product Categories',
+    description: 'Organize catalog categories, sub-categories, taxonomies, and visual site groups.',
+    path: '/dashboard/category',
+    icon: <BiCategory />
+  },
+  brands: {
+    key: 'brands',
+    name: 'Brands & Manufacturers',
+    description: 'Manage product brand lists, manufacturer details, logos, and vendor affiliations.',
+    path: '/dashboard/brands',
+    icon: <BiTag />
+  },
+  product: {
+    key: 'product',
+    name: 'Products Catalog',
+    description: 'Create and update products, manage pricing, inventory SKUs, and product assets.',
+    path: '/dashboard/product',
+    icon: <BiPackage />
+  },
+  stock: {
+    key: 'stock',
+    name: 'Stock & Inventory',
+    description: 'Monitor stock levels, low inventory warnings, reorder thresholds, and adjustments.',
+    path: '/dashboard/stock',
+    icon: <BiPackage />
+  },
+  purchase: {
+    key: 'purchase',
+    name: 'Purchases & Procurement',
+    description: 'Create purchase orders, track inbound inventory shipments, and vendor invoices.',
+    path: '/dashboard/purchase',
+    icon: <BiDollarCircle />
+  },
+  supplier: {
+    key: 'supplier',
+    name: 'Suppliers Directory',
+    description: 'Manage vendor contacts, supplier profiles, purchase terms, and supply contracts.',
+    path: '/dashboard/supplier',
+    icon: <BiStoreAlt />
+  },
+  customers: {
+    key: 'customers',
+    name: 'Customer Directory',
+    description: 'View registered customer profiles, purchase history, loyalty metrics, and contacts.',
+    path: '/dashboard/customers',
+    icon: <BiUser />
+  },
+  support: {
+    key: 'support',
+    name: 'Support Tickets',
+    description: 'Handle customer helpdesk tickets, customer service requests, and issue logs.',
+    path: '/dashboard/support',
+    icon: <BiMessageSquareDetail />
+  },
+  contact: {
+    key: 'contact',
+    name: 'Contact Messages',
+    description: 'Review web contact form submissions, customer inquiries, and lead communications.',
+    path: '/dashboard/contact',
+    icon: <BiMessageSquareDetail />
+  },
+  reviews: {
+    key: 'reviews',
+    name: 'Customer Reviews',
+    description: 'Moderate product ratings, customer feedback, and store experience reviews.',
+    path: '/dashboard/reviews',
+    icon: <BiUserVoice />
+  },
+  payments: {
+    key: 'payments',
+    name: 'Register Payments',
+    description: 'Post direct cash collections, mobile banking payments, and invoice receipts.',
+    path: '/dashboard/payments',
+    icon: <BiDollarCircle />
+  },
+  return: {
+    key: 'return',
+    name: 'Returns & Refunds',
+    description: 'Process product returns, restock inventory items, and log customer refunds.',
+    path: '/dashboard/return',
+    icon: <BiUndo />
+  },
+  report: {
+    key: 'report',
+    name: 'Reports & Analytics',
+    description: 'Generate comprehensive financial, sales performance, and operational reports.',
+    path: '/dashboard/report',
+    icon: <BiFile />
+  },
+  backup: {
+    key: 'backup',
+    name: 'System Backups',
+    description: 'Export database snapshots, system data archives, and recovery backups.',
+    path: '/dashboard/backup',
+    icon: <BiCloudDownload />
+  },
+  settings: {
+    key: 'settings',
+    name: 'Platform Settings',
+    description: 'Configure store parameters, tax policies, payment methods, and system preferences.',
+    path: '/dashboard/settings',
+    icon: <BiCog />
+  },
+  sale: {
+    key: 'sale',
+    name: 'Create Invoice Sale',
+    description: 'Generate new POS checkouts, assign customer cards, and register transactions.',
+    path: '/dashboard/sale',
+    icon: <BiCart />
+  },
+  'pending-sale': {
+    key: 'pending-sale',
+    name: 'Pending Sales Orders',
+    description: 'Review cash-on-delivery orders waiting for dispatch confirmation or payments.',
+    path: '/dashboard/pending-sale',
+    icon: <BiTime />
+  },
+  'confirmed-sale': {
+    key: 'confirmed-sale',
+    name: 'Confirmed Orders',
+    description: 'Review and process confirmed orders, dispatch for delivery, or fulfill directly.',
+    path: '/dashboard/confirmed-sale',
+    icon: <BiCheckCircle />
+  },
+  out_for_delivery: {
+    key: 'out_for_delivery',
+    name: 'Out for Delivery',
+    description: 'Manage orders currently with couriers. Update delivery status or process returns.',
+    path: '/dashboard/out_for_delivery',
+    icon: <BiSolidTruck />
+  },
+  'completed-sale': {
+    key: 'completed-sale',
+    name: 'Completed Orders',
+    description: 'Track finalized invoices, transaction receipts, and order histories.',
+    path: '/dashboard/completed-sale',
+    icon: <BiCheckCircle />
+  },
+  'returned-sale': {
+    key: 'returned-sale',
+    name: 'Returned Orders',
+    description: 'Review returned sales orders where products were restocked and order amounts set to zero.',
+    path: '/dashboard/returned-sale',
+    icon: <BiUndo />
+  },
+  history: {
+    key: 'history',
+    name: 'My Sales History',
+    description: 'Check personal checkouts ledger history and transaction logs.',
+    path: '/dashboard/history',
+    icon: <BiHistory />
+  },
+  issue: {
+    key: 'issue',
+    name: 'Report Technical Issue',
+    description: 'Submit issue tickets, system bugs, or catalog reports to management board.',
+    path: '/dashboard/issue',
+    icon: <BiMessageSquareDetail />
+  },
+  profile: {
+    key: 'profile',
+    name: 'My Account Profile',
+    description: 'View and update personal profile, security details, and staff credentials.',
+    path: '/dashboard/profile',
+    icon: <BiUser />
+  },
+  orders: {
+    key: 'orders',
+    name: 'Order Management',
+    description: 'Browse, filter, and track all incoming customer order statuses and updates.',
+    path: '/dashboard/orders',
+    icon: <BiListUl />
+  },
+  'activity-logs': {
+    key: 'activity-logs',
+    name: 'Login & Activity Logs',
+    description: 'Audit system login history, staff access logs, client IP addresses, and device user-agents.',
+    path: '/dashboard/activity-logs',
+    icon: <BiShieldQuarter />
+  }
+}
 
 export default function DashboardSalesPage() {
   const { user, loading, dashSidebar, logout, website } = useContext(Context)
@@ -25,72 +257,24 @@ export default function DashboardSalesPage() {
       <div className="w-full min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-2">
           <BiLoaderAlt className="animate-spin text-4xl text-slate-800" />
-          <p className="text-slate-600 text-sm font-semibold animate-pulse">Loading sales dashboard...</p>
+          <p className="text-slate-600 text-sm font-semibold animate-pulse">Loading dashboard console...</p>
         </div>
       </div>
     )
   }
 
+  const role = user?.role || 'staff'
+  const allowedKeys = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.staff
+  const roleTitle = ROLE_TITLES[role] || 'Staff Console'
+  const centerName = ROLE_CENTER_NAMES[role] || 'Staff Navigation Center'
+
+  const moduleCards = allowedKeys
+    .map(key => ALL_MODULE_CARDS[key])
+    .filter(Boolean)
+
   const initials = user?.name
     ? user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'SL'
-
-  const salesLinks = [
-    {
-      name: 'Create Invoice Sale',
-      description: "Generate new POS checkouts, assign customer cards, and register transactions.",
-      path: '/dashboard/sale',
-      icon: <BiCart />
-    },
-    {
-      name: 'Pending Sales Order',
-      description: "Review cash-on-delivery orders waiting for dispatch confirmation or payments.",
-      path: '/dashboard/pending-sale',
-      icon: <BiTime />
-    },
-    {
-      name: 'Confirmed Orders',
-      description: "Review and process confirmed orders, dispatch them for delivery, or deliver them directly.",
-      path: '/dashboard/confirmed-sale',
-      icon: <BiCheckCircle />
-    },
-    {
-      name: 'Out for Delivery',
-      description: "Manage orders currently with the courier. Update statuses to delivered or process returns.",
-      path: '/dashboard/out_for_delivery',
-      icon: <BiSolidTruck />
-    },
-    {
-      name: 'Completed Orders',
-      description: "Track finalized invoices, transaction receipts, and order histories.",
-      path: '/dashboard/completed-sale',
-      icon: <BiCheckCircle />
-    },
-    {
-      name: 'Returned Orders',
-      description: "Review returned sales orders where products were restocked and order amounts set to zero.",
-      path: '/dashboard/returned-sale',
-      icon: <BiUndo />
-    },
-    {
-      name: 'Register Payments',
-      description: "Post direct cash collections or mobile banking payments against invoices.",
-      path: '/dashboard/payments',
-      icon: <BiDollarCircle />
-    },
-    {
-      name: 'My Sales History',
-      description: "Check your personal checkouts ledger history and transaction logs.",
-      path: '/dashboard/history',
-      icon: <BiHistory />
-    },
-    {
-      name: 'Report Technical Issue',
-      description: "Submit issue tickets, system bugs, or catalog reports to the management board.",
-      path: '/dashboard/issue',
-      icon: <BiMessageSquareDetail />
-    }
-  ]
+    : 'ST'
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
@@ -103,19 +287,19 @@ export default function DashboardSalesPage() {
               {initials}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">{user.name}</h1>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">{user.email}</p>
+              <h1 className="text-xl font-bold text-slate-800">{user?.name || 'Staff Member'}</h1>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email || 'N/A'}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="px-2.5 py-0.5 text-xxs font-bold uppercase border" style={{ color: themeColor, borderColor: themeColor + '40', backgroundColor: themeColor + '10' }}>
-                  Sales Desk Console
+                  {roleTitle}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-1 border-t md:border-t-0 md:border-l border-slate-200 pt-4 md:pt-0 md:pl-6 text-xs text-slate-500 font-medium">
-            <div><span className="font-bold text-slate-700">Phone:</span> {user.phone || 'N/A'}</div>
-            <div className="mt-1"><span className="font-bold text-slate-700">Member Since:</span> {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
+            <div><span className="font-bold text-slate-700">Phone:</span> {user?.phone || 'N/A'}</div>
+            <div className="mt-1"><span className="font-bold text-slate-700">Member Since:</span> {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
             <button 
               onClick={() => logout()}
               className="mt-3 text-left font-bold text-rose-600 hover:underline cursor-pointer"
@@ -127,12 +311,12 @@ export default function DashboardSalesPage() {
 
         {/* Available Modules */}
         <div>
-          <h2 className="text-base font-bold text-slate-800 mb-6">Sales Agent Navigation Center</h2>
+          <h2 className="text-base font-bold text-slate-800 mb-6">{centerName}</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {salesLinks.map((link) => (
+            {moduleCards.map((link) => (
               <div 
-                key={link.path}
+                key={link.key}
                 className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition group"
               >
                 <div>
@@ -161,4 +345,3 @@ export default function DashboardSalesPage() {
     </div>
   )
 }
-

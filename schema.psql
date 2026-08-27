@@ -140,6 +140,7 @@ CREATE TABLE purchases (
   purchase_id SERIAL PRIMARY KEY,
   branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
   supplier_id INT REFERENCES suppliers(supplier_id),
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
   supplier_name VARCHAR(200),
   supplier_phone VARCHAR(20),
   invoice_no VARCHAR(100),
@@ -177,6 +178,7 @@ CREATE TABLE public.orders (
   order_id            SERIAL PRIMARY KEY,
   branch_id           INTEGER REFERENCES public.branches(branch_id) ON DELETE SET NULL,
   customer_id         INTEGER REFERENCES public.customers(customer_id),
+  staff_id            INTEGER REFERENCES public.staffs(staff_id) ON DELETE SET NULL,
   phone               VARCHAR(20) NOT NULL,
   shipping_address    TEXT NOT NULL,
   shipping_city       VARCHAR(100),
@@ -259,12 +261,30 @@ CREATE TABLE damage_items (
 );
 
 -- =====================================================
+-- INVESTORS
+-- =====================================================
+CREATE TABLE investors (
+  investor_id SERIAL PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  phone VARCHAR(20),
+  email VARCHAR(150),
+  address TEXT,
+  nid_passport VARCHAR(100),
+  is_active BOOLEAN DEFAULT TRUE,
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+-- =====================================================
 -- MONEY WITHDRAWALS
 -- =====================================================
 CREATE TABLE withdrawals (
   withdrawal_id SERIAL PRIMARY KEY,
+  investor_id INT REFERENCES investors(investor_id) ON DELETE SET NULL,
   branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
   staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  investor_name VARCHAR(150),
   amount NUMERIC(10,2) NOT NULL,
   payment_method VARCHAR(50) DEFAULT 'cash',
   account_details TEXT,
@@ -280,6 +300,7 @@ CREATE TABLE withdrawals (
 -- =====================================================
 CREATE TABLE investments (
   investment_id SERIAL PRIMARY KEY,
+  investor_id INT REFERENCES investors(investor_id) ON DELETE SET NULL,
   branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
   staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
   investor_name VARCHAR(150) NOT NULL,
@@ -298,15 +319,19 @@ CREATE INDEX idx_payments_order_id ON public.payments(order_id);
 CREATE INDEX idx_payments_payment_method ON public.payments(payment_method);
 CREATE INDEX idx_stocks_variant_branch ON stocks(variant_id, branch_id);
 CREATE INDEX idx_orders_branch_id ON orders(branch_id);
+CREATE INDEX idx_orders_staff_id ON orders(staff_id);
 CREATE INDEX idx_purchases_branch_id ON purchases(branch_id);
+CREATE INDEX idx_purchases_staff_id ON purchases(staff_id);
 CREATE INDEX idx_staffs_branch_id ON staffs(branch_id);
 CREATE INDEX idx_damages_branch_id ON damages(branch_id);
 CREATE INDEX idx_damages_staff_id ON damages(staff_id);
 CREATE INDEX idx_damage_items_damage_id ON damage_items(damage_id);
 CREATE INDEX idx_withdrawals_branch_id ON withdrawals(branch_id);
 CREATE INDEX idx_withdrawals_staff_id ON withdrawals(staff_id);
+CREATE INDEX idx_withdrawals_investor_id ON withdrawals(investor_id);
 CREATE INDEX idx_investments_branch_id ON investments(branch_id);
 CREATE INDEX idx_investments_staff_id ON investments(staff_id);
+CREATE INDEX idx_investments_investor_id ON investments(investor_id);
 
 -- =====================================================
 -- INVENTORY LOGS & REFUNDS
@@ -363,6 +388,18 @@ FROM issues i
 LEFT JOIN staffs s ON i.sender_id = s.staff_id
 LEFT JOIN staffs r ON i.receiver_id = r.staff_id;
 
+-- =====================================================
+-- CURRENCIES
+-- =====================================================
+CREATE TABLE currencies (
+  currency_id SERIAL PRIMARY KEY,
+  code VARCHAR(10) UNIQUE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  symbol VARCHAR(10) NOT NULL,
+  is_active BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT now()
+);
+
 CREATE TABLE websites (
   website_id SERIAL PRIMARY KEY,
   logo TEXT,
@@ -377,3 +414,32 @@ CREATE TABLE websites (
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );
+
+-- =====================================================
+-- LOGIN & ACTIVITY LOGS
+-- =====================================================
+CREATE TABLE login_logs (
+  log_id SERIAL PRIMARY KEY,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  email VARCHAR(150),
+  role VARCHAR(50),
+  ip_address VARCHAR(100),
+  user_agent TEXT,
+  status VARCHAR(50) DEFAULT 'success' CHECK (status IN ('success', 'failed')),
+  created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE activity_logs (
+  activity_id SERIAL PRIMARY KEY,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  action VARCHAR(100) NOT NULL,
+  entity VARCHAR(100),
+  entity_id INT,
+  details TEXT,
+  ip_address VARCHAR(100),
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX idx_login_logs_staff_id ON login_logs(staff_id);
+CREATE INDEX idx_activity_logs_staff_id ON activity_logs(staff_id);

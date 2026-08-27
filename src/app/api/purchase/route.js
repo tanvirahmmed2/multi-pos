@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { isManager } from '@/lib/auth';
+import { recordActivityLog } from '@/lib/logger';
 
 export async function GET(req) {
   try {
@@ -11,11 +12,15 @@ export async function GET(req) {
     const result = await query(`
       SELECT 
         p.*, 
+        s.name AS staff_name,
+        s.email AS staff_email,
+        s.role AS staff_role,
         COALESCE(SUM(pm.amount_paid), 0)::numeric AS total_paid,
         (p.total_amount - COALESCE(SUM(pm.amount_paid), 0))::numeric AS due_amount
       FROM purchases p
       LEFT JOIN purchase_payments pm ON p.purchase_id = pm.purchase_id
-      GROUP BY p.purchase_id
+      LEFT JOIN staffs s ON p.staff_id = s.staff_id
+      GROUP BY p.purchase_id, s.staff_id
       ORDER BY p.purchase_id DESC
     `);
 
@@ -32,6 +37,8 @@ export async function POST(req) {
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
+
+    const staffId = auth.user ? (auth.user.staff_id || auth.user.user_id) : null;
 
     const body = await req.json();
     const { 
@@ -75,15 +82,15 @@ export async function POST(req) {
 
     const total = subtotal - parseFloat(extra_discount);
 
-    // Insert purchase
+    // Insert purchase with staff_id tracking
     const purchaseRes = await query(
       `INSERT INTO purchases (
-        supplier_id, supplier_name, supplier_phone, invoice_no, 
+        supplier_id, staff_id, supplier_name, supplier_phone, invoice_no, 
         subtotal_amount, extra_discount, total_amount, payment_method, transaction_id, note
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
-        parsedSupplierId, sName, sPhone, invoice_no || null,
+        parsedSupplierId, staffId, sName, sPhone, invoice_no || null,
         subtotal, extra_discount, total, payment_method, transaction_id, note
       ]
     );
@@ -145,6 +152,15 @@ export async function POST(req) {
     }
 
     await query('COMMIT');
+
+    // Record activity log
+    await recordActivityLog(req, {
+      staffId,
+      action: 'CREATE_PURCHASE_INVOICE',
+      entity: 'purchases',
+      entityId: purchaseId,
+      details: `Purchase Invoice #${invoice_no || purchaseId} logged for supplier ${sName}`
+    });
 
     return Response.json(purchase, { status: 201 });
 

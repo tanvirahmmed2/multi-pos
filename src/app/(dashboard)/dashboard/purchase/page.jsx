@@ -69,7 +69,7 @@ export default function DashboardManagerPurchasePage() {
   // Format currency
   const formatCurrency = (val) => {
     const num = parseFloat(val) || 0
-    return `$${num.toFixed(2)}`
+    return `৳${num.toFixed(2)}`
   }
 
   return (
@@ -157,6 +157,9 @@ export default function DashboardManagerPurchasePage() {
                             {purchase.supplier_phone && (
                               <span className="text-slate-400 text-xs mt-0.5">{purchase.supplier_phone}</span>
                             )}
+                            <span className="text-slate-400 text-[10px] mt-1 font-semibold">
+                              Created by: {purchase.staff_name ? `${purchase.staff_name} (${purchase.staff_role || 'Staff'})` : 'System'}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4">

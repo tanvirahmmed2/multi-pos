@@ -62,6 +62,7 @@ export async function GET(req) {
             p.purchase_id, 
             p.supplier_name, 
             p.supplier_phone, 
+            s.name AS created_by_staff,
             p.invoice_no, 
             p.subtotal_amount, 
             p.extra_discount, 
@@ -74,7 +75,8 @@ export async function GET(req) {
             p.created_at
           FROM purchases p
           LEFT JOIN purchase_payments pm ON p.purchase_id = pm.purchase_id
-          GROUP BY p.purchase_id
+          LEFT JOIN staffs s ON p.staff_id = s.staff_id
+          GROUP BY p.purchase_id, s.staff_id
           ORDER BY p.purchase_id DESC
         `);
         rows = result.rows;
@@ -83,7 +85,7 @@ export async function GET(req) {
       }
       case 'sales': {
         const result = await query(`
-          SELECT o.*, c.name AS customer_name, c.email AS customer_email,
+          SELECT o.*, c.name AS customer_name, c.email AS customer_email, s.name AS processed_by_staff,
                  (SELECT JSON_AGG(JSON_BUILD_OBJECT(
                     'product_name', p.name,
                     'variant_name', pv.variant_name,
@@ -94,6 +96,7 @@ export async function GET(req) {
                  WHERE oi.order_id = o.order_id) AS items
           FROM public.orders o
           LEFT JOIN customers c ON o.customer_id = c.customer_id
+          LEFT JOIN staffs s ON o.staff_id = s.staff_id
           ORDER BY o.order_id DESC
         `);
 
