@@ -107,7 +107,7 @@ const Navbar = () => {
 
       <div ref={searchRef} className="relative w-full max-w-xs sm:max-w-md mx-2">
         <div className="relative flex items-center">
-          <BiSearch className="absolute left-3 text-white/70 text-base pointer-events-none" />
+          <BiSearch className="absolute left-3 text-black text-base pointer-events-none" />
           <input
             ref={inputRef}
             type="text"

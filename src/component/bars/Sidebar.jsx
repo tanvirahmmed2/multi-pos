@@ -63,7 +63,10 @@ export const MODULE_LINKS = {
   'login-logs': { name: 'Login Logs', path: '/dashboard/login-logs', icon: <BiKey /> },
   investor: { name: 'Investors', path: '/dashboard/investor', icon: <BiUser /> },
   investments: { name: 'Investments', path: '/dashboard/investments', icon: <BiDollarCircle /> },
-  withdrawals: { name: 'Withdrawals', path: '/dashboard/withdrawals', icon: <BiUndo /> }
+  withdrawals: { name: 'Withdrawals', path: '/dashboard/withdrawals', icon: <BiUndo /> },
+  salaries: { name: 'Salary Structures', path: '/dashboard/salaries', icon: <BiDollarCircle /> },
+  'staff-salaries': { name: 'Staff Salaries', path: '/dashboard/staff-salaries', icon: <BiUser /> },
+  'salary-payments': { name: 'Salary Payments', path: '/dashboard/salary-payments', icon: <BiFile /> }
 }
 
 const Sidebar = () => {
