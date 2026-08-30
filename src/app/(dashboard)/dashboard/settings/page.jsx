@@ -19,7 +19,6 @@ import {
 
 export default function DashboardAdminSettingsPage() {
   const { dashSidebar, fetchWebsite, fetchActiveCurrency } = useContext(Context)
-  const themeColor = '#73976A'
   
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -190,7 +189,7 @@ export default function DashboardAdminSettingsPage() {
         
         <div className="border-b border-slate-200 pb-4">
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <BiCog style={{ color: themeColor }} />
+            <BiCog className="text-primary" />
             Website Settings & Configuration
           </h1>
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Configure store branding logo, contact details, and landing page banner headers.</p>
@@ -202,12 +201,12 @@ export default function DashboardAdminSettingsPage() {
             
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                <BiGlobe style={{ color: themeColor }} className="text-base" /> General Identity
+                <BiGlobe className="text-base text-primary" /> General Identity
               </h2>
               
               <div className="p-3.5 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center rounded-xl">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: themeColor }}>Secret Configured</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider block text-primary">Secret Configured</span>
                   <h4 className="text-xs font-bold text-slate-800">{STORE_NAME}</h4>
                   <p className="text-[11px] text-slate-500 italic mt-0.5">"{STORE_TAGLINE}"</p>
                 </div>
@@ -266,7 +265,7 @@ export default function DashboardAdminSettingsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
                   <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <BiDollarCircle style={{ color: themeColor }} className="text-base" /> Store Currency Manager
+                    <BiDollarCircle className="text-base text-primary" /> Store Currency Manager
                   </h2>
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     Active currency currently used across prices, orders, purchases, and receipts.
@@ -278,8 +277,7 @@ export default function DashboardAdminSettingsPage() {
                     setCurrencyTab('select')
                     setIsCurrencyModalOpen(true)
                   }}
-                  className="px-3.5 py-2 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 shrink-0 select-none cursor-pointer hover:opacity-95"
-                  style={{ backgroundColor: themeColor }}
+                  className="px-3.5 py-2 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-1.5 shrink-0 select-none cursor-pointer bg-primary hover:bg-primary-dark"
                 >
                   <BiRefresh className="text-base" /> Change Currency
                 </button>
@@ -320,7 +318,7 @@ export default function DashboardAdminSettingsPage() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div>
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                          <BiDollarCircle style={{ color: themeColor }} className="text-lg" /> Store Currency Setup
+                          <BiDollarCircle className="text-lg text-primary" /> Store Currency Setup
                         </h3>
                         <p className="text-[11px] text-slate-500 mt-0.5">Select an active store currency or register a new currency.</p>
                       </div>
@@ -456,8 +454,7 @@ export default function DashboardAdminSettingsPage() {
                             type="button"
                             disabled={addingCurrency}
                             onClick={handleAddCurrencySubmit}
-                            className="px-4 py-2 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
-                            style={{ backgroundColor: themeColor }}
+                            className="px-4 py-2 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs bg-primary hover:bg-primary-dark"
                           >
                             {addingCurrency ? 'Saving Currency...' : 'Save & Register Currency'}
                           </button>
@@ -473,7 +470,7 @@ export default function DashboardAdminSettingsPage() {
 
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                <BiLayout style={{ color: themeColor }} className="text-base" /> Landing Hero Section
+                <BiLayout className="text-base text-primary" /> Landing Hero Section
               </h2>
 
               <div className="flex flex-col gap-1.5">
@@ -503,7 +500,7 @@ export default function DashboardAdminSettingsPage() {
             
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                <BiUpload style={{ color: themeColor }} className="text-base" /> Website Logo (Cloudinary)
+                <BiUpload className="text-base text-primary" /> Website Logo (Cloudinary)
               </h2>
 
               <div className="flex flex-col gap-2.5">
@@ -526,7 +523,7 @@ export default function DashboardAdminSettingsPage() {
                   )}
 
                   <label className="w-full flex items-center justify-center py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer select-none gap-1.5 border border-slate-200 rounded-xl">
-                    <BiUpload className="text-base" style={{ color: themeColor }} /> Select & Replace Logo
+                    <BiUpload className="text-base text-primary" /> Select & Replace Logo
                     <input className="hidden"
                       type="file"
                       accept="image/*"
@@ -541,8 +538,7 @@ export default function DashboardAdminSettingsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full py-3 text-white text-xs md:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-2 shadow-md rounded-xl disabled:opacity-50 hover:opacity-95"
-                  style={{ backgroundColor: themeColor }}
+                  className="w-full py-3 text-white text-xs md:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-2 shadow-md rounded-xl disabled:opacity-50 bg-primary hover:bg-primary-dark"
                 >
                   {saving ? (
                     <>
@@ -561,7 +557,7 @@ export default function DashboardAdminSettingsPage() {
 
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                <BiShow style={{ color: themeColor }} className="text-base" /> Live Preview
+                <BiShow className="text-base text-primary" /> Live Preview
               </h2>
 
               <div className="w-full p-5 border border-slate-200 relative min-h-[160px] flex flex-col justify-center gap-2 rounded-xl bg-slate-50">

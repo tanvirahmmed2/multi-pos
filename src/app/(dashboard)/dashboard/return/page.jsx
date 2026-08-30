@@ -18,8 +18,7 @@ import {
 } from 'react-icons/bi'
 
 export default function ManagerReturnDeskPage() {
-  const { dashSidebar, user, loading: userLoading, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [returnedOrders, setReturnedOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -138,7 +137,7 @@ export default function ManagerReturnDeskPage() {
               <div className="bg-white border border-slate-200 p-6 shadow-sm flex flex-col gap-4">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                   <h3 className="text-xs font-bold text-slate-900">#{searchedOrder.order_id} Details</h3>
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase border" style={{ color: themeColor, backgroundColor: themeColor + '10', borderColor: themeColor + '30' }}>
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase border text-primary border-primary/30 bg-primary/10">
                     {searchedOrder.status}
                   </span>
                 </div>

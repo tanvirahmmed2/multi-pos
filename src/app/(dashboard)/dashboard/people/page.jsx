@@ -15,8 +15,7 @@ import {
 } from 'react-icons/bi'
 
 export default function DashboardAdminPeoplePage() {
-  const { dashSidebar, user: currentUser, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user: currentUser } = useContext(Context)
   
   const [users, setUsers] = useState([])
   const [branches, setBranches] = useState([])
@@ -135,7 +134,7 @@ export default function DashboardAdminPeoplePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <BiUser style={{ color: themeColor }} />
+              <BiUser className="text-primary" />
               Staff Accounts Management
             </h1>
             <p className="text-slate-500 text-xs md:text-sm mt-0.5">Manage staff roles, branch assignments, active statuses, and access permissions.</p>
@@ -143,8 +142,7 @@ export default function DashboardAdminPeoplePage() {
 
           <Link
             href="/dashboard/people/new"
-            className="px-4 py-2.5 text-white text-xs font-bold flex items-center justify-center gap-2 rounded-xl shadow-sm transition hover:opacity-90 self-start sm:self-auto"
-            style={{ backgroundColor: themeColor }}
+            className="px-4 py-2.5 text-white text-xs font-bold flex items-center justify-center gap-2 rounded-xl shadow-sm transition hover:bg-primary-dark bg-primary self-start sm:self-auto"
           >
             <BiPlus className="text-lg" />
             <span>Create Staff Account</span>
@@ -157,7 +155,7 @@ export default function DashboardAdminPeoplePage() {
               <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Staff Accounts</span>
               <span className="text-2xl font-bold text-slate-800">{loading ? '...' : stats.total}</span>
             </div>
-            <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+            <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold bg-primary">
               <BiUser />
             </div>
           </div>

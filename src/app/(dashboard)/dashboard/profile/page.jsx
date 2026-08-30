@@ -17,8 +17,7 @@ import {
 } from 'react-icons/bi'
 
 export default function UserProfilePage() {
-  const { dashSidebar, user, setUser, website, loading: contextLoading } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user, setUser, loading: contextLoading } = useContext(Context)
 
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -119,7 +118,7 @@ export default function UserProfilePage() {
         
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <BiUser style={{ color: themeColor }} />
+            <BiUser className="text-primary" />
             Account Profile Settings
           </h1>
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Manage your personal account information and login security credentials.</p>
@@ -127,14 +126,14 @@ export default function UserProfilePage() {
 
         <div className="bg-white border border-slate-200 shadow-sm p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl text-white text-xl font-bold flex items-center justify-center shadow-md shrink-0" style={{ backgroundColor: themeColor }}>
+            <div className="w-16 h-16 rounded-2xl text-white text-xl font-bold flex items-center justify-center shadow-md shrink-0 bg-primary">
               {initials}
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-slate-800">{user?.name}</h2>
               <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <span className="px-2.5 py-0.5 text-[10px] md:text-xs font-bold uppercase rounded-full border" style={{ color: themeColor, borderColor: themeColor + '40', backgroundColor: themeColor + '10' }}>
+                <span className="px-2.5 py-0.5 text-[10px] md:text-xs font-bold uppercase rounded-full border text-primary border-primary/40 bg-primary/10">
                   {user?.role || 'Staff'}
                 </span>
                 {user?.is_varified && (
@@ -272,8 +271,7 @@ export default function UserProfilePage() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-3 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:opacity-95"
-              style={{ backgroundColor: themeColor }}
+              className="px-8 py-3 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-primary-dark bg-primary"
             >
               {submitting ? (
                 <>

@@ -176,7 +176,7 @@ The PostgreSQL database schema is structured around 17 primary entities:
 17. **`contacts` & `contact_replies`**: Public contact form messages and staff replies.
 18. **`supports` & `support_messages`**: Support ticket threads.
 19. **`issues` & `issues_view`**: Internal communications between staff members.
-20. **`websites`**: Global site settings (branding, theme color, hero text, contact info).
+20. **`websites`**: Global site settings (branding, hero text, contact info).
 
 ---
 

@@ -31,9 +31,8 @@ export const ROLE_PERMISSIONS = {
 }
 
 export default function DashboardLayout({ children }) {
-  const { user, loading, website } = useContext(Context)
+  const { user, loading } = useContext(Context)
   const pathname = usePathname()
-  const themeColor = website?.theme_color || '#73976A'
 
   if (loading) {
     return (
@@ -68,8 +67,7 @@ export default function DashboardLayout({ children }) {
             </div>
             <Link
               href="/dashboard"
-              className="mt-2 px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer hover:opacity-95"
-              style={{ backgroundColor: themeColor }}
+              className="mt-2 px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer bg-primary hover:bg-primary-dark"
             >
               <BiHome className="text-base" /> Return to Dashboard
             </Link>

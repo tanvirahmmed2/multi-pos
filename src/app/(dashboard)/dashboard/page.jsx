@@ -249,8 +249,7 @@ const ALL_MODULE_CARDS = {
 }
 
 export default function DashboardSalesPage() {
-  const { user, loading, dashSidebar, logout, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { user, loading, dashSidebar, logout } = useContext(Context)
 
   if (loading) {
     return (
@@ -289,7 +288,7 @@ export default function DashboardSalesPage() {
               <h1 className="text-xl font-bold text-slate-800">{user?.name || 'Staff Member'}</h1>
               <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email || 'N/A'}</p>
               <div className="flex items-center gap-2 mt-2">
-                <span className="px-2.5 py-0.5 text-xxs font-bold uppercase border" style={{ color: themeColor, borderColor: themeColor + '40', backgroundColor: themeColor + '10' }}>
+                <span className="px-2.5 py-0.5 text-xxs font-bold uppercase border text-primary border-primary/40 bg-primary/10">
                   {roleTitle}
                 </span>
               </div>
@@ -318,7 +317,7 @@ export default function DashboardSalesPage() {
                 className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition group"
               >
                 <div>
-                  <div className="w-10 h-10 flex items-center justify-center text-xl mb-4 text-white font-bold" style={{ backgroundColor: themeColor }}>
+                  <div className="w-10 h-10 flex items-center justify-center text-xl mb-4 text-white font-bold bg-primary">
                     {link.icon}
                   </div>
                   <h3 className="font-bold text-slate-800 text-base">{link.name}</h3>
@@ -329,8 +328,7 @@ export default function DashboardSalesPage() {
                 
                 <Link 
                   href={link.path} 
-                  className="mt-6 flex items-center gap-1.5 font-bold text-xs hover:gap-2.5 transition-all"
-                  style={{ color: themeColor }}
+                  className="mt-6 flex items-center gap-1.5 font-bold text-xs hover:gap-2.5 transition-all text-primary"
                 >
                   Access Module <BiChevronRight className="text-base" />
                 </Link>

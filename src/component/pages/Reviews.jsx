@@ -5,9 +5,6 @@ import { Context } from '../helper/Context'
 import { BiLoaderAlt, BiSolidStar } from 'react-icons/bi'
 
 const Reviews = () => {
-  const { website } = useContext(Context)
-  const themeColor = website?.theme_color || '#10b981'
-
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -28,7 +25,7 @@ const Reviews = () => {
   if (loading) {
     return (
       <div className="w-full py-12 flex justify-center items-center">
-        <BiLoaderAlt className="text-3xl animate-spin" style={{ color: themeColor }} />
+        <BiLoaderAlt className="text-3xl animate-spin text-primary" />
       </div>
     )
   }
@@ -58,7 +55,7 @@ const Reviews = () => {
       `}} />
 
       <div className="w-full px-4 md:px-8 mb-6">
-        <span className="text-xs font-black uppercase tracking-widest text-emerald-600" style={{ color: themeColor }}>
+        <span className="text-xs font-black uppercase tracking-widest text-primary">
           Testimonials
         </span>
         <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">

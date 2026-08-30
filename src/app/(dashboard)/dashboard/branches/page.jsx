@@ -21,8 +21,7 @@ import {
 } from 'react-icons/bi'
 
 export default function AdminBranchesPage() {
-  const { dashSidebar, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar } = useContext(Context)
 
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -190,7 +189,7 @@ export default function AdminBranchesPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-4">
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-              <BiStoreAlt style={{ color: themeColor }} />
+              <BiStoreAlt className="text-primary" />
               Store Branches Management
             </h1>
             <p className="text-slate-500 text-xs md:text-sm mt-0.5">Create, view, update, and manage all physical and online store branches.</p>
@@ -206,8 +205,7 @@ export default function AdminBranchesPage() {
             </button>
             <button
               onClick={handleOpenCreate}
-              className="px-4 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer hover:opacity-95"
-              style={{ backgroundColor: themeColor }}
+              className="px-4 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-primary-dark"
             >
               <BiPlus className="text-lg" /> New Branch
             </button>
@@ -355,7 +353,7 @@ export default function AdminBranchesPage() {
               
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  <BiStoreAlt style={{ color: themeColor }} />
+                  <BiStoreAlt className="text-primary" />
                   {editingBranch ? 'Update Store Branch' : 'Create New Store Branch'}
                 </h3>
                 <button
@@ -457,8 +455,7 @@ export default function AdminBranchesPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 hover:opacity-95"
-                    style={{ backgroundColor: themeColor }}
+                    className="px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 bg-primary hover:bg-primary-dark"
                   >
                     {submitting ? (
                       <>

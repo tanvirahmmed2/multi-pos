@@ -20,8 +20,7 @@ import {
 } from 'react-icons/bi'
 
 export default function AdminOverviewPage() {
-  const { dashSidebar, user, loading: userLoading, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [stats, setStats] = useState({
     staff: 0,
@@ -100,8 +99,7 @@ export default function AdminOverviewPage() {
             </button>
             <Link 
               href="/dashboard/settings"
-              className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
-              style={{ backgroundColor: themeColor }}
+              className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm bg-primary hover:bg-primary-dark"
             >
               <BiCog className="text-base" /> Store Settings
             </Link>
@@ -116,7 +114,7 @@ export default function AdminOverviewPage() {
               <h2 className="text-2xl font-bold text-slate-800 mt-1">{stats.staff} Members</h2>
               <p className="text-[11px] text-slate-500 mt-0.5">Admins, Managers & Sales</p>
             </div>
-            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold bg-primary">
               <BiUserCheck />
             </div>
           </div>
@@ -140,7 +138,7 @@ export default function AdminOverviewPage() {
               </h2>
               <p className="text-[11px] text-slate-500 mt-0.5">Settled Gross Earnings</p>
             </div>
-            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold bg-primary">
               <BiDollarCircle />
             </div>
           </div>
@@ -164,7 +162,7 @@ export default function AdminOverviewPage() {
               </h2>
               <p className="text-[11px] text-slate-500 mt-0.5">Retail Inventory Value</p>
             </div>
-            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold bg-primary">
               <BiTrendingUp />
             </div>
           </div>
@@ -197,7 +195,7 @@ export default function AdminOverviewPage() {
               <h2 className="text-2xl font-bold text-slate-800 mt-1">{stats.completedOrders} Orders</h2>
               <p className="text-[11px] text-slate-500 mt-0.5">Delivered Successfully</p>
             </div>
-            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+            <div className="w-12 h-12 text-white flex items-center justify-center text-2xl shrink-0 font-bold bg-primary">
               <BiCheckCircle />
             </div>
           </div>
@@ -237,7 +235,7 @@ export default function AdminOverviewPage() {
                         <td className="hidden sm:table-cell px-2.5 sm:px-3 py-2.5 font-medium text-slate-500">{order.phone}</td>
                         <td className="px-2.5 sm:px-3 py-2.5 text-right font-bold text-slate-900">৳{parseFloat(order.total_amount).toFixed(2)}</td>
                         <td className="px-2.5 sm:px-3 py-2.5 text-center">
-                          <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase border" style={{ color: themeColor, backgroundColor: themeColor + '10', borderColor: themeColor + '30' }}>
+                          <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase border text-primary bg-primary/10 border-primary/30">
                             {order.status}
                           </span>
                         </td>

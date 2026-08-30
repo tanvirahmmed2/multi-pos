@@ -404,7 +404,6 @@ CREATE TABLE websites (
   website_id SERIAL PRIMARY KEY,
   logo TEXT,
   logo_id TEXT,
-  theme_color TEXT,
   hero_title TEXT,
   hero_subtitle TEXT,
   address TEXT,

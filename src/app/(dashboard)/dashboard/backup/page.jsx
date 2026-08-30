@@ -13,8 +13,7 @@ import {
 } from 'react-icons/bi'
 
 export default function AdminBackupPage() {
-  const { dashSidebar, user, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user } = useContext(Context)
 
   const [downloading, setDownloading] = useState(false)
 
@@ -54,7 +53,7 @@ export default function AdminBackupPage() {
         
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <BiData style={{ color: themeColor }} />
+            <BiData className="text-primary" />
             Database Backup & Recovery
           </h1>
           <p className="text-slate-500 text-xs md:text-sm mt-0.5">Export a full .sql dump of all tables, schema structures, and store data.</p>
@@ -62,7 +61,7 @@ export default function AdminBackupPage() {
 
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col gap-6">
           <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
-            <div className="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-3xl font-bold shadow-md shrink-0" style={{ backgroundColor: themeColor }}>
+            <div className="w-14 h-14 rounded-2xl text-white flex items-center justify-center text-3xl font-bold shadow-md shrink-0 bg-primary">
               <BiCloudDownload />
             </div>
             <div>
@@ -106,8 +105,7 @@ export default function AdminBackupPage() {
             <button
               onClick={handleDownloadBackup}
               disabled={downloading}
-              className="w-full sm:w-auto px-6 py-3 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:opacity-95"
-              style={{ backgroundColor: themeColor }}
+              className="w-full sm:w-auto px-6 py-3 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-primary-dark bg-primary"
             >
               {downloading ? (
                 <>

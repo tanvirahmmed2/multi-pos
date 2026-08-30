@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
@@ -13,8 +13,7 @@ import {
 } from 'react-icons/bi'
 
 export default function ManagerStockInventoryPage() {
-  const { dashSidebar, user, loading: userLoading, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -81,7 +80,7 @@ export default function ManagerStockInventoryPage() {
             <p className="text-xs text-slate-500 mt-1">Track physical warehouse listings, check barcodes, purchase price, and restock warning signs.</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/dashboard/manager/purchase/create" className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer" style={{ backgroundColor: themeColor }}>
+            <Link href="/dashboard/manager/purchase/create" className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer bg-primary hover:bg-primary-dark">
               <BiPlusCircle /> Restock Order (Purchase)
             </Link>
           </div>
@@ -93,7 +92,7 @@ export default function ManagerStockInventoryPage() {
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Catalog Items</p>
               <h3 className="text-lg font-bold text-slate-800 mt-0.5">{totalItems} Products</h3>
             </div>
-            <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+            <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold bg-primary">
               <BiPackage />
             </div>
           </div>

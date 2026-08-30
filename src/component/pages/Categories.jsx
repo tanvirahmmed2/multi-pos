@@ -5,8 +5,7 @@ import { Context } from '../helper/Context'
 import Image from 'next/image'
 
 const Categories = () => {
-  const { categories, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#10b981'
+  const { categories } = useContext(Context)
 
   if (!categories || categories.length === 0) return null
 

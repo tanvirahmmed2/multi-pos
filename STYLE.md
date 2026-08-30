@@ -70,13 +70,12 @@ All status badges use sharp square borders with light background tints:
 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
   <div>
     <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-      <BiIcon style={{ color: themeColor }} /> Page Title
+      <BiIcon className="text-primary" /> Page Title
     </h1>
     <p className="text-xs text-slate-500 mt-0.5">Descriptive subtitle text here.</p>
   </div>
   <button
-    className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-    style={{ backgroundColor: themeColor }}
+    className="px-4 py-2.5 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer bg-primary hover:bg-primary-dark"
   >
     <BiPlus /> Action Label
   </button>
@@ -90,7 +89,7 @@ All status badges use sharp square borders with light background tints:
     <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Metric Title</p>
     <h3 className="text-lg font-bold text-slate-800 mt-0.5">Value Count</h3>
   </div>
-  <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold" style={{ backgroundColor: themeColor }}>
+  <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold bg-primary">
     <BiIcon />
   </div>
 </div>

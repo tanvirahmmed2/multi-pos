@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
@@ -15,8 +15,7 @@ import {
 } from 'react-icons/bi'
 
 export default function ReviewsModerationPage() {
-  const { dashSidebar, user, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user } = useContext(Context)
   
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
@@ -98,7 +97,7 @@ export default function ReviewsModerationPage() {
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <BiConversation style={{ color: themeColor }} />
+              <BiConversation className="text-primary" />
               Review Moderation Center
             </h1>
             <p className="text-slate-500 text-xs md:text-sm mt-0.5">Approve customer feedback, revert status logs, or reject inappropriate posts.</p>
@@ -119,10 +118,9 @@ export default function ReviewsModerationPage() {
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2 text-xs font-bold uppercase transition cursor-pointer ${
                 activeTab === tab
-                  ? 'text-white shadow-sm'
+                  ? 'text-white shadow-sm bg-primary'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
-              style={activeTab === tab ? { backgroundColor: themeColor } : {}}
             >
               {tab === 'pending' ? 'Pending' : tab === 'approved' ? 'Approved' : 'All'}
             </button>
@@ -186,8 +184,7 @@ export default function ReviewsModerationPage() {
                           <button
                             onClick={() => handleApprove(rev.review_id, true)}
                             disabled={isBusy}
-                            className="px-3 py-1.5 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm disabled:opacity-50"
-                            style={{ backgroundColor: themeColor }}
+                            className="px-3 py-1.5 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm disabled:opacity-50 bg-primary hover:bg-primary-dark"
                           >
                             <BiCheck className="text-base" /> Approve Feedback
                           </button>

@@ -10,7 +10,6 @@ const Hero = () => {
   const [activeIdx, setActiveIdx] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
 
-  const themeColor = website?.theme_color || '#10b981'
   const bgImages = ['/Fashion.jpg', '/fashionn.jpg', '/fassh.jpg']
 
   const handleNext = useCallback(() => {
@@ -31,10 +30,9 @@ const Hero = () => {
 
   return (
     <div
-      className="w-full relative aspect-video md:aspect-video p-4 overflow-hidden  border border-slate-100 flex items-center justify-center bg-slate-900 text-white z-10"
+      className="w-full relative aspect-video md:aspect-video p-4 overflow-hidden border border-slate-100 flex items-center justify-center bg-slate-900 text-white z-10"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ '--theme-color': themeColor }}
     >
       
       <div className="absolute inset-0 z-0">
@@ -66,8 +64,7 @@ const Hero = () => {
         <div className="flex items-center gap-3 sm:gap-4 justify-center mt-1 sm:mt-2">
           <Link
             href="/products"
-            className="px-4 py-2 sm:px-6 sm:py-3 text-[10px] sm:text-xs font-bold text-white rounded-lg transition hover:brightness-110 flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-            style={{ backgroundColor: themeColor }}
+            className="px-4 py-2 sm:px-6 sm:py-3 text-[10px] sm:text-xs font-bold text-white rounded-lg bg-primary hover:bg-primary-dark transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
           >
             Shop Now <FiArrowRight />
           </Link>
@@ -104,10 +101,9 @@ const Hero = () => {
           <button
             key={idx}
             onClick={() => setActiveIdx(idx)}
-            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all cursor-pointer"
-            style={{
-              backgroundColor: activeIdx === idx ? themeColor : 'rgba(255, 255, 255, 0.4)'
-            }}
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all cursor-pointer ${
+              activeIdx === idx ? 'bg-primary' : 'bg-white/40'
+            }`}
             aria-label={`Go to slide ${idx + 1}`}
           />
         ))}

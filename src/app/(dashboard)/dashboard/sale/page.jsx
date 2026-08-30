@@ -24,8 +24,7 @@ import Image from 'next/image'
 
 export default function POSPageClean() {
   const router = useRouter()
-  const { user, loading: userLoading, dashSidebar, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#0f172a' 
+  const { user, loading: userLoading, dashSidebar } = useContext(Context)
 
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])

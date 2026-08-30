@@ -19,8 +19,7 @@ import {
 
 export default function CreateNewUserPage() {
   const router = useRouter()
-  const { dashSidebar, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar } = useContext(Context)
 
   const [branches, setBranches] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -109,7 +108,7 @@ export default function CreateNewUserPage() {
 
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl">
           <div className="flex items-center gap-3 pb-6 border-b border-slate-100 mb-6">
-            <div className="w-12 h-12 rounded-xl text-white flex items-center justify-center text-2xl font-bold shadow-sm" style={{ backgroundColor: themeColor }}>
+            <div className="w-12 h-12 rounded-xl text-white flex items-center justify-center text-2xl font-bold shadow-sm bg-primary">
               <BiUser />
             </div>
             <div>
@@ -283,8 +282,7 @@ export default function CreateNewUserPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                style={{ backgroundColor: themeColor }}
+                className="px-6 py-2.5 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 hover:bg-primary-dark bg-primary"
               >
                 {submitting ? (
                   <>

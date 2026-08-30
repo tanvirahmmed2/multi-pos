@@ -15,8 +15,7 @@ import {
 } from 'react-icons/bi'
 
 export default function ManagerCustomersDirectoryPage() {
-  const { dashSidebar, user, loading: userLoading, website } = useContext(Context)
-  const themeColor = website?.theme_color || '#73976A'
+  const { dashSidebar, user, loading: userLoading } = useContext(Context)
   
   const [customers, setCustomers] = useState([])
   const [search, setSearch] = useState('')
@@ -114,7 +113,7 @@ export default function ManagerCustomersDirectoryPage() {
                     </td>
                     <td className="px-2 sm:px-3 py-3.5">
                       <Link href={`/dashboard/customers/${cust.customer_id}`} className="flex items-center gap-2.5 group">
-                        <div className="w-7 h-7 text-white text-xs font-bold flex items-center justify-center" style={{ backgroundColor: themeColor }}>
+                        <div className="w-7 h-7 text-white text-xs font-bold flex items-center justify-center bg-primary">
                           {cust.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="font-bold text-slate-900 group-hover:underline">{cust.name}</div>

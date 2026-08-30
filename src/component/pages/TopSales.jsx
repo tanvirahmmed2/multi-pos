@@ -7,9 +7,6 @@ import { BiLoaderAlt, BiSolidChevronRight } from 'react-icons/bi'
 import Link from 'next/link'
 
 const TopSales = () => {
-  const { website } = useContext(Context)
-  const themeColor = website?.theme_color || '#10b981'
-
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -34,7 +31,7 @@ const TopSales = () => {
   if (loading) {
     return (
       <div className="w-full py-12 flex justify-center items-center">
-        <BiLoaderAlt className="text-3xl animate-spin" style={{ color: themeColor }} />
+        <BiLoaderAlt className="text-3xl animate-spin text-primary" />
       </div>
     )
   }
