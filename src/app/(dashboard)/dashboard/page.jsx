@@ -271,9 +271,6 @@ export default function DashboardSalesPage() {
     .map(key => ALL_MODULE_CARDS[key])
     .filter(Boolean)
 
-  const initials = user?.name
-    ? user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'ST'
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
@@ -281,28 +278,21 @@ export default function DashboardSalesPage() {
         
         <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-slate-900 text-white text-xl font-bold flex items-center justify-center shadow-sm">
-              {initials}
-            </div>
+            
             <div>
               <h1 className="text-xl font-bold text-slate-800">{user?.name || 'Staff Member'}</h1>
               <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email || 'N/A'}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="px-2.5 py-0.5 text-xxs font-bold uppercase border text-primary border-primary/40 bg-primary/10">
-                  {roleTitle}
-                </span>
-              </div>
+              
             </div>
           </div>
 
           <div className="flex flex-col gap-1 border-t md:border-t-0 md:border-l border-slate-200 pt-4 md:pt-0 md:pl-6 text-xs text-slate-500 font-medium">
             <div><span className="font-bold text-slate-700">Phone:</span> {user?.phone || 'N/A'}</div>
-            <div className="mt-1"><span className="font-bold text-slate-700">Member Since:</span> {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
             <button 
               onClick={() => logout()}
-              className="mt-3 text-left font-bold text-rose-600 hover:underline cursor-pointer"
+              className="mt-3 p-1 rounded-2xl font-bold bg-primary text-tertiary-light text-center hover:underline cursor-pointer"
             >
-              Sign Out Account
+              Logout
             </button>
           </div>
         </div>
