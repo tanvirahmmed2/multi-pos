@@ -112,18 +112,23 @@ export async function POST(req) {
     const cleanPhone = phone.trim();
     const cleanAddr = shipping_address ? shipping_address.trim() : 'In-Store POS';
 
+    const cleanName = name && name.trim() ? name.trim() : null;
+
     if (is_pos) {
       const checkCust = await client.query('SELECT customer_id FROM customers WHERE phone = $1 LIMIT 1', [cleanPhone]);
       if (checkCust.rows.length > 0) {
         customerId = checkCust.rows[0].customer_id;
+        if (cleanName) {
+          await client.query('UPDATE customers SET name = $1 WHERE customer_id = $2', [cleanName, customerId]);
+        }
       } else {
         const checkStaff = await client.query('SELECT name, email FROM staffs WHERE phone = $1 LIMIT 1', [cleanPhone]);
         
-        let finalName = 'Guest';
+        let finalName = cleanName || 'Guest';
         let finalEmail = 'guest@sale.com';
         let finalAddr = 'In-Store POS';
 
-        if (checkStaff.rows.length > 0) {
+        if (!cleanName && checkStaff.rows.length > 0) {
           finalName = checkStaff.rows[0].name || 'Guest';
           finalEmail = checkStaff.rows[0].email || 'guest@sale.com';
         }
