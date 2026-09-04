@@ -28,6 +28,7 @@ export default function DashboardAdminSettingsPage() {
   const [heroSubtitle, setHeroSubtitle] = useState('')
   
   const [isShareInvestment, setIsShareInvestment] = useState(false)
+  const [isSaleActive, setIsSaleActive] = useState(true)
   const [excludedTax, setExcludedTax] = useState(false)
   const [taxAmount, setTaxAmount] = useState(0)
   
@@ -75,6 +76,7 @@ export default function DashboardAdminSettingsPage() {
           setHeroTitle(data.hero_title || '')
           setHeroSubtitle(data.hero_subtitle || '')
           setIsShareInvestment(data.is_share_investment === true)
+          setIsSaleActive(data.is_sale_active !== false)
           setExcludedTax(data.excluded_tax === true)
           setTaxAmount(data.tax_amount || 0)
           setLogoPreview(data.logo || data.logo_url || '')
@@ -148,6 +150,7 @@ export default function DashboardAdminSettingsPage() {
     formData.append('hero_title', heroTitle)
     formData.append('hero_subtitle', heroSubtitle)
     formData.append('is_share_investment', isShareInvestment ? 'true' : 'false')
+    formData.append('is_sale_active', isSaleActive ? 'true' : 'false')
     formData.append('excluded_tax', excludedTax ? 'true' : 'false')
     formData.append('tax_amount', taxAmount)
     formData.append('currency_symbol', currencySymbol)
@@ -287,6 +290,30 @@ export default function DashboardAdminSettingsPage() {
                     type="checkbox"
                     checked={isShareInvestment}
                     onChange={(e) => setIsShareInvestment(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl mt-1">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-slate-800">POS Sales Active Mode</h4>
+                    <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${isSaleActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                      {isSaleActive ? 'ACTIVE' : 'PAUSED (SALE OFF)'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    When active, sales checkout is allowed. When turned off, POS sale page shows sales off and blocks orders.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isSaleActive}
+                    onChange={(e) => setIsSaleActive(e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>

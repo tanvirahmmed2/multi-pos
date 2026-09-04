@@ -1,4 +1,4 @@
-import { isManagementRole } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
 import { checkShareInvestmentEnabled, transferProfitToInvestment } from '@/lib/financial';
 
@@ -9,7 +9,7 @@ export async function POST(req) {
       return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
     }
 
-    const auth = await isManagementRole();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }

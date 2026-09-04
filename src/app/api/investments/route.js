@@ -1,5 +1,5 @@
 import { query } from '@/lib/db';
-import { isManagementRole } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
 import { recalculateShares } from '@/lib/shares';
 import { checkShareInvestmentEnabled, updateAvailableBalance } from '@/lib/financial';
@@ -11,7 +11,7 @@ export async function GET(req) {
       return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
     }
 
-    const auth = await isManagementRole();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
@@ -56,7 +56,7 @@ export async function POST(req) {
       return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
     }
 
-    const auth = await isManagementRole();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }

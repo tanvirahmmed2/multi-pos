@@ -412,6 +412,7 @@ CREATE TABLE websites (
   email TEXT,
   phone TEXT,
   is_share_investment BOOLEAN DEFAULT FALSE,
+  is_sale_active BOOLEAN DEFAULT TRUE,
   excluded_tax BOOLEAN DEFAULT FALSE,
   tax_amount NUMERIC(10,2) DEFAULT 0,
   created_at TIMESTAMP DEFAULT now(),
@@ -591,6 +592,19 @@ CREATE TABLE balance_transactions (
 );
 
 CREATE INDEX idx_balance_transactions_staff_id ON balance_transactions(staff_id);
+
+-- =====================================================
+-- NOTICES & ANNOUNCEMENTS
+-- =====================================================
+CREATE TABLE notices (
+  notice_id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  description TEXT NOT NULL,
+  notice_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 
 
 

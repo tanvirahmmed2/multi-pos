@@ -12,20 +12,35 @@ import {
   BiKey, 
   BiMapPin, 
   BiTime, 
-  BiRefresh
+  BiRefresh,
+  BiStoreAlt
 } from 'react-icons/bi'
 
 export default function DashboardActivityLogsPage() {
-  const { dashSidebar } = useContext(Context)
+  const { dashSidebar, user } = useContext(Context)
   const [logs, setLogs] = useState([])
+  const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [selectedBranch, setSelectedBranch] = useState('all')
+
+  const fetchBranches = async () => {
+    if (user?.role === 'admin') {
+      try {
+        const res = await axios.get('/api/branch')
+        setBranches(res.data || [])
+      } catch (err) {
+        console.error('Failed to fetch branches:', err)
+      }
+    }
+  }
 
   const fetchLogs = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/activity-logs?type=activity')
-      setLogs(res.data)
+      const branchParam = selectedBranch !== 'all' ? `&branch_id=${selectedBranch}` : ''
+      const res = await axios.get(`/api/activity-logs?type=activity${branchParam}`)
+      setLogs(res.data || [])
     } catch (err) {
       toast.error('Failed to load activity logs')
       console.error(err)
@@ -35,8 +50,14 @@ export default function DashboardActivityLogsPage() {
   }
 
   useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchBranches()
+    }
+  }, [user])
+
+  useEffect(() => {
     fetchLogs()
-  }, [])
+  }, [selectedBranch])
 
   const filteredLogs = logs.filter((log) => {
     const term = search.toLowerCase()
@@ -46,6 +67,7 @@ export default function DashboardActivityLogsPage() {
       (log.details && log.details.toLowerCase().includes(term)) ||
       (log.staff_name && log.staff_name.toLowerCase().includes(term)) ||
       (log.staff_email && log.staff_email.toLowerCase().includes(term)) ||
+      (log.branch_name && log.branch_name.toLowerCase().includes(term)) ||
       (log.ip_address && log.ip_address.toLowerCase().includes(term))
     )
   })
@@ -65,35 +87,39 @@ export default function DashboardActivityLogsPage() {
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
-      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6">
 
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
+            <h1 className="text-2xl font-semibold text-slate-800 tracking-tight flex items-center gap-2.5">
               <BiShieldQuarter className="text-primary text-3xl" /> Staff Activity Logs
             </h1>
             <p className="text-slate-500 text-xs mt-1 font-medium">
-              Track and audit actions, modifications, and system events performed by staff members.
+              {user?.role === 'admin' 
+                ? 'Track and audit actions across all store branches.'
+                : 'Track and audit actions performed by staff members in your branch.'}
             </p>
           </div>
           
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <Link
               href="/dashboard/login-logs"
-              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
             >
               <BiKey className="text-base text-primary" /> View Login Logs
             </Link>
             <button
               onClick={fetchLogs}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
             >
               <BiRefresh className={`text-base ${loading ? 'animate-spin' : ''}`} /> Refresh
             </button>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        {/* Filter and Search Bar */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative w-full md:w-96">
             <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
             <input
@@ -104,11 +130,31 @@ export default function DashboardActivityLogsPage() {
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
             />
           </div>
-          <div className="text-xs font-bold text-slate-500 hidden md:block">
-            Total Records: <span className="text-slate-800">{filteredLogs.length}</span>
+
+          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+            {user?.role === 'admin' && (
+              <div className="flex items-center gap-1.5">
+                <BiStoreAlt className="text-slate-400 text-sm" />
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Branches</option>
+                  {branches.map((b) => (
+                    <option key={b.branch_id} value={b.branch_id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="text-xs font-semibold text-slate-500">
+              Total Records: <span className="text-slate-800">{filteredLogs.length}</span>
+            </div>
           </div>
         </div>
 
+        {/* Activity Logs Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -119,15 +165,16 @@ export default function DashboardActivityLogsPage() {
             <div className="flex flex-col items-center justify-center py-20 gap-2 text-slate-400">
               <BiShieldQuarter className="text-4xl" />
               <p className="text-sm font-semibold text-slate-600">No activity logs found</p>
-              <p className="text-xs">No records matched your search query.</p>
+              <p className="text-xs">No records matched your search query or permission scope.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                   <tr>
                     <th className="py-3.5 px-4">Timestamp</th>
                     <th className="py-3.5 px-4">Staff</th>
+                    <th className="py-3.5 px-4">Branch</th>
                     <th className="py-3.5 px-4">Action</th>
                     <th className="py-3.5 px-4">Entity</th>
                     <th className="py-3.5 px-4">Details</th>
@@ -142,6 +189,7 @@ export default function DashboardActivityLogsPage() {
                           <BiTime className="text-slate-400" /> {formatDate(log.created_at)}
                         </span>
                       </td>
+
                       <td className="py-3.5 px-4 font-semibold text-slate-800">
                         {log.staff_name || log.staff_email ? (
                           <div>
@@ -156,11 +204,19 @@ export default function DashboardActivityLogsPage() {
                           <span className="text-slate-400 font-normal italic">System / Unknown</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-800">
+
+                      <td className="py-3.5 px-4 font-semibold text-slate-700">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[11px] text-slate-700">
+                          <BiStoreAlt className="text-slate-400" /> {log.branch_name || 'Main Branch'}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 font-semibold text-slate-800">
                         <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[11px] font-mono">
                           {log.action}
                         </span>
                       </td>
+
                       <td className="py-3.5 px-4">
                         {log.entity ? (
                           <span className="px-2 py-0.5 bg-blue-50 text-blue-700 font-medium rounded-md text-[11px]">
@@ -170,9 +226,11 @@ export default function DashboardActivityLogsPage() {
                           <span className="text-slate-400">-</span>
                         )}
                       </td>
+
                       <td className="py-3.5 px-4 max-w-xs truncate text-slate-600 font-medium" title={log.details}>
                         {log.details || '-'}
                       </td>
+
                       <td className="py-3.5 px-4 text-slate-500">
                         <div className="flex items-center gap-1">
                           <BiMapPin className="text-slate-400 shrink-0" />

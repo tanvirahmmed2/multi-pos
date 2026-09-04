@@ -13,20 +13,20 @@ export const ROLE_PERMISSIONS = {
     'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits', 'balance'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits', 'balance', 'notices', 'my-salary'
   ],
   manager: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'expenses', 'expense-payments', 'profits'
+    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'expenses', 'expense-payments', 'notices', 'my-salary'
   ],
   sales: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders'
+    'profile', 'orders', 'notices', 'activity-logs', 'login-logs', 'my-salary'
   ],
   staff: [
-    'modules', 'profile', 'issue', 'orders'
+    'modules', 'profile', 'issue', 'orders', 'notices', 'activity-logs', 'login-logs', 'my-salary'
   ]
 }
 

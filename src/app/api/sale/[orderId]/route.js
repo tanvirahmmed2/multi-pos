@@ -10,6 +10,8 @@ export async function GET(req, { params }) {
       `SELECT o.*, 
               c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
               s.name AS staff_name, s.email AS staff_email, s.role AS staff_role,
+              b.name AS branch_name,
+              p_last.amount_received, p_last.change_amount,
               (SELECT JSON_AGG(JSON_BUILD_OBJECT(
                  'order_item_id', oi.order_item_id,
                  'product_id', oi.product_id,
@@ -26,6 +28,10 @@ export async function GET(req, { params }) {
        FROM public.orders o
        LEFT JOIN customers c ON o.customer_id = c.customer_id
        LEFT JOIN staffs s ON o.staff_id = s.staff_id
+       LEFT JOIN branches b ON s.branch_id = b.branch_id
+       LEFT JOIN LATERAL (
+         SELECT amount_received, change_amount FROM public.payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1
+       ) p_last ON true
        WHERE o.order_id = $1`,
       [orderId]
     );
@@ -60,7 +66,7 @@ export async function PUT(req, { params }) {
     await client.query('BEGIN');
 
     const orderRes = await client.query(
-      `SELECT status, total_amount, due_amount FROM public.orders WHERE order_id = $1 FOR UPDATE`,
+      `SELECT status, total_amount, due_amount, branch_id FROM public.orders WHERE order_id = $1 FOR UPDATE`,
       [orderId]
     );
 
@@ -72,6 +78,7 @@ export async function PUT(req, { params }) {
     const order = orderRes.rows[0];
     const oldStatus = order.status;
     const newStatus = status;
+    const orderBranchId = order.branch_id || 1;
 
     const deductStock = async () => {
       const itemsRes = await client.query(
@@ -93,9 +100,9 @@ export async function PUT(req, { params }) {
           const updateRes = await client.query(
             `UPDATE stocks 
              SET stock = stock - $1, updated_at = NOW() 
-             WHERE variant_id = $2 AND branch_id = 1
+             WHERE variant_id = $2 AND branch_id = $3
              RETURNING stock`,
-            [item.quantity, targetVarId]
+            [item.quantity, targetVarId, orderBranchId]
           );
           if (updateRes.rows.length === 0 || updateRes.rows[0].stock < 0) {
             throw new Error(`Insufficient stock for product/variant`);
@@ -122,10 +129,10 @@ export async function PUT(req, { params }) {
         }
         if (targetVarId) {
           await client.query(
-            `INSERT INTO stocks (variant_id, branch_id, stock) VALUES ($1, 1, $2)
+            `INSERT INTO stocks (variant_id, branch_id, stock) VALUES ($1, $2, $3)
              ON CONFLICT (variant_id, branch_id)
              DO UPDATE SET stock = stocks.stock + EXCLUDED.stock, updated_at = NOW()`,
-            [targetVarId, item.quantity]
+            [targetVarId, orderBranchId, item.quantity]
           );
         }
       }

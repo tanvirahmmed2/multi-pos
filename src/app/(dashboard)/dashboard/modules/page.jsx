@@ -253,6 +253,62 @@ const ALL_MODULE_CARDS = {
     description: 'Audit system login history, staff access logs, client IP addresses, and device user-agents.',
     path: '/dashboard/activity-logs',
     icon: <BiShieldQuarter />
+  },
+  investor: {
+    key: 'investor',
+    name: 'Investors Management',
+    description: 'Manage capital investors, funding profiles, contact details, and account statuses.',
+    path: '/dashboard/investor',
+    icon: <BiUser />
+  },
+  investments: {
+    key: 'investments',
+    name: 'Investments System',
+    description: 'Record capital injections, bank transfers, and investor equity additions.',
+    path: '/dashboard/investments',
+    icon: <BiDollarCircle />
+  },
+  withdrawals: {
+    key: 'withdrawals',
+    name: 'Capital Withdrawals',
+    description: 'Track money withdrawals, profit distributions, and capital returns.',
+    path: '/dashboard/withdrawals',
+    icon: <BiUndo />
+  },
+  profits: {
+    key: 'profits',
+    name: 'Investor Profits',
+    description: 'Manage daily gross profit allocations based on equity share percentages.',
+    path: '/dashboard/profits',
+    icon: <BiDollarCircle />
+  },
+  salaries: {
+    key: 'salaries',
+    name: 'Salary Structures',
+    description: 'Configure grade structures, base salary levels, allowances, and deductions.',
+    path: '/dashboard/salaries',
+    icon: <BiDollarCircle />
+  },
+  'staff-salaries': {
+    key: 'staff-salaries',
+    name: 'Staff Salary Assignments',
+    description: 'Assign salary structures to staff members and manage effective dates.',
+    path: '/dashboard/staff-salaries',
+    icon: <BiUser />
+  },
+  'salary-payments': {
+    key: 'salary-payments',
+    name: 'Salary Payments Management',
+    description: 'Disburse staff salaries, generate monthly payroll entries, and record payments.',
+    path: '/dashboard/salary-payments',
+    icon: <BiFile />
+  },
+  'my-salary': {
+    key: 'my-salary',
+    name: 'My Salary & Payments',
+    description: 'View your assigned salary structure, allowance breakdown, and payment history.',
+    path: '/dashboard/my-salary',
+    icon: <BiDollarCircle />
   }
 }
 

@@ -210,11 +210,7 @@ const Navbar = () => {
           {user?.name && (
             <Link href="/dashboard/profile" className="flex items-center gap-2 hover:opacity-90 transition cursor-pointer">
               <span className="text-xs font-bold text-white hidden sm:inline">{user.name}</span>
-              {user.role && (
-                <span className="text-[10px] uppercase font-extrabold bg-white/20 px-2 py-0.5 rounded-full tracking-wider text-white">
-                  {user.role}
-                </span>
-              )}
+              
             </Link>
           )}
         </div>

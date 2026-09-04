@@ -204,6 +204,10 @@ export default function POSPageClean() {
   const changeAmount = paymentType === 'cash' && receivedVal > totalAmount ? receivedVal - totalAmount : 0
 
   const handleCheckout = async () => {
+    if (websiteSettings && websiteSettings.is_sale_active === false) {
+      toast.error('Sales are currently paused by administrator (Sale Off)')
+      return
+    }
     if (cart.length === 0) {
       toast.error('Cart is empty')
       return
@@ -265,6 +269,19 @@ export default function POSPageClean() {
       
       <div className="w-full flex flex-col gap-6">
         
+        {websiteSettings && websiteSettings.is_sale_active === false && (
+          <div className="bg-rose-500 text-white p-4 border border-rose-600 flex items-center justify-between gap-4 shadow-sm animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <div>
+                <h3 className="font-bold text-xs uppercase tracking-wider">POS Sales Paused (Sale Off)</h3>
+                <p className="text-xs text-rose-100 mt-0.5">Sales functionality is currently disabled by administrator in Settings. Orders cannot be completed.</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-white text-rose-700 text-[10px] font-black uppercase tracking-wider shrink-0">Sale Off</span>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div className="flex items-center gap-3">
             <form onSubmit={handleBarcodeSubmit} className="flex items-center border border-slate-200 bg-white rounded-lg px-2.5 py-1">
@@ -515,12 +532,20 @@ export default function POSPageClean() {
 
               <button
                 onClick={handleCheckout}
-                disabled={submitting || cart.length === 0}
-                className="w-full py-2.5 text-white bg-primary hover:bg-primary-dark text-xs font-bold rounded-lg transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                disabled={submitting || cart.length === 0 || (websiteSettings && websiteSettings.is_sale_active === false)}
+                className={`w-full py-2.5 text-white text-xs font-bold transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm ${
+                  websiteSettings && websiteSettings.is_sale_active === false 
+                    ? 'bg-rose-500 cursor-not-allowed' 
+                    : 'bg-primary hover:bg-primary-dark cursor-pointer'
+                }`}
               >
                 {submitting ? (
                   <>
                     <BiLoaderAlt className="animate-spin text-sm" /> Processing...
+                  </>
+                ) : websiteSettings && websiteSettings.is_sale_active === false ? (
+                  <>
+                    <BiShieldQuarter className="text-sm" /> Sales Paused (Sale Off)
                   </>
                 ) : (
                   <>

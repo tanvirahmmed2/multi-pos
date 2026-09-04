@@ -76,7 +76,9 @@ export const MODULE_LINKS = {
   expenses: { name: 'Expenses', path: '/dashboard/expenses', icon: <BiDollarCircle /> },
   profits: { name: 'Profits', path: '/dashboard/profits', icon: <BiPieChartAlt2 /> },
   'purchase-payments': { name: 'Purchase Payments', path: '/dashboard/purchase-payments', icon: <BiDollarCircle /> },
-  'expense-payments': { name: 'Expense Payments', path: '/dashboard/expense-payments', icon: <BiDollarCircle /> }
+  'expense-payments': { name: 'Expense Payments', path: '/dashboard/expense-payments', icon: <BiDollarCircle /> },
+  notices: { name: 'Notice Board', path: '/dashboard/notices', icon: <BiMessageSquareDetail /> },
+  'my-salary': { name: 'My Salary History', path: '/dashboard/my-salary', icon: <BiDollarCircle /> }
 }
 
 const Sidebar = () => {

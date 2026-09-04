@@ -1,11 +1,11 @@
 import { query } from '@/lib/db';
-import { isManagementRole } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
 import { recalculateShares } from '@/lib/shares';
 
 export async function PUT(req, { params }) {
   try {
-    const auth = await isManagementRole();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
@@ -70,7 +70,7 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const auth = await isManagementRole();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }

@@ -16,6 +16,8 @@ export async function GET(req) {
              s.name AS staff_name,
              s.email AS staff_email,
              s.role AS staff_role,
+             b.name AS branch_name,
+             p_last.amount_received, p_last.change_amount,
              (SELECT JSON_AGG(JSON_BUILD_OBJECT(
                 'order_item_id', oi.order_item_id,
                 'product_id', oi.product_id,
@@ -32,6 +34,10 @@ export async function GET(req) {
       FROM public.orders o
       LEFT JOIN customers c ON o.customer_id = c.customer_id
       LEFT JOIN staffs s ON o.staff_id = s.staff_id
+      LEFT JOIN branches b ON s.branch_id = b.branch_id
+      LEFT JOIN LATERAL (
+        SELECT amount_received, change_amount FROM public.payments WHERE order_id = o.order_id ORDER BY payment_id DESC LIMIT 1
+      ) p_last ON true
     `;
     let params = [];
 
@@ -65,15 +71,40 @@ export async function POST(req) {
       is_pos,
       payment_type,
       amount_received,
-      change_amount
+      change_amount,
+      branch_id
     } = await req.json();
 
     if (!phone || (!is_pos && !shipping_address) || !items || !Array.isArray(items) || items.length === 0) {
+      client.release();
       return Response.json({ error: 'Phone and items are required' }, { status: 400 });
+    }
+
+    const settingRes = await client.query('SELECT is_sale_active FROM websites LIMIT 1');
+    if (settingRes.rows.length > 0 && settingRes.rows[0].is_sale_active === false) {
+      client.release();
+      return Response.json({ error: 'Sales are currently paused' }, { status: 403 });
     }
 
     const auth = await authenticateUser();
     const staffId = auth.success && auth.user ? (auth.user.staff_id || auth.user.user_id) : null;
+
+    let creatorBranchId = auth.success && auth.user?.branch_id ? auth.user.branch_id : null;
+    if (!creatorBranchId && staffId) {
+      const staffBranchRes = await client.query('SELECT branch_id FROM staffs WHERE staff_id = $1', [staffId]);
+      if (staffBranchRes.rows.length > 0 && staffBranchRes.rows[0].branch_id) {
+        creatorBranchId = staffBranchRes.rows[0].branch_id;
+      }
+    }
+    if (!creatorBranchId && branch_id) {
+      creatorBranchId = parseInt(branch_id, 10);
+    }
+    if (!creatorBranchId) {
+      const defaultBranchRes = await client.query('SELECT branch_id FROM branches WHERE is_active = true ORDER BY branch_id ASC LIMIT 1');
+      if (defaultBranchRes.rows.length > 0) {
+        creatorBranchId = defaultBranchRes.rows[0].branch_id;
+      }
+    }
 
     await client.query('BEGIN');
 
@@ -205,12 +236,13 @@ export async function POST(req) {
 
     const orderRes = await client.query(
       `INSERT INTO public.orders (
-        customer_id, staff_id, phone, shipping_address, shipping_city, shipping_area,
+        branch_id, customer_id, staff_id, phone, shipping_address, shipping_city, shipping_area,
         status, subtotal_amount, total_discount_amount, delivery_charge,
         total_amount, due_amount, payment_type, note
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING order_id`,
       [
+        creatorBranchId,
         customerId,
         staffId,
         cleanPhone,
@@ -251,9 +283,9 @@ export async function POST(req) {
           const updateRes = await client.query(
             `UPDATE stocks 
              SET stock = stock - $1, updated_at = NOW() 
-             WHERE variant_id = $2 AND branch_id = 1
+             WHERE variant_id = $2 AND branch_id = $3
              RETURNING stock`,
-            [vItem.quantity, targetVarId]
+            [vItem.quantity, targetVarId, creatorBranchId]
           );
           if (updateRes.rows.length === 0 || updateRes.rows[0].stock < 0) {
             throw new Error(`Insufficient stock for product`);

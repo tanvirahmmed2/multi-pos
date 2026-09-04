@@ -1,10 +1,10 @@
 import { query } from '@/lib/db';
-import { isManagerOrAdmin } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
 
 export async function GET(req, { params }) {
   try {
-    const auth = await isManagerOrAdmin();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
@@ -24,7 +24,7 @@ export async function GET(req, { params }) {
 
 export async function PUT(req, { params }) {
   try {
-    const auth = await isManagerOrAdmin();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
@@ -70,7 +70,7 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const auth = await isManagerOrAdmin();
+    const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
