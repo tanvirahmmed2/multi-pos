@@ -1,9 +1,15 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { checkShareInvestmentEnabled, updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
+    const isEnabled = await checkShareInvestmentEnabled();
+    if (!isEnabled) {
+      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
+    }
+
     const auth = await isManagementRole();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -44,22 +50,31 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
+    const isEnabled = await checkShareInvestmentEnabled();
+    if (!isEnabled) {
+      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
+    }
+
     const auth = await isManagementRole();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
     const body = await req.json();
-    const { investor_id, investor_name, branch_id, amount, payment_method, account_details, status, note } = body;
+    const { investor_id, investor_name, branch_id, amount, payment_method, account_details, status, note, withdrawal_type } = body;
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return Response.json({ error: 'Valid withdrawal amount is required' }, { status: 400 });
     }
 
+    const type = (withdrawal_type === 'profit') ? 'profit' : 'investment';
+
     let name = investor_name;
-    if (investor_id) {
-      const invRes = await query('SELECT name FROM investors WHERE investor_id = $1', [investor_id]);
+    const invId = investor_id ? parseInt(investor_id, 10) : null;
+
+    if (invId) {
+      const invRes = await query('SELECT name FROM investors WHERE investor_id = $1', [invId]);
       if (invRes.rows.length > 0) {
         name = invRes.rows[0].name;
       }
@@ -69,11 +84,11 @@ export async function POST(req) {
     const branchVal = branch_id ? parseInt(branch_id, 10) : auth.staff.branch_id;
 
     const result = await query(
-      `INSERT INTO withdrawals (investor_id, branch_id, staff_id, investor_name, amount, payment_method, account_details, status, note)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO withdrawals (investor_id, branch_id, staff_id, investor_name, amount, payment_method, account_details, status, note, withdrawal_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
-        investor_id ? parseInt(investor_id, 10) : null,
+        invId,
         branchVal || null,
         staffId || null,
         name || null,
@@ -81,11 +96,24 @@ export async function POST(req) {
         payment_method || 'cash',
         account_details || null,
         status || 'completed',
-        note || null
+        note || null,
+        type
       ]
     );
 
     const withdrawal = result.rows[0];
+
+    // Deduct withdrawal amount from available balance
+    await updateAvailableBalance(-parsedAmount);
+
+    // If withdrawal is from profits and investor is specified, adjust profit table
+    if (type === 'profit' && invId) {
+      await query(
+        `INSERT INTO profits (investor_id, profit_date, amount, note)
+         VALUES ($1, CURRENT_DATE, $2, $3)`,
+        [invId, -parsedAmount, `Profit withdrawal #${withdrawal.withdrawal_id}`]
+      );
+    }
 
     await logActivity({
       req,
@@ -93,7 +121,7 @@ export async function POST(req) {
       action: 'CREATE_WITHDRAWAL',
       entity: 'withdrawals',
       entityId: withdrawal.withdrawal_id,
-      details: `Recorded withdrawal of ৳${parsedAmount}${name ? ` for ${name}` : ''}`
+      details: `Recorded ${type} withdrawal of ৳${parsedAmount}${name ? ` for ${name}` : ''}`
     });
 
     return Response.json(withdrawal, { status: 201 });

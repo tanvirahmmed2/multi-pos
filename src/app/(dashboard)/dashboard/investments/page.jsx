@@ -18,6 +18,7 @@ import {
   BiRefresh,
   BiCreditCard
 } from 'react-icons/bi'
+import ShareInvestmentDisabled from '@/component/helper/ShareInvestmentDisabled'
 
 export default function DashboardInvestmentsPage() {
   const { dashSidebar, formatCurrency, currencySymbol } = useContext(Context)
@@ -40,18 +41,29 @@ export default function DashboardInvestmentsPage() {
     note: ''
   })
 
+  const [isShareInvestment, setIsShareInvestment] = useState(false)
+
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [invRes, investorRes] = await Promise.all([
-        axios.get('/api/investments'),
-        axios.get('/api/investor')
-      ])
-      setInvestments(invRes.data)
-      setInvestors(investorRes.data)
+      const settingsRes = await axios.get('/api/settings')
+      const isEnabled = settingsRes.data && settingsRes.data.is_share_investment === true
+      setIsShareInvestment(isEnabled)
+      if (isEnabled) {
+        const [invRes, investorRes] = await Promise.all([
+          axios.get('/api/investments'),
+          axios.get('/api/investor')
+        ])
+        setInvestments(invRes.data)
+        setInvestors(investorRes.data)
+      }
     } catch (err) {
-      toast.error('Failed to load investments data')
-      console.error(err)
+      if (err.response?.status === 403) {
+        setIsShareInvestment(false)
+      } else {
+        toast.error('Failed to load investments data')
+        console.error(err)
+      }
     } finally {
       setLoading(false)
     }
@@ -168,6 +180,10 @@ export default function DashboardInvestmentsPage() {
     if (!dateStr) return '-'
     const d = new Date(dateStr)
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  if (!loading && !isShareInvestment) {
+    return <ShareInvestmentDisabled moduleName="Investments System" />
   }
 
   return (

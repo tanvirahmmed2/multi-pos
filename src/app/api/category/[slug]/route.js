@@ -54,7 +54,7 @@ export async function PUT(req, { params }) {
     const parentIdVal = formData.get('parent_id');
     const imageFile = formData.get('image');
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return Response.json({ error: 'Category name is required' }, { status: 400 });
     }
 
@@ -65,14 +65,20 @@ export async function PUT(req, { params }) {
       return Response.json({ error: 'A category cannot be its own parent' }, { status: 400 });
     }
 
-    let imageUrl = category.image;
-    let imageId = category.image_id;
+    let imageUrl = category.image || null;
+    let imageId = category.image_id || null;
 
-    if (imageFile && typeof imageFile !== 'string') {
+    // If new image file is provided during update
+    if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
       const uploadResult = await uploadToCloudinary(imageFile, 'categories');
       if (uploadResult) {
+        // Delete old image from Cloudinary if it exists
         if (category.image_id) {
-          await deleteFromCloudinary(category.image_id);
+          try {
+            await deleteFromCloudinary(category.image_id);
+          } catch (err) {
+            console.error('Failed to delete old category image from Cloudinary:', err);
+          }
         }
         imageUrl = uploadResult.url;
         imageId = uploadResult.id;
@@ -84,7 +90,7 @@ export async function PUT(req, { params }) {
        SET name = $1, slug = $2, parent_id = $3, image = $4, image_id = $5 
        WHERE category_id = $6 
        RETURNING *`,
-      [name, slug, parent_id, imageUrl, imageId, category.category_id]
+      [name.trim(), slug, parent_id, imageUrl, imageId, category.category_id]
     );
 
     return Response.json(result.rows[0], { status: 200 });

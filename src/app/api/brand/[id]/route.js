@@ -36,20 +36,24 @@ export async function PUT(req, { params }) {
     const isActiveVal = formData.get('is_active');
     const imageFile = formData.get('image');
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return Response.json({ error: 'Brand name is required' }, { status: 400 });
     }
 
     const is_active = isActiveVal === 'false' ? false : true;
 
-    let imageUrl = brand.image;
-    let imageId = brand.image_id;
+    let imageUrl = brand.image || null;
+    let imageId = brand.image_id || null;
 
-    if (imageFile && typeof imageFile !== 'string') {
+    if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
       const uploadResult = await uploadToCloudinary(imageFile, 'brands');
       if (uploadResult) {
         if (brand.image_id) {
-          await deleteFromCloudinary(brand.image_id);
+          try {
+            await deleteFromCloudinary(brand.image_id);
+          } catch (err) {
+            console.error('Failed to delete old brand logo from Cloudinary:', err);
+          }
         }
         imageUrl = uploadResult.url;
         imageId = uploadResult.id;
@@ -61,7 +65,7 @@ export async function PUT(req, { params }) {
        SET name = $1, description = $2, is_active = $3, image = $4, image_id = $5 
        WHERE brand_id = $6 
        RETURNING *`,
-      [name, description, is_active, imageUrl, imageId, id]
+      [name.trim(), description, is_active, imageUrl, imageId, id]
     );
 
     return Response.json(result.rows[0], { status: 200 });

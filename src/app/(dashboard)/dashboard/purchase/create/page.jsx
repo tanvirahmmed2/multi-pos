@@ -12,17 +12,20 @@ import {
   BiLoaderAlt, 
   BiDollarCircle, 
   BiFile,
-  BiUserPlus
+  BiUserPlus,
+  BiSearch,
+  BiStore
 } from 'react-icons/bi'
 import BarScanner from '@/component/helper/BarScanner'
 
 export default function PurchaseCreatePage() {
-  const { dashSidebar } = useContext(Context)
+  const { user, dashSidebar, currencySymbol, formatCurrency } = useContext(Context)
   const router = useRouter()
   
   const [suppliers, setSuppliers] = useState([])
-  const [products, setProducts] = useState([])
+  const [branches, setBranches] = useState([])
   
+  const [branchId, setBranchId] = useState('')
   const [supplierId, setSupplierId] = useState('')
   const [invoiceNo, setInvoiceNo] = useState('')
   const [note, setNote] = useState('')
@@ -31,9 +34,14 @@ export default function PurchaseCreatePage() {
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [transactionId, setTransactionId] = useState('')
   
-  const [rows, setRows] = useState([
-    { product_id: '', variant_id: '', variants: [], quantity: 1, purchase_price: 0 }
-  ])
+  const [productSearch, setProductSearch] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  
+  const [selectedProdForVariant, setSelectedProdForVariant] = useState(null)
+  const [variantsModalList, setVariantsModalList] = useState([])
+  
+  const [rows, setRows] = useState([])
   
   const [fetchingOptions, setFetchingOptions] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -41,31 +49,106 @@ export default function PurchaseCreatePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [supRes, prodRes] = await Promise.all([
+        const [supRes, branchRes] = await Promise.all([
           axios.get('/api/supplier'),
-          axios.get('/api/product')
+          axios.get('/api/branch')
         ])
-        setSuppliers(supRes.data.filter(s => s.is_active !== false))
-        setProducts(prodRes.data.filter(p => p.is_active !== false))
+        const activeSuppliers = supRes.data.filter(s => s.is_active !== false)
+        const activeBranches = Array.isArray(branchRes.data) ? branchRes.data.filter(b => b.is_active !== false) : []
+        
+        setSuppliers(activeSuppliers)
+        setBranches(activeBranches)
+
+        // Pre-select branch if manager/admin has a branch assigned
+        if (user?.branch_id) {
+          setBranchId(user.branch_id.toString())
+        } else if (activeBranches.length === 1) {
+          setBranchId(activeBranches[0].branch_id.toString())
+        }
       } catch (err) {
-        toast.error('Failed to load form selections')
+        toast.error('Failed to load metadata options')
         console.error(err)
       } finally {
         setFetchingOptions(false)
       }
     }
     fetchData()
-  }, [])
+  }, [user])
 
-  const addRow = () => {
-    setRows([...rows, { product_id: '', variant_id: '', variants: [], quantity: 1, purchase_price: 0 }])
+  useEffect(() => {
+    if (!productSearch.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await axios.get(`/api/product?search=${encodeURIComponent(productSearch.trim())}`)
+        setSearchResults(res.data.filter(p => p.is_active !== false))
+      } catch (err) {
+        console.error('Failed to search products:', err)
+      } finally {
+        setSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [productSearch])
+
+  const handleSelectProduct = async (product) => {
+    setProductSearch('')
+    setSearchResults([])
+    
+    try {
+      const res = await axios.get(`/api/product/${product.product_id}`)
+      const fullProd = res.data
+      const vars = fullProd.variants && fullProd.variants.length > 0 ? fullProd.variants.filter(v => v.is_active !== false) : []
+      
+      if (vars.length > 1) {
+        setSelectedProdForVariant(fullProd)
+        setVariantsModalList(vars)
+      } else {
+        const targetVar = vars.length === 1 ? vars[0] : null
+        addProductToRows(fullProd, targetVar)
+      }
+    } catch (err) {
+      toast.error('Failed to load product details')
+      console.error(err)
+    }
+  }
+
+  const addProductToRows = (product, variant = null) => {
+    const prodIdStr = product.product_id.toString()
+    const varIdStr = variant ? variant.variant_id.toString() : ''
+    const varName = variant ? variant.variant_name : 'Default'
+    const cost = variant ? (parseFloat(variant.purchase_price) || 0) : (parseFloat(product.purchase_price) || 0)
+
+    const existingIdx = rows.findIndex(r => r.product_id === prodIdStr && r.variant_id === varIdStr)
+
+    if (existingIdx > -1) {
+      const updated = [...rows]
+      updated[existingIdx].quantity = (parseInt(updated[existingIdx].quantity, 10) || 0) + 1
+      setRows(updated)
+      toast.success(`Incremented quantity for ${product.name} (${varName})`)
+    } else {
+      setRows(prev => [
+        ...prev,
+        {
+          product_id: prodIdStr,
+          product_name: product.name,
+          variant_id: varIdStr,
+          variant_name: varName,
+          variants: product.variants || [],
+          quantity: 1,
+          purchase_price: cost
+        }
+      ])
+      toast.success(`Added ${product.name} (${varName})`)
+    }
   }
 
   const removeRow = (index) => {
-    if (rows.length === 1) {
-      toast.error('At least one item is required')
-      return
-    }
     setRows(rows.filter((_, i) => i !== index))
   }
 
@@ -73,73 +156,24 @@ export default function PurchaseCreatePage() {
     setRows(rows.map((row, i) => i === index ? { ...row, ...newData } : row))
   }
 
-  const handleProductChange = async (index, productId) => {
-    if (!productId) {
-      updateRow(index, { product_id: '', variant_id: '', variants: [], purchase_price: 0, quantity: 1 })
-      return
-    }
-
+  const handleBarcodeScan = async (scannedBarcode) => {
     try {
-      const res = await axios.get(`/api/product/${productId}`)
-      const prod = res.data
+      const res = await axios.get(`/api/product?search=${encodeURIComponent(scannedBarcode)}`)
+      const matchedProds = res.data.filter(p => p.is_active !== false)
       
-      updateRow(index, {
-        product_id: productId,
-        variants: prod.variants || [],
-        variant_id: prod.variants && prod.variants.length > 0 ? prod.variants[0].variant_id : '',
-        purchase_price: prod.purchase_price || 0,
-        quantity: 1
-      })
+      if (matchedProds.length === 0) {
+        toast.error(`No product found with barcode: ${scannedBarcode}`)
+        return
+      }
+      
+      const matched = matchedProds[0]
+      toast.success(`Scanned: ${matched.name}`)
+      handleSelectProduct(matched)
     } catch (err) {
-      toast.error('Failed to load variants for product')
+      toast.error('Failed to scan barcode product')
       console.error(err)
     }
   }
-
-  const handleBarcodeScan = async (scannedBarcode) => {
-    const matched = products.find(p => p.barcode === scannedBarcode);
-    if (!matched) {
-      toast.error(`No product found with barcode: ${scannedBarcode}`);
-      return;
-    }
-
-    toast.success(`Product scanned: ${matched.name}`);
-
-    try {
-      const res = await axios.get(`/api/product/${matched.product_id}`);
-      const prod = res.data;
-      
-      const defaultVariantId = prod.variants && prod.variants.length > 0 ? prod.variants[0].variant_id : '';
-
-      const existingRowIndex = rows.findIndex(r => 
-        r.product_id === matched.product_id.toString() && 
-        (r.variant_id === defaultVariantId || (!r.variant_id && !defaultVariantId))
-      );
-
-      if (existingRowIndex > -1) {
-        const currentQty = parseInt(rows[existingRowIndex].quantity, 10) || 0;
-        updateRow(existingRowIndex, { quantity: currentQty + 1 });
-      } else {
-        const isFirstRowEmpty = rows.length === 1 && !rows[0].product_id;
-        const newRow = {
-          product_id: matched.product_id.toString(),
-          variants: prod.variants || [],
-          variant_id: defaultVariantId,
-          purchase_price: prod.purchase_price || 0,
-          quantity: 1
-        };
-
-        if (isFirstRowEmpty) {
-          setRows([newRow]);
-        } else {
-          setRows(prev => [...prev, newRow]);
-        }
-      }
-    } catch (err) {
-      toast.error('Failed to load scanned product details');
-      console.error(err);
-    }
-  };
 
   const subtotal = rows.reduce((acc, row) => {
     const qty = parseInt(row.quantity, 10) || 0
@@ -153,13 +187,18 @@ export default function PurchaseCreatePage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (rows.some(r => !r.product_id)) {
-      toast.error('Please select a product for all rows')
+    if (!branchId) {
+      toast.error('Branch selection is mandatory. Please select a branch.')
       return
     }
 
-    if (rows.some(r => r.variants && r.variants.length > 0 && !r.variant_id)) {
-      toast.error('Please select a variant for all variant products')
+    if (rows.length === 0) {
+      toast.error('Please add at least one product item to the purchase invoice')
+      return
+    }
+
+    if (rows.some(r => !r.product_id)) {
+      toast.error('Please select a valid product for all items')
       return
     }
 
@@ -181,6 +220,7 @@ export default function PurchaseCreatePage() {
     setSubmitting(true)
     try {
       const payload = {
+        branch_id: parseInt(branchId, 10),
         supplier_id: supplierId || null,
         invoice_no: invoiceNo || null,
         extra_discount: parseFloat(extraDiscount) || 0,
@@ -212,12 +252,14 @@ export default function PurchaseCreatePage() {
     return (
       <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'} flex items-center justify-center`}>
         <div className="flex items-center gap-2 text-slate-500 font-semibold">
-          <BiLoaderAlt className="animate-spin text-xl text-emerald-600" />
+          <BiLoaderAlt className="animate-spin text-xl text-primary" />
           <span>Loading catalog options...</span>
         </div>
       </div>
     )
   }
+
+  const assignedBranch = branches.find(b => b.branch_id.toString() === branchId)
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
@@ -242,13 +284,46 @@ export default function PurchaseCreatePage() {
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-50 pb-2">Invoice Info</h2>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                {/* Branch Selection (Mandatory) */}
+                <div className="flex flex-col gap-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase flex items-center gap-1">
+                    <BiStore className="text-primary text-sm" /> Target Branch *
+                  </label>
+                  {user?.branch_id ? (
+                    <div className="flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-xl text-slate-800 text-sm font-semibold">
+                      <span className="flex-1">
+                        {assignedBranch ? `${assignedBranch.name} (${assignedBranch.code || 'Main'})` : `Branch #${user.branch_id}`}
+                      </span>
+                      <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-primary text-white rounded-md">
+                        Assigned User Branch
+                      </span>
+                    </div>
+                  ) : (
+                    <select
+                      value={branchId}
+                      required
+                      onChange={(e) => setBranchId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition font-medium"
+                    >
+                      <option value="">-- Select Mandatory Target Branch * --</option>
+                      {branches.map(b => (
+                        <option key={b.branch_id} value={b.branch_id}>
+                          {b.name} {b.code ? `(${b.code})` : ''} {b.address ? `- ${b.address}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="text-[11px] text-slate-400">Stock ingested from this purchase will be credited specifically to this target branch.</p>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase">Supplier</label>
                   <div className="flex gap-2">
                     <select
                       value={supplierId}
                       onChange={(e) => setSupplierId(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                      className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                     >
                       <option value="">Walk-in Supplier / Unknown</option>
                       {suppliers.map(s => (
@@ -286,117 +361,181 @@ export default function PurchaseCreatePage() {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition resize-none"
+                  className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-none"
                 />
               </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
               <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Purchase Line Items</h2>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Purchase Line Items</h2>
+                  <p className="text-slate-400 text-xs mt-0.5">Search products from API or scan barcode to add items.</p>
+                </div>
                 <button
                   type="button"
-                  onClick={addRow}
-                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-250/20 hover:bg-emerald-100 text-xs font-semibold rounded-lg flex items-center gap-1 transition cursor-pointer"
+                  onClick={() => {
+                    const el = document.getElementById('purchase-product-search-input')
+                    if (el) el.focus()
+                  }}
+                  className="px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-xs font-semibold rounded-lg flex items-center gap-1 transition cursor-pointer"
                 >
-                  <BiPlus /> Add Row
+                  <BiPlus /> Search Product
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="text-slate-400 font-bold uppercase border-b border-slate-100">
-                      <th className="py-2 pr-4 w-[40%]">Product *</th>
-                      <th className="py-2 pr-4 w-[25%]">Variant *</th>
-                      <th className="py-2 pr-4 w-[15%]">Qty</th>
-                      <th className="py-2 pr-4 w-[15%]">Cost ($)</th>
-                      <th className="py-2 w-[5%] text-right"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {rows.map((row, index) => (
-                      <tr key={index} className="align-middle">
-                        <td className="py-3 pr-4">
-                          <select
-                            value={row.product_id}
-                            required
-                            onChange={(e) => handleProductChange(index, e.target.value)}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-xs focus:bg-white outline-none"
-                          >
-                            <option value="">-- Select Product --</option>
-                            {products.map(p => (
-                              <option key={p.product_id} value={p.product_id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <BiSearch className="absolute left-3.5 text-slate-400 text-lg pointer-events-none" />
+                  <input
+                    id="purchase-product-search-input"
+                    type="text"
+                    placeholder="Search product directly from API (by title or barcode)..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="input-style pl-10"
+                  />
+                  {searching && (
+                    <BiLoaderAlt className="absolute right-3.5 animate-spin text-primary text-lg" />
+                  )}
+                </div>
 
-                        <td className="py-3 pr-4">
-                          {row.variants && row.variants.length > 0 ? (
-                            <select
-                              value={row.variant_id}
-                              required
-                              onChange={(e) => {
-                                const selectedId = e.target.value;
-                                const matchedVar = row.variants.find(v => v.variant_id.toString() === selectedId);
-                                updateRow(index, { 
-                                  variant_id: selectedId,
-                                  purchase_price: matchedVar ? (matchedVar.purchase_price || 0) : row.purchase_price
-                                });
-                              }}
-                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-xs focus:bg-white outline-none"
-                            >
-                              <option value="">-- Select Variant --</option>
-                              {row.variants.map(v => (
-                                <option key={v.variant_id} value={v.variant_id}>
-                                  {v.variant_name} (Stock: {v.stock})
-                                </option>
-                              ))}
-                            </select>
-                          ) : row.product_id ? (
-                            <span className="text-slate-400 italic text-xxs px-2">No variants</span>
+                {searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                    {searchResults.map((prod) => (
+                      <div
+                        key={prod.product_id}
+                        onClick={() => handleSelectProduct(prod)}
+                        className="p-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition"
+                      >
+                        <div className="flex items-center gap-3">
+                          {prod.image ? (
+                            <img src={prod.image} alt={prod.name} className="w-9 h-9 object-cover rounded-lg border border-slate-200" />
                           ) : (
-                            <span className="text-slate-400 italic text-xxs px-2">Choose product first</span>
+                            <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs font-bold">
+                              {prod.name?.[0]}
+                            </div>
                           )}
-                        </td>
-
-                        <td className="py-3 pr-4">
-                          <input className="input-style"
-                            type="number"
-                            min="1"
-                            required
-                            value={row.quantity}
-                            onChange={(e) => updateRow(index, { quantity: parseInt(e.target.value, 10) || 0 })}
-                          />
-                        </td>
-
-                        <td className="py-3 pr-4">
-                          <input className="input-style"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            required
-                            value={row.purchase_price}
-                            onChange={(e) => updateRow(index, { purchase_price: parseFloat(e.target.value) || 0 })}
-                          />
-                        </td>
-
-                        <td className="py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => removeRow(index)}
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition cursor-pointer"
-                          >
-                            <BiTrash className="text-base" />
-                          </button>
-                        </td>
-                      </tr>
+                          <div>
+                            <span className="font-semibold text-slate-800 text-xs block">{prod.name}</span>
+                            <span className="text-[10px] text-slate-400 block">
+                              {prod.brand_name ? `${prod.brand_name} • ` : ''}Barcode: {prod.barcode || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-bold text-slate-800 block">
+                            {formatCurrency(prod.purchase_price || 0)}
+                          </span>
+                          <span className="text-[10px] text-primary font-semibold">Click to Add</span>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                )}
               </div>
+
+              {rows.length > 0 ? (
+                <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-400 font-bold uppercase">
+                        <th className="py-3 px-4 w-[35%]">Product *</th>
+                        <th className="py-3 px-4 w-[25%]">Variant *</th>
+                        <th className="py-3 px-4 w-[15%]">Qty</th>
+                        <th className="py-3 px-4 w-[20%]">Cost ({currencySymbol})</th>
+                        <th className="py-3 px-4 text-right">Subtotal</th>
+                        <th className="py-3 px-4 text-right"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {rows.map((row, index) => {
+                        const rowQty = parseInt(row.quantity, 10) || 0
+                        const rowCost = parseFloat(row.purchase_price) || 0
+                        const rowSubtotal = rowQty * rowCost
+
+                        return (
+                          <tr key={index} className="align-middle hover:bg-slate-50/40">
+                            <td className="py-3 px-4">
+                              <span className="font-semibold text-slate-800 text-xs">{row.product_name}</span>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              {row.variants && row.variants.length > 1 ? (
+                                <select
+                                  value={row.variant_id}
+                                  onChange={(e) => {
+                                    const selectedId = e.target.value
+                                    const matchedVar = row.variants.find(v => v.variant_id.toString() === selectedId)
+                                    updateRow(index, {
+                                      variant_id: selectedId,
+                                      variant_name: matchedVar ? matchedVar.variant_name : row.variant_name,
+                                      purchase_price: matchedVar ? (parseFloat(matchedVar.purchase_price) || 0) : row.purchase_price
+                                    })
+                                  }}
+                                  className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-xs focus:bg-white outline-none"
+                                >
+                                  {row.variants.map(v => (
+                                    <option key={v.variant_id} value={v.variant_id}>
+                                      {v.variant_name} ({formatCurrency(v.purchase_price || 0)})
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-slate-600 text-xs font-medium bg-slate-100 px-2 py-0.5 rounded">
+                                  {row.variant_name || 'Default'}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <input className="input-style text-center w-20"
+                                type="number"
+                                min="1"
+                                required
+                                value={row.quantity}
+                                onChange={(e) => updateRow(index, { quantity: parseInt(e.target.value, 10) || 0 })}
+                              />
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <input className="input-style text-right w-28"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                required
+                                value={row.purchase_price}
+                                onChange={(e) => updateRow(index, { purchase_price: parseFloat(e.target.value) || 0 })}
+                              />
+                            </td>
+
+                            <td className="py-3 px-4 text-right font-mono font-bold text-slate-800">
+                              {formatCurrency(rowSubtotal)}
+                            </td>
+
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => removeRow(index)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition cursor-pointer"
+                                title="Remove item"
+                              >
+                                <BiTrash className="text-base" />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-12 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <BiSearch className="text-3xl text-slate-300" />
+                  <p className="font-semibold text-xs text-slate-600">No purchase items added yet</p>
+                  <p className="text-xxs text-slate-400">Search products in the box above or scan barcodes to populate items.</p>
+                </div>
+              )}
             </div>
 
           </div>
@@ -409,7 +548,7 @@ export default function PurchaseCreatePage() {
               <div className="flex flex-col gap-3 text-sm text-slate-600">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span className="font-semibold text-slate-800">${subtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-800">{formatCurrency(subtotal)}</span>
                 </div>
                 
                 <div className="flex items-center justify-between gap-4">
@@ -427,7 +566,7 @@ export default function PurchaseCreatePage() {
                 
                 <div className="flex justify-between text-base font-bold text-slate-800">
                   <span>Total Amount:</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatCurrency(total)}</span>
                 </div>
               </div>
 
@@ -437,8 +576,8 @@ export default function PurchaseCreatePage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">Amount Paid Now</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                    <input className="input-style"
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
+                    <input className="input-style pl-8"
                       type="number"
                       step="0.01"
                       min="0"
@@ -456,7 +595,7 @@ export default function PurchaseCreatePage() {
                       <select
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                       >
                         <option value="Cash">Cash</option>
                         <option value="Card">Credit/Debit Card</option>
@@ -481,8 +620,8 @@ export default function PurchaseCreatePage() {
                     <span className="text-xs font-semibold text-slate-600 block">Remaining Due</span>
                     <span className="text-xxs text-slate-450">Payable to Supplier</span>
                   </div>
-                  <span className={`text-base font-bold ${due > 0 ? 'text-amber-600' : 'text-emerald-700'}`}>
-                    ${due.toFixed(2)}
+                  <span className={`text-base font-bold ${due > 0 ? 'text-amber-600' : 'text-primary-dark'}`}>
+                    {formatCurrency(due)}
                   </span>
                 </div>
               </div>
@@ -491,7 +630,7 @@ export default function PurchaseCreatePage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/10"
+                  className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold transition cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-primary/10"
                 >
                   {submitting ? (
                     <>
@@ -506,7 +645,7 @@ export default function PurchaseCreatePage() {
                 </button>
                 <Link
                   href="/dashboard/purchase"
-                  className="w-full py-2.5 border border-slate-200 hover:bg-slate-55 text-center text-slate-600 hover:bg-slate-50 rounded-xl text-sm font-semibold transition"
+                  className="w-full py-2.5 border border-slate-200 text-center text-slate-600 hover:bg-slate-50 rounded-xl text-sm font-semibold transition"
                 >
                   Cancel
                 </Link>
@@ -519,6 +658,46 @@ export default function PurchaseCreatePage() {
         </form>
 
       </div>
+
+      {selectedProdForVariant && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xxs flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 rounded-xl max-w-sm w-full shadow-lg p-5 flex flex-col gap-4 animate-in fade-in duration-100">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+              <div>
+                <h3 className="font-bold text-slate-900 text-xs">{selectedProdForVariant.name}</h3>
+                <span className="text-[9px] text-slate-400 font-medium tracking-wide uppercase block mt-0.5">Select Variant to Purchase</span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setSelectedProdForVariant(null)}
+                className="text-xs text-slate-400 hover:text-slate-700 font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {variantsModalList.map((v) => (
+                <button
+                  key={v.variant_id}
+                  type="button"
+                  onClick={() => {
+                    addProductToRows(selectedProdForVariant, v)
+                    setSelectedProdForVariant(null)
+                  }}
+                  className="w-full py-2 px-3 border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-400 rounded text-left text-xs font-semibold transition flex items-center justify-between cursor-pointer"
+                >
+                  <span>{v.variant_name}</span>
+                  <span className="text-xxs font-mono text-slate-700">
+                    Cost: {formatCurrency(v.purchase_price || 0)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

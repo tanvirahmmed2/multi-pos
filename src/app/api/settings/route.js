@@ -31,6 +31,11 @@ export async function POST(req) {
     const sociallink = formData.get('sociallink') || '';
     const email = formData.get('email') || '';
     const phone = formData.get('phone') || '';
+    const isShareInvestmentRaw = formData.get('is_share_investment');
+    const is_share_investment = isShareInvestmentRaw === 'true' || isShareInvestmentRaw === true;
+    const excludedTaxRaw = formData.get('excluded_tax');
+    const excluded_tax = excludedTaxRaw === 'true' || excludedTaxRaw === true;
+    const tax_amount = formData.get('tax_amount') ? parseFloat(formData.get('tax_amount')) : 0;
     
     const logoFile = formData.get('logo'); 
 
@@ -61,17 +66,17 @@ export async function POST(req) {
         `UPDATE websites 
          SET logo = $1, logo_id = $2, hero_title = $3, hero_subtitle = $4,
              address = $5, sociallink = $6, email = $7, phone = $8,
-             updated_at = now()
-         WHERE website_id = $9
+             is_share_investment = $9, excluded_tax = $10, tax_amount = $11, updated_at = now()
+         WHERE website_id = $12
          RETURNING *`,
-        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, existing.website_id]
+        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, is_share_investment, excluded_tax, tax_amount, existing.website_id]
       );
     } else {
       result = await query(
-        `INSERT INTO websites (logo, logo_id, hero_title, hero_subtitle, address, sociallink, email, phone)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO websites (logo, logo_id, hero_title, hero_subtitle, address, sociallink, email, phone, is_share_investment, excluded_tax, tax_amount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
-        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone]
+        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, is_share_investment, excluded_tax, tax_amount]
       );
     }
 

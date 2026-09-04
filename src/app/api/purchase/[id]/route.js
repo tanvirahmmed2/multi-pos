@@ -17,13 +17,16 @@ export async function GET(req, { params }) {
         s.name AS staff_name,
         s.email AS staff_email,
         s.role AS staff_role,
+        b.name AS branch_name,
+        b.code AS branch_code,
         COALESCE(SUM(pm.amount_paid), 0)::numeric AS total_paid,
         (p.total_amount - COALESCE(SUM(pm.amount_paid), 0))::numeric AS due_amount
       FROM purchases p
       LEFT JOIN purchase_payments pm ON p.purchase_id = pm.purchase_id
       LEFT JOIN staffs s ON p.staff_id = s.staff_id
+      LEFT JOIN branches b ON p.branch_id = b.branch_id
       WHERE p.purchase_id = $1
-      GROUP BY p.purchase_id, s.staff_id
+      GROUP BY p.purchase_id, s.staff_id, b.branch_id
     `, [purchaseId]);
 
     if (purchaseRes.rows.length === 0) {
@@ -73,13 +76,13 @@ export async function DELETE(req, { params }) {
     const { id } = await params;
     const purchaseId = parseInt(id, 10);
 
-    const itemsRes = await query('SELECT * FROM purchase_items WHERE purchase_id = $1', [purchaseId]);
-    if (itemsRes.rows.length === 0) {
-      const checkRes = await query('SELECT * FROM purchases WHERE purchase_id = $1', [purchaseId]);
-      if (checkRes.rows.length === 0) {
-        return Response.json({ error: 'Purchase invoice not found' }, { status: 404 });
-      }
+    const purchaseCheck = await query('SELECT branch_id FROM purchases WHERE purchase_id = $1', [purchaseId]);
+    if (purchaseCheck.rows.length === 0) {
+      return Response.json({ error: 'Purchase invoice not found' }, { status: 404 });
     }
+    const purchaseBranchId = purchaseCheck.rows[0].branch_id || 1;
+
+    const itemsRes = await query('SELECT * FROM purchase_items WHERE purchase_id = $1', [purchaseId]);
 
     await query('BEGIN');
 
@@ -97,10 +100,10 @@ export async function DELETE(req, { params }) {
 
       if (targetVarId) {
         await query(
-          `UPDATE product_variants 
-           SET stock = GREATEST(stock - $1, 0) 
-           WHERE variant_id = $2`,
-          [item.quantity, targetVarId]
+          `UPDATE stocks 
+           SET stock = GREATEST(stock - $1, 0), updated_at = NOW() 
+           WHERE variant_id = $2 AND branch_id = $3`,
+          [item.quantity, targetVarId, purchaseBranchId]
         );
       }
     }

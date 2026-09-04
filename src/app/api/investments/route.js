@@ -1,9 +1,16 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { recalculateShares } from '@/lib/shares';
+import { checkShareInvestmentEnabled, updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
+    const isEnabled = await checkShareInvestmentEnabled();
+    if (!isEnabled) {
+      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
+    }
+
     const auth = await isManagementRole();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -44,6 +51,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
+    const isEnabled = await checkShareInvestmentEnabled();
+    if (!isEnabled) {
+      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
+    }
+
     const auth = await isManagementRole();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -98,6 +110,9 @@ export async function POST(req) {
 
     const investment = result.rows[0];
 
+    // Add new investment amount directly to available balance!
+    await updateAvailableBalance(parsedAmount);
+
     await logActivity({
       req,
       staffId,
@@ -106,6 +121,9 @@ export async function POST(req) {
       entityId: investment.investment_id,
       details: `Recorded investment of ৳${parsedAmount} from ${name}`
     });
+
+    // Automatically recalculate investor shares
+    await recalculateShares();
 
     return Response.json(investment, { status: 201 });
   } catch (error) {

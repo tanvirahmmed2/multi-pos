@@ -39,26 +39,29 @@ export async function POST(req) {
     const parentIdVal = formData.get('parent_id');
     const imageFile = formData.get('image');
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return Response.json({ error: 'Category name is required' }, { status: 400 });
-    }
-    if (!imageFile) {
-      return Response.json({ error: 'Category image is required' }, { status: 400 });
     }
 
     const slug = slugify(name);
     const parent_id = parentIdVal && parentIdVal !== 'null' && parentIdVal !== '' ? parseInt(parentIdVal, 10) : null;
 
-    const uploadResult = await uploadToCloudinary(imageFile, 'categories');
-    if (!uploadResult) {
-      return Response.json({ error: 'Failed to upload image' }, { status: 500 });
+    let imageUrl = null;
+    let imageId = null;
+
+    if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
+      const uploadResult = await uploadToCloudinary(imageFile, 'categories');
+      if (uploadResult) {
+        imageUrl = uploadResult.url;
+        imageId = uploadResult.id;
+      }
     }
 
     const result = await query(
       `INSERT INTO categories (name, slug, parent_id, image, image_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [name, slug, parent_id, uploadResult.url, uploadResult.id]
+      [name.trim(), slug, parent_id, imageUrl, imageId]
     );
 
     return Response.json(result.rows[0], { status: 201 });

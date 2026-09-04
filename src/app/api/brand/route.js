@@ -25,25 +25,28 @@ export async function POST(req) {
     const isActiveVal = formData.get('is_active');
     const imageFile = formData.get('image');
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return Response.json({ error: 'Brand name is required' }, { status: 400 });
-    }
-    if (!imageFile) {
-      return Response.json({ error: 'Brand logo image is required' }, { status: 400 });
     }
 
     const is_active = isActiveVal === 'false' ? false : true;
 
-    const uploadResult = await uploadToCloudinary(imageFile, 'brands');
-    if (!uploadResult) {
-      return Response.json({ error: 'Failed to upload logo image' }, { status: 500 });
+    let imageUrl = null;
+    let imageId = null;
+
+    if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
+      const uploadResult = await uploadToCloudinary(imageFile, 'brands');
+      if (uploadResult) {
+        imageUrl = uploadResult.url;
+        imageId = uploadResult.id;
+      }
     }
 
     const result = await query(
       `INSERT INTO brands (name, description, is_active, image, image_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [name, description, is_active, uploadResult.url, uploadResult.id]
+      [name.trim(), description, is_active, imageUrl, imageId]
     );
 
     return Response.json(result.rows[0], { status: 201 });

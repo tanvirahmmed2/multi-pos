@@ -43,7 +43,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
   const [retailPrice, setRetailPrice] = useState(0)
   const [unit, setUnit] = useState('Pcs')
   const [barcode, setBarcode] = useState('')
-  const [stock, setStock] = useState(0)
   const [weight, setWeight] = useState(0)
 
   const [variants, setVariants] = useState([])
@@ -57,7 +56,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
   const [newVarDealerPrice, setNewVarDealerPrice] = useState(0)
   const [newVarRetailPrice, setNewVarRetailPrice] = useState(0)
   const [newVarWeight, setNewVarWeight] = useState(0)
-  const [newVarStock, setNewVarStock] = useState(0)
   const [newVarUnit, setNewVarUnit] = useState('Pcs')
   const [newVarIsActive, setNewVarIsActive] = useState(true)
   const [newVarImageFile, setNewVarImageFile] = useState(null)
@@ -131,7 +129,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         setRetailPrice(0)
         setUnit('Pcs')
         setBarcode('')
-        setStock(0)
         setWeight(0)
       } else {
         setProductType('simple')
@@ -144,7 +141,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         setRetailPrice(defVar.retail_price || 0)
         setUnit(defVar.unit || 'Pcs')
         setBarcode(defVar.barcode || '')
-        setStock(defVar.stock || 0)
         setWeight(defVar.weight || 0)
         setVariants([])
       }
@@ -174,7 +170,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       dealer_price: parseFloat(newVarDealerPrice) || 0,
       retail_price: parseFloat(newVarRetailPrice) || 0,
       weight: parseFloat(newVarWeight) || 0,
-      stock: parseInt(newVarStock, 10) || 0,
       barcode: newVarBarcode || null,
       unit: newVarUnit || 'Pcs',
       is_active: newVarIsActive !== false,
@@ -189,7 +184,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
     setNewVarDealerPrice(0)
     setNewVarRetailPrice(0)
     setNewVarWeight(0)
-    setNewVarStock(0)
     setNewVarBarcode('')
     setNewVarUnit('Pcs')
     setNewVarIsActive(true)
@@ -311,7 +305,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
         wholesale_price: parseFloat(wholesalePrice) || 0,
         dealer_price: parseFloat(dealerPrice) || 0,
         retail_price: parseFloat(retailPrice) || 0,
-        stock: parseInt(stock, 10) || 0,
         unit: unit || 'Pcs',
         barcode: barcode || null,
         weight: (weight !== undefined && weight !== null && weight !== '') ? parseFloat(weight) : null,
@@ -334,7 +327,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
           dealer_price: parseFloat(newVarDealerPrice) || 0,
           retail_price: parseFloat(newVarRetailPrice) || 0,
           weight: parseFloat(newVarWeight) || 0,
-          stock: parseInt(newVarStock, 10) || 0,
           barcode: newVarBarcode || null,
           unit: newVarUnit || 'Pcs',
           is_active: newVarIsActive !== false,
@@ -393,7 +385,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       formData.append('retail_price', mainVar.retail_price || 0)
       formData.append('unit', mainVar.unit || 'Pcs')
       formData.append('barcode', mainVar.barcode || '')
-      formData.append('stock', mainVar.stock)
     }
 
     onSubmit(formData)
@@ -635,7 +626,7 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-655 uppercase">Unit</label>
                     <select
@@ -660,17 +651,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                       <option value="Pair">Pair</option>
                       <option value="Tube">Tube</option>
                     </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-655 uppercase">Stock Quantity *</label>
-                    <input className="input-style"
-                      type="number"
-                      required
-                      placeholder="0"
-                      value={stock}
-                      onChange={(e) => setStock(parseInt(e.target.value, 10) || 0)}
-                    />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
@@ -866,32 +846,22 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-550 uppercase">Stock *</label>
-                        <input className="input-style"
-                          type="number"
-                          value={newVarStock}
-                          onChange={(e) => setNewVarStock(parseInt(e.target.value, 10) || 0)}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-550 uppercase">Unit</label>
-                        <select
-                          value={newVarUnit}
-                          onChange={(e) => setNewVarUnit(e.target.value)}
-                          className="w-full px-1.5 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-                        >
-                          <option value="Pcs">Pcs</option>
-                          <option value="Litter">Litter</option>
-                          <option value="Kg">Kg</option>
-                          <option value="Bottle">Bottle</option>
-                          <option value="Box">Box</option>
-                          <option value="Pack">Pack</option>
-                          <option value="Gram">Gram</option>
-                          <option value="Ml">Ml</option>
-                        </select>
-                      </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Unit</label>
+                      <select
+                        value={newVarUnit}
+                        onChange={(e) => setNewVarUnit(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                      >
+                        <option value="Pcs">Pcs</option>
+                        <option value="Litter">Litter</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Bottle">Bottle</option>
+                        <option value="Box">Box</option>
+                        <option value="Pack">Pack</option>
+                        <option value="Gram">Gram</option>
+                        <option value="Ml">Ml</option>
+                      </select>
                     </div>
                   </div>
 
@@ -906,7 +876,7 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
 
                 {variants.length > 0 ? (
                   <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm overflow-x-auto">
-                    <table className="w-full text-left text-xs min-w-[1250px]">
+                    <table className="w-full text-left text-xs min-w-[1150px]">
                       <thead className="bg-slate-50 text-slate-650 font-bold border-b border-slate-100">
                         <tr>
                           <th className="px-3 py-3 w-[70px] text-center">Image</th>
@@ -919,7 +889,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                           <th className="px-3 py-3 w-[90px]">Dealer</th>
                           <th className="px-3 py-3 w-[90px]">Retail</th>
                           <th className="px-3 py-3 w-[70px]">Weight</th>
-                          <th className="px-3 py-3 w-[80px]">Stock *</th>
                           <th className="px-3 py-3 w-[85px]">Unit</th>
                           <th className="px-3 py-3 w-[70px] text-center">Active</th>
                           <th className="px-3 py-3 text-right w-[50px]">Action</th>
@@ -1029,14 +998,6 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
                                   step="0.01"
                                   value={v.weight !== undefined ? v.weight : 0}
                                   onChange={(e) => handleVariantChange(index, 'weight', parseFloat(e.target.value) || 0)}
-                                />
-                              </td>
-                              <td className="px-2 py-1.5">
-                                <input className="input-style"
-                                  type="number"
-                                  required
-                                  value={v.stock !== undefined ? v.stock : 0}
-                                  onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value, 10) || 0)}
                                 />
                               </td>
                               <td className="px-2 py-1.5">

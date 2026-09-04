@@ -25,9 +25,10 @@ import {
   BiSolidTruck,
   BiCloudDownload,
   BiListUl,
-  BiUndo,
-  BiShieldQuarter,
-  BiKey
+  BiUndo, 
+  BiShieldQuarter, 
+  BiKey,
+  BiPieChartAlt2
 } from 'react-icons/bi'
 
 export const MODULE_LINKS = {
@@ -66,7 +67,10 @@ export const MODULE_LINKS = {
   withdrawals: { name: 'Withdrawals', path: '/dashboard/withdrawals', icon: <BiUndo /> },
   salaries: { name: 'Salary Structures', path: '/dashboard/salaries', icon: <BiDollarCircle /> },
   'staff-salaries': { name: 'Staff Salaries', path: '/dashboard/staff-salaries', icon: <BiUser /> },
-  'salary-payments': { name: 'Salary Payments', path: '/dashboard/salary-payments', icon: <BiFile /> }
+  'salary-payments': { name: 'Salary Payments', path: '/dashboard/salary-payments', icon: <BiFile /> },
+  shares: { name: 'Shares', path: '/dashboard/shares', icon: <BiPieChartAlt2 /> },
+  expenses: { name: 'Expenses', path: '/dashboard/expenses', icon: <BiDollarCircle /> },
+  profits: { name: 'Profits', path: '/dashboard/profits', icon: <BiPieChartAlt2 /> }
 }
 
 const Sidebar = () => {

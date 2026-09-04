@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { isManager } from '@/lib/auth';
+import { updateAvailableBalance } from '@/lib/financial';
 
 export async function POST(req, { params }) {
   try {
@@ -52,6 +53,8 @@ export async function POST(req, { params }) {
        RETURNING *`,
       [purchaseId, payment_method, amount, transaction_id]
     );
+
+    await updateAvailableBalance(-amount);
 
     return Response.json(result.rows[0], { status: 201 });
 

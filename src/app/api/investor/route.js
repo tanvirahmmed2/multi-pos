@@ -1,9 +1,16 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { recalculateShares } from '@/lib/shares';
+import { checkShareInvestmentEnabled } from '@/lib/financial';
 
 export async function GET(req) {
   try {
+    const isEnabled = await checkShareInvestmentEnabled();
+    if (!isEnabled) {
+      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
+    }
+
     const auth = await isManagementRole();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -14,7 +21,8 @@ export async function GET(req) {
         inv.*,
         COALESCE(i.total_investment, 0) AS total_investment,
         COALESCE(w.total_withdrawal, 0) AS total_withdrawal,
-        (COALESCE(i.total_investment, 0) - COALESCE(w.total_withdrawal, 0)) AS net_balance
+        (COALESCE(i.total_investment, 0) - COALESCE(w.total_withdrawal, 0)) AS net_balance,
+        COALESCE(sh.share_percentage, 0.00) AS share_percentage
       FROM investors inv
       LEFT JOIN (
         SELECT investor_id, SUM(amount) AS total_investment 
@@ -28,6 +36,7 @@ export async function GET(req) {
         WHERE investor_id IS NOT NULL
         GROUP BY investor_id
       ) w ON inv.investor_id = w.investor_id
+      LEFT JOIN shares sh ON inv.investor_id = sh.investor_id
       ORDER BY inv.investor_id DESC
     `);
 
@@ -40,6 +49,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
+    const isEnabled = await checkShareInvestmentEnabled();
+    if (!isEnabled) {
+      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
+    }
+
     const auth = await isManagementRole();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -77,6 +91,8 @@ export async function POST(req) {
       entityId: investor.investor_id,
       details: `Created investor: ${investor.name}`
     });
+
+    await recalculateShares();
 
     return Response.json(investor, { status: 201 });
   } catch (error) {

@@ -13,12 +13,12 @@ export const ROLE_PERMISSIONS = {
     'purchase', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'profits'
   ],
   manager: [
     'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'overview', 'purchase', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments'
+    'profile', 'orders', 'overview', 'purchase', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'expenses', 'profits'
   ],
   sales: [
     'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',

@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import pool from '@/lib/db';
 import { authenticateUser } from '@/lib/auth';
+import { updateAvailableBalance, allocateOrderProfit } from '@/lib/financial';
 
 export async function GET(req, { params }) {
   try {
@@ -78,36 +79,26 @@ export async function PUT(req, { params }) {
         [orderId]
       );
       for (const item of itemsRes.rows) {
-        if (item.variant_id) {
-          const updateRes = await client.query(
-            `UPDATE product_variants 
-             SET stock = stock - $1 
-             WHERE variant_id = $2 
-             RETURNING stock, variant_name`,
-            [item.quantity, item.variant_id]
-          );
-          if (updateRes.rows.length > 0 && updateRes.rows[0].stock < 0) {
-            throw new Error(`Insufficient stock for variant "${updateRes.rows[0].variant_name}"`);
-          }
-        } else {
+        let targetVarId = item.variant_id;
+        if (!targetVarId) {
           const defaultVarRes = await client.query(
             `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
             [item.product_id]
           );
           if (defaultVarRes.rows.length > 0) {
-            const targetVarId = defaultVarRes.rows[0].variant_id;
-            const updateRes = await client.query(
-              `UPDATE product_variants 
-               SET stock = stock - $1 
-               WHERE variant_id = $2 
-               RETURNING stock, variant_name AS name`,
-              [item.quantity, targetVarId]
-            );
-            if (updateRes.rows.length > 0 && updateRes.rows[0].stock < 0) {
-              throw new Error(`Insufficient stock for product variant`);
-            }
-          } else {
-            throw new Error(`Default variant not found for product ID ${item.product_id}`);
+            targetVarId = defaultVarRes.rows[0].variant_id;
+          }
+        }
+        if (targetVarId) {
+          const updateRes = await client.query(
+            `UPDATE stocks 
+             SET stock = stock - $1, updated_at = NOW() 
+             WHERE variant_id = $2 AND branch_id = 1
+             RETURNING stock`,
+            [item.quantity, targetVarId]
+          );
+          if (updateRes.rows.length === 0 || updateRes.rows[0].stock < 0) {
+            throw new Error(`Insufficient stock for product/variant`);
           }
         }
       }
@@ -119,27 +110,23 @@ export async function PUT(req, { params }) {
         [orderId]
       );
       for (const item of itemsRes.rows) {
-        if (item.variant_id) {
-          await client.query(
-            `UPDATE product_variants 
-             SET stock = stock + $1 
-             WHERE variant_id = $2`,
-            [item.quantity, item.variant_id]
-          );
-        } else {
+        let targetVarId = item.variant_id;
+        if (!targetVarId) {
           const defaultVarRes = await client.query(
             `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
             [item.product_id]
           );
           if (defaultVarRes.rows.length > 0) {
-            const targetVarId = defaultVarRes.rows[0].variant_id;
-            await client.query(
-              `UPDATE product_variants 
-               SET stock = stock + $1 
-               WHERE variant_id = $2`,
-              [item.quantity, targetVarId]
-            );
+            targetVarId = defaultVarRes.rows[0].variant_id;
           }
+        }
+        if (targetVarId) {
+          await client.query(
+            `INSERT INTO stocks (variant_id, branch_id, stock) VALUES ($1, 1, $2)
+             ON CONFLICT (variant_id, branch_id)
+             DO UPDATE SET stock = stocks.stock + EXCLUDED.stock, updated_at = NOW()`,
+            [targetVarId, item.quantity]
+          );
         }
       }
     };
@@ -163,6 +150,7 @@ export async function PUT(req, { params }) {
     }
 
     let updateDueAmount = parseFloat(order.due_amount || 0);
+    let collectedPayment = 0;
 
     if (newStatus === 'returned' || newStatus === 'cancelled') {
       updateDueAmount = 0;
@@ -177,6 +165,7 @@ export async function PUT(req, { params }) {
         [orderId, method, payAmount, payNote]
       );
       updateDueAmount = Math.max(0, updateDueAmount - payAmount);
+      collectedPayment = payAmount;
     } else if (newStatus === 'delivered') {
       const payRes = await client.query(
         `SELECT payment_id FROM public.payments WHERE order_id = $1 AND payment_status = 'completed'`,
@@ -188,6 +177,7 @@ export async function PUT(req, { params }) {
            VALUES ($1, 'cod', $2, $2, 0, 'completed', 'COD payment received on delivery')`,
           [orderId, updateDueAmount]
         );
+        collectedPayment = updateDueAmount;
       }
       updateDueAmount = 0;
     }
@@ -207,8 +197,14 @@ export async function PUT(req, { params }) {
       [newStatus, updateDueAmount, courier_name || null, courier_tracking_id || null, orderId]
     );
 
-
     await client.query('COMMIT');
+
+    if (collectedPayment > 0) {
+      await updateAvailableBalance(collectedPayment);
+    }
+    if (newStatus === 'delivered') {
+      await allocateOrderProfit(orderId);
+    }
     return Response.json({ message: 'Order status updated successfully' }, { status: 200 });
 
   } catch (error) {

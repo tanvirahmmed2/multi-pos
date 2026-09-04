@@ -62,6 +62,7 @@ export default function DashboardManagerPurchasePage() {
       (p.invoice_no && p.invoice_no.toLowerCase().includes(term)) ||
       (p.supplier_name && p.supplier_name.toLowerCase().includes(term)) ||
       (p.supplier_phone && p.supplier_phone.toLowerCase().includes(term)) ||
+      (p.branch_name && p.branch_name.toLowerCase().includes(term)) ||
       String(p.purchase_id).includes(term)
     )
   })
@@ -78,14 +79,14 @@ export default function DashboardManagerPurchasePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2 animate-fade-in">
-              <BiReceipt className="text-emerald-600" />
+              <BiReceipt className="text-primary" />
               Procurement & Purchase Invoices
             </h1>
             <p className="text-slate-500 text-sm mt-0.5 animate-fade-in">Record goods ingestion, track supplier billing, and manage payments.</p>
           </div>
           <Link
             href="/dashboard/purchase/create"
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/10 cursor-pointer self-start sm:self-auto"
+            className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 shadow-sm shadow-primary/10 cursor-pointer self-start sm:self-auto"
           >
             <BiPlus className="text-lg" /> New Purchase Invoice
           </Link>
@@ -105,7 +106,7 @@ export default function DashboardManagerPurchasePage() {
 
         {loading ? (
           <div className="w-full h-64 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 gap-2">
-            <BiLoaderAlt className="animate-spin text-xl text-emerald-600" />
+            <BiLoaderAlt className="animate-spin text-xl text-primary" />
             <span>Loading purchases...</span>
           </div>
         ) : filteredPurchases.length > 0 ? (
@@ -115,6 +116,7 @@ export default function DashboardManagerPurchasePage() {
                 <thead className="bg-slate-50/75 text-xs font-semibold text-slate-700 uppercase border-b border-slate-100">
                   <tr>
                     <th scope="col" className="px-6 py-4">Invoice # / Date</th>
+                    <th scope="col" className="px-6 py-4">Branch</th>
                     <th scope="col" className="px-6 py-4">Supplier</th>
                     <th scope="col" className="px-6 py-4">Financials</th>
                     <th scope="col" className="px-6 py-4">Payments</th>
@@ -145,6 +147,11 @@ export default function DashboardManagerPurchasePage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
+                          <span className="font-semibold text-slate-800 text-xs bg-slate-100 px-2.5 py-1 rounded-md inline-block">
+                            {purchase.branch_name ? `${purchase.branch_name}${purchase.branch_code ? ` (${purchase.branch_code})` : ''}` : 'Main Branch'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="font-medium text-slate-800 flex items-center gap-1">
                               <BiUser className="text-slate-400 text-xs" />
@@ -171,7 +178,7 @@ export default function DashboardManagerPurchasePage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-emerald-700 text-sm">
+                            <span className="font-semibold text-primary-dark text-sm">
                               {formatCurrency(purchase.total_paid)}
                             </span>
                             <span className="text-slate-450 text-xxs mt-0.5 font-medium uppercase tracking-wider">
@@ -181,7 +188,7 @@ export default function DashboardManagerPurchasePage() {
                         </td>
                         <td className="px-6 py-4">
                           {isFullyPaid ? (
-                            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary-dark">
                               Paid
                             </span>
                           ) : (

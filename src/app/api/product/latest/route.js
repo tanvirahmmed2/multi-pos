@@ -8,7 +8,8 @@ export async function GET(req) {
         c.name AS category_name, b.name AS brand_name,
         v.variant_id, v.variant_name, v.barcode, v.purchase_price, v.sale_price,
         v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price,
-        v.stock, v.image, v.image_id, v.weight, v.unit
+        COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock,
+        v.image, v.image_id, v.weight, v.unit
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id

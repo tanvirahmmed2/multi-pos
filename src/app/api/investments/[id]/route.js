@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { recalculateShares } from '@/lib/shares';
 
 export async function PUT(req, { params }) {
   try {
@@ -58,6 +59,8 @@ export async function PUT(req, { params }) {
       details: `Updated investment record ID ${id}`
     });
 
+    await recalculateShares();
+
     return Response.json(updated, { status: 200 });
   } catch (error) {
     console.error('Error updating investment:', error);
@@ -87,6 +90,8 @@ export async function DELETE(req, { params }) {
       entityId: id,
       details: `Deleted investment record ID ${id}`
     });
+
+    await recalculateShares();
 
     return Response.json({ message: 'Investment deleted successfully' }, { status: 200 });
   } catch (error) {

@@ -18,14 +18,18 @@ async function getProductByIdOrSlug(idOrSlug) {
   const sql = isNumeric 
     ? `SELECT p.*,
               v.variant_id, v.variant_name, v.barcode, v.purchase_price, v.sale_price,
-              v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price, v.stock, v.image, v.image_id, v.weight, v.unit
+              v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price,
+              COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock,
+              v.image, v.image_id, v.weight, v.unit
        FROM products p 
        LEFT JOIN product_variants v ON p.product_id = v.product_id
        WHERE p.product_id = $1
        ORDER BY v.variant_id ASC LIMIT 1`
     : `SELECT p.*,
               v.variant_id, v.variant_name, v.barcode, v.purchase_price, v.sale_price,
-              v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price, v.stock, v.image, v.image_id, v.weight, v.unit
+              v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price,
+              COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock,
+              v.image, v.image_id, v.weight, v.unit
        FROM products p 
        LEFT JOIN product_variants v ON p.product_id = v.product_id
        WHERE p.slug = $1
@@ -44,7 +48,10 @@ export async function GET(req, { params }) {
     }
 
     const variantsRes = await query(
-      'SELECT * FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC',
+      `SELECT v.*, COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock
+       FROM product_variants v 
+       WHERE v.product_id = $1 
+       ORDER BY v.variant_id ASC`,
       [product.product_id]
     );
 
@@ -90,7 +97,6 @@ export async function PUT(req, { params }) {
 
     const unit = formData.get('unit') || 'Pcs';
     let barcode = formData.get('barcode') || '';
-    const stock = formData.get('stock') ? parseInt(formData.get('stock'), 10) : 0;
     const variantsStr = formData.get('variants'); 
 
     let variants = [];
@@ -115,7 +121,6 @@ export async function PUT(req, { params }) {
         wholesale_price,
         dealer_price,
         retail_price,
-        stock,
         unit
       }];
     }
@@ -192,6 +197,9 @@ export async function PUT(req, { params }) {
       }
     }
 
+    const branchRes = await query('SELECT branch_id FROM branches');
+    const branches = branchRes.rows.length > 0 ? branchRes.rows : [{ branch_id: 1 }];
+
     let index = 0;
     for (const variant of variants) {
       const vName = variant.variant_name || 'Default';
@@ -202,7 +210,6 @@ export async function PUT(req, { params }) {
       const vWholesalePrice = parseFloat(variant.wholesale_price) || 0;
       const vDealerPrice = parseFloat(variant.dealer_price) || 0;
       const vRetailPrice = parseFloat(variant.retail_price) || 0;
-      const vStock = parseInt(variant.stock, 10) || 0;
       const vUnit = variant.unit || unit || 'Pcs';
       const vWeight = (variant.weight !== undefined && variant.weight !== null && variant.weight !== '') ? parseFloat(variant.weight) : null;
       const vIsActive = variant.is_active !== false;
@@ -230,25 +237,33 @@ export async function PUT(req, { params }) {
           `UPDATE product_variants 
            SET variant_name = $1, barcode = $2, purchase_price = $3, sale_price = $4, 
                discount_price = $5, wholesale_price = $6, dealer_price = $7, retail_price = $8, 
-               stock = $9, weight = $10, unit = $11, image = $12, image_id = $13, is_active = $14, updated_at = NOW()
-           WHERE variant_id = $15`,
+               weight = $9, unit = $10, image = $11, image_id = $12, is_active = $13, updated_at = NOW()
+           WHERE variant_id = $14`,
           [
             vName, vBarcode, vPurchasePrice, vSalePrice,
-            vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vStock, vWeight, vUnit, vImage, vImageId, vIsActive,
+            vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vWeight, vUnit, vImage, vImageId, vIsActive,
             variant.variant_id
           ]
         );
       } else {
-        await query(
+        const insertedVar = await query(
           `INSERT INTO product_variants (
             product_id, variant_name, barcode, purchase_price, sale_price, 
-            discount_price, wholesale_price, dealer_price, retail_price, stock, weight, unit, image, image_id, is_active
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+            discount_price, wholesale_price, dealer_price, retail_price, weight, unit, image, image_id, is_active
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          RETURNING variant_id`,
           [
             product.product_id, vName, vBarcode, vPurchasePrice, vSalePrice,
-            vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vStock, vWeight, vUnit, vImage, vImageId, vIsActive
+            vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vWeight, vUnit, vImage, vImageId, vIsActive
           ]
         );
+        const newVarId = insertedVar.rows[0].variant_id;
+        for (const b of branches) {
+          await query(
+            `INSERT INTO stocks (variant_id, branch_id, stock) VALUES ($1, $2, 0) ON CONFLICT (variant_id, branch_id) DO NOTHING`,
+            [newVarId, b.branch_id]
+          );
+        }
       }
       index++;
     }
@@ -256,7 +271,8 @@ export async function PUT(req, { params }) {
     await query('COMMIT');
 
     const finalFirstVarRes = await query(
-      `SELECT image, image_id, purchase_price, sale_price, discount_price, wholesale_price, dealer_price, retail_price, unit, barcode, stock 
+      `SELECT image, image_id, purchase_price, sale_price, discount_price, wholesale_price, dealer_price, retail_price, unit, barcode,
+              COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = product_variants.variant_id), 0) AS stock 
        FROM product_variants 
        WHERE product_id = $1 
        ORDER BY variant_id ASC LIMIT 1`,
@@ -274,7 +290,7 @@ export async function PUT(req, { params }) {
       retail_price: finalFirstVar.retail_price || 0,
       unit: finalFirstVar.unit || 'Pcs',
       barcode: finalFirstVar.barcode,
-      stock: finalFirstVar.stock,
+      stock: finalFirstVar.stock || 0,
       image: finalFirstVar.image || null,
       image_id: finalFirstVar.image_id || null
     }, { status: 200 });

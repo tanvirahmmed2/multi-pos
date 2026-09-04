@@ -27,6 +27,10 @@ export default function DashboardAdminSettingsPage() {
   const [heroTitle, setHeroTitle] = useState('')
   const [heroSubtitle, setHeroSubtitle] = useState('')
   
+  const [isShareInvestment, setIsShareInvestment] = useState(false)
+  const [excludedTax, setExcludedTax] = useState(false)
+  const [taxAmount, setTaxAmount] = useState(0)
+  
   const [dbCurrencies, setDbCurrencies] = useState([])
   const [activatingId, setActivatingId] = useState(null)
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false)
@@ -70,6 +74,9 @@ export default function DashboardAdminSettingsPage() {
           setSociallink(data.sociallink || '')
           setHeroTitle(data.hero_title || '')
           setHeroSubtitle(data.hero_subtitle || '')
+          setIsShareInvestment(data.is_share_investment === true)
+          setExcludedTax(data.excluded_tax === true)
+          setTaxAmount(data.tax_amount || 0)
           setLogoPreview(data.logo || data.logo_url || '')
           setExistingLogoUrl(data.logo || data.logo_url || '')
         }
@@ -140,6 +147,9 @@ export default function DashboardAdminSettingsPage() {
     formData.append('sociallink', sociallink)
     formData.append('hero_title', heroTitle)
     formData.append('hero_subtitle', heroSubtitle)
+    formData.append('is_share_investment', isShareInvestment ? 'true' : 'false')
+    formData.append('excluded_tax', excludedTax ? 'true' : 'false')
+    formData.append('tax_amount', taxAmount)
     formData.append('currency_symbol', currencySymbol)
     formData.append('currency_code', currencyCode)
     if (currencyId) {
@@ -257,6 +267,71 @@ export default function DashboardAdminSettingsPage() {
                   onChange={(e) => setSociallink(e.target.value)}
                   className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition"
                 />
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl mt-1">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-slate-800">Share Investment Mode</h4>
+                    <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${isShareInvestment ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-secondary text-white border-slate-200'}`}>
+                      {isShareInvestment ? 'ENABLED' : 'DISABLED'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    When enabled, equity share percentages are automatically calculated from investments and displayed on the Investor dashboard.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isShareInvestment}
+                    onChange={(e) => setIsShareInvestment(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 flex flex-col gap-3 rounded-xl mt-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-slate-800">Excluded Tax Mode</h4>
+                      <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${excludedTax ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                        {excludedTax ? 'ENABLED' : 'DISABLED'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Turn on excluded tax to specify tax amount for store orders and pricing calculation.
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={excludedTax}
+                      onChange={(e) => setExcludedTax(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                {excludedTax && (
+                  <div className="pt-2 border-t border-slate-200 flex flex-col gap-1.5 animate-fadeIn">
+                    <label className="text-xs font-bold text-slate-700">Tax Amount</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={taxAmount}
+                      onChange={(e) => setTaxAmount(parseFloat(e.target.value) || 0)}
+                      placeholder="Enter tax amount"
+                      className="px-3.5 py-2.5 bg-white border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition w-full sm:w-1/2"
+                    />
+                  </div>
+                )}
               </div>
 
             </div>

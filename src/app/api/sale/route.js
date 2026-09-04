@@ -2,6 +2,7 @@ import { query } from '@/lib/db';
 import pool from '@/lib/db';
 import { authenticateUser } from '@/lib/auth';
 import { recordActivityLog } from '@/lib/logger';
+import { updateAvailableBalance, allocateOrderProfit } from '@/lib/financial';
 
 export async function GET(req) {
   try {
@@ -135,7 +136,9 @@ export async function POST(req) {
     for (const item of items) {
       if (item.variant_id) {
         const varRes = await client.query(
-          `SELECT v.sale_price, v.discount_price, v.stock, p.name, p.product_id
+          `SELECT v.sale_price, v.discount_price, 
+                  COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock, 
+                  p.name, p.product_id
            FROM product_variants v
            JOIN products p ON v.product_id = p.product_id
            WHERE v.variant_id = $1`,
@@ -163,7 +166,9 @@ export async function POST(req) {
         });
       } else {
         const prodRes = await client.query(
-          `SELECT v.sale_price, v.discount_price, v.stock, p.name
+          `SELECT v.sale_price, v.discount_price, 
+                  COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock, 
+                  p.name
            FROM product_variants v
            JOIN products p ON v.product_id = p.product_id
            WHERE p.product_id = $1
@@ -232,36 +237,26 @@ export async function POST(req) {
       );
 
       if (is_pos) {
-        if (vItem.variant_id) {
-          const updateRes = await client.query(
-            `UPDATE product_variants 
-             SET stock = stock - $1 
-             WHERE variant_id = $2
-             RETURNING stock, variant_name`,
-            [vItem.quantity, vItem.variant_id]
-          );
-          if (updateRes.rows.length > 0 && updateRes.rows[0].stock < 0) {
-            throw new Error(`Insufficient stock for variant "${updateRes.rows[0].variant_name}"`);
-          }
-        } else {
+        let targetVarId = vItem.variant_id;
+        if (!targetVarId) {
           const defaultVarRes = await client.query(
             `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
             [vItem.product_id]
           );
           if (defaultVarRes.rows.length > 0) {
-            const targetVarId = defaultVarRes.rows[0].variant_id;
-            const updateRes = await client.query(
-              `UPDATE product_variants 
-               SET stock = stock - $1 
-               WHERE variant_id = $2
-               RETURNING stock, variant_name AS name`,
-              [vItem.quantity, targetVarId]
-            );
-            if (updateRes.rows.length > 0 && updateRes.rows[0].stock < 0) {
-              throw new Error(`Insufficient stock for product variant`);
-            }
-          } else {
-            throw new Error(`Default variant not found for product ID ${vItem.product_id}`);
+            targetVarId = defaultVarRes.rows[0].variant_id;
+          }
+        }
+        if (targetVarId) {
+          const updateRes = await client.query(
+            `UPDATE stocks 
+             SET stock = stock - $1, updated_at = NOW() 
+             WHERE variant_id = $2 AND branch_id = 1
+             RETURNING stock`,
+            [vItem.quantity, targetVarId]
+          );
+          if (updateRes.rows.length === 0 || updateRes.rows[0].stock < 0) {
+            throw new Error(`Insufficient stock for product`);
           }
         }
       }
@@ -282,6 +277,11 @@ export async function POST(req) {
     }
 
     await client.query('COMMIT');
+
+    if (is_pos) {
+      await updateAvailableBalance(totalAmount);
+      await allocateOrderProfit(orderId);
+    }
 
     await recordActivityLog(req, {
       staffId,

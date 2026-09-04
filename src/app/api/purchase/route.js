@@ -1,10 +1,11 @@
 import { query } from '@/lib/db';
-import { isManager } from '@/lib/auth';
+import { isManagerOrAdmin } from '@/lib/auth';
 import { recordActivityLog } from '@/lib/logger';
+import { updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
-    const auth = await isManager();
+    const auth = await isManagerOrAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
@@ -15,12 +16,15 @@ export async function GET(req) {
         s.name AS staff_name,
         s.email AS staff_email,
         s.role AS staff_role,
+        b.name AS branch_name,
+        b.code AS branch_code,
         COALESCE(SUM(pm.amount_paid), 0)::numeric AS total_paid,
         (p.total_amount - COALESCE(SUM(pm.amount_paid), 0))::numeric AS due_amount
       FROM purchases p
       LEFT JOIN purchase_payments pm ON p.purchase_id = pm.purchase_id
       LEFT JOIN staffs s ON p.staff_id = s.staff_id
-      GROUP BY p.purchase_id, s.staff_id
+      LEFT JOIN branches b ON p.branch_id = b.branch_id
+      GROUP BY p.purchase_id, s.staff_id, b.branch_id
       ORDER BY p.purchase_id DESC
     `);
 
@@ -33,15 +37,17 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const auth = await isManager();
+    const auth = await isManagerOrAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
     const staffId = auth.user ? (auth.user.staff_id || auth.user.user_id) : null;
+    const staffBranchId = auth.user ? auth.user.branch_id : null;
 
     const body = await req.json();
     const { 
+      branch_id,
       supplier_id, 
       invoice_no, 
       extra_discount = 0, 
@@ -54,6 +60,17 @@ export async function POST(req) {
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'At least one purchase item is required' }, { status: 400 });
+    }
+
+    let effectiveBranchId = branch_id ? parseInt(branch_id, 10) : staffBranchId;
+
+    if (!effectiveBranchId) {
+      const defaultBranchRes = await query('SELECT branch_id FROM branches WHERE is_active = true ORDER BY branch_id ASC LIMIT 1');
+      if (defaultBranchRes.rows.length > 0) {
+        effectiveBranchId = defaultBranchRes.rows[0].branch_id;
+      } else {
+        return Response.json({ error: 'Branch selection is mandatory for purchase invoice' }, { status: 400 });
+      }
     }
 
     let sName = 'Walk-in Supplier';
@@ -81,12 +98,12 @@ export async function POST(req) {
 
     const purchaseRes = await query(
       `INSERT INTO purchases (
-        supplier_id, staff_id, supplier_name, supplier_phone, invoice_no, 
+        branch_id, supplier_id, staff_id, supplier_name, supplier_phone, invoice_no, 
         subtotal_amount, extra_discount, total_amount, payment_method, transaction_id, note
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        parsedSupplierId, staffId, sName, sPhone, invoice_no || null,
+        effectiveBranchId, parsedSupplierId, staffId, sName, sPhone, invoice_no || null,
         subtotal, extra_discount, total, payment_method, transaction_id, note
       ]
     );
@@ -119,10 +136,11 @@ export async function POST(req) {
 
       if (targetVarId) {
         await query(
-          `UPDATE product_variants 
-           SET stock = stock + $1 
-           WHERE variant_id = $2`,
-          [q, targetVarId]
+          `INSERT INTO stocks (variant_id, branch_id, stock)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (variant_id, branch_id)
+           DO UPDATE SET stock = stocks.stock + EXCLUDED.stock, updated_at = NOW()`,
+          [targetVarId, effectiveBranchId, q]
         );
       }
 
@@ -140,6 +158,7 @@ export async function POST(req) {
          VALUES ($1, $2, $3, $4)`,
         [purchaseId, payment_method, initialPaid, transaction_id]
       );
+      await updateAvailableBalance(-initialPaid);
     }
 
     await query('COMMIT');
@@ -149,7 +168,7 @@ export async function POST(req) {
       action: 'CREATE_PURCHASE_INVOICE',
       entity: 'purchases',
       entityId: purchaseId,
-      details: `Purchase Invoice #${invoice_no || purchaseId} logged for supplier ${sName}`
+      details: `Purchase Invoice #${invoice_no || purchaseId} logged for supplier ${sName} (Branch #${effectiveBranchId})`
     });
 
     return Response.json(purchase, { status: 201 });

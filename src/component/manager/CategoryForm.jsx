@@ -105,11 +105,11 @@ export default function CategoryForm({ initialData, onSubmit, loading }) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-slate-700">Category Image/Banner</label>
+          <label className="text-sm font-semibold text-slate-700">Category Image/Banner (Optional)</label>
           
           <div className="flex flex-col md:flex-row items-center gap-4">
             {imagePreview && (
-              <div className="relative w-24 h-24 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center shrink-0">
+              <div className="relative w-24 h-24 border border-slate-200 overflow-hidden bg-slate-50 flex items-center justify-center shrink-0">
                 <img
                   src={imagePreview}
                   alt="Preview"
@@ -118,14 +118,13 @@ export default function CategoryForm({ initialData, onSubmit, loading }) {
               </div>
             )}
             
-            <label className="w-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 hover:bg-slate-50 transition cursor-pointer text-slate-500 hover:text-slate-700">
+            <label className="w-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 p-4 hover:bg-slate-50 transition cursor-pointer text-slate-500 hover:text-slate-700">
               <BiUpload className="text-2xl mb-1.5" />
               <span className="text-sm font-medium">Click to upload file</span>
               <span className="text-xs text-slate-400 mt-0.5">PNG, JPG, JPEG up to 5MB</span>
               <input className="input-style hidden"
                 type="file"
                 accept="image/*"
-                required={!initialData}
                 onChange={handleImageChange}
               />
             </label>

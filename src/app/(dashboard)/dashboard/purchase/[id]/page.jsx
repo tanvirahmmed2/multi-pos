@@ -15,11 +15,12 @@ import {
   BiCalendar,
   BiUser,
   BiCreditCard,
-  BiDetail
+  BiDetail,
+  BiStore
 } from 'react-icons/bi'
 
 export default function PurchaseDetailPage() {
-  const { dashSidebar } = useContext(Context)
+  const { dashSidebar, currencySymbol, formatCurrency } = useContext(Context)
   const router = useRouter()
   const params = useParams()
   const { id } = params
@@ -80,7 +81,7 @@ export default function PurchaseDetailPage() {
 
     const due = parseFloat(purchase.due_amount) || 0
     if (amt > due + 0.01) {
-      toast.error(`Payment exceeds remaining due of $${due.toFixed(2)}`)
+      toast.error(`Payment exceeds remaining due of ${formatCurrency(due)}`)
       return
     }
 
@@ -103,16 +104,11 @@ export default function PurchaseDetailPage() {
     }
   }
 
-  const formatCurrency = (val) => {
-    const num = parseFloat(val) || 0
-    return `৳${num.toFixed(2)}`
-  }
-
   if (fetching) {
     return (
       <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'} flex items-center justify-center print:hidden`}>
         <div className="flex items-center gap-2 text-slate-500 font-semibold">
-          <BiLoaderAlt className="animate-spin text-xl text-emerald-600" />
+          <BiLoaderAlt className="animate-spin text-xl text-primary" />
           <span>Fetching invoice details...</span>
         </div>
       </div>
@@ -143,7 +139,7 @@ export default function PurchaseDetailPage() {
             </Link>
             <div>
               <h1 className="text-xl font-bold text-slate-800 flex items-center gap-1.5">
-                <BiDetail className="text-emerald-650" />
+                <BiDetail className="text-primary" />
                 Invoice Detail
               </h1>
               <p className="text-slate-500 text-xs mt-0.5">Invoice ID: #{purchase.purchase_id}</p>
@@ -176,7 +172,7 @@ export default function PurchaseDetailPage() {
           
           <div className="absolute top-4 right-4 print:hidden">
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-              isFullyPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+              isFullyPaid ? 'bg-primary/10 text-primary-dark border border-primary/20' : 'bg-amber-50 text-amber-700 border border-amber-200'
             }`}>
               {isFullyPaid ? 'Fully Paid' : 'Due Outstanding'}
             </span>
@@ -199,10 +195,18 @@ export default function PurchaseDetailPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 print:bg-white print:border-slate-100 print:p-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 print:bg-white print:border-slate-100 print:p-2">
+            <div>
+              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Target Branch</h4>
+              <p className="font-bold text-slate-850 mt-1 flex items-center gap-1.5 text-xs">
+                <BiStore className="text-primary text-sm" />
+                {purchase.branch_name ? `${purchase.branch_name}${purchase.branch_code ? ` (${purchase.branch_code})` : ''}` : 'Main Branch'}
+              </p>
+            </div>
+
             <div>
               <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Billing From (Supplier)</h4>
-              <p className="font-bold text-slate-850 mt-1 flex items-center gap-1.5">
+              <p className="font-bold text-slate-850 mt-1 flex items-center gap-1.5 text-xs">
                 <BiUser className="text-slate-400" />
                 {purchase.supplier_name || 'Walk-in Supplier'}
               </p>
@@ -212,9 +216,9 @@ export default function PurchaseDetailPage() {
             </div>
             
             <div>
-              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Created & Processed By (Staff)</h4>
+              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Created & Processed By</h4>
               <p className="font-bold text-slate-800 mt-1 flex items-center gap-1.5 text-xs">
-                <BiUser className="text-emerald-600" />
+                <BiUser className="text-primary" />
                 {purchase.staff_name ? `${purchase.staff_name} (${purchase.staff_role || 'Staff'})` : 'System Administrator'}
               </p>
               {purchase.staff_email && (
@@ -275,14 +279,14 @@ export default function PurchaseDetailPage() {
                 <span>Total Amount:</span>
                 <span>{formatCurrency(purchase.total_amount)}</span>
               </div>
-              <div className="flex justify-between text-emerald-700 font-semibold">
+              <div className="flex justify-between text-primary-dark font-semibold">
                 <span>Total Amount Paid:</span>
                 <span>{formatCurrency(purchase.total_paid)}</span>
               </div>
               
               <div className="flex justify-between p-2 rounded-xl bg-slate-55 bg-slate-50/75 border border-slate-150 items-center">
                 <span className="font-semibold text-slate-700">Remaining Balance:</span>
-                <span className={`text-base font-bold ${due > 0 ? 'text-amber-600' : 'text-emerald-700'}`}>
+                <span className={`text-base font-bold ${due > 0 ? 'text-amber-600' : 'text-primary-dark'}`}>
                   {formatCurrency(purchase.due_amount)}
                 </span>
               </div>
@@ -314,7 +318,7 @@ export default function PurchaseDetailPage() {
                         <td className="px-3 py-2.5 text-slate-500 font-mono">
                           {p.transaction_id || 'N/A'}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-semibold text-emerald-700">
+                        <td className="px-3 py-2.5 text-right font-semibold text-primary-dark">
                           {formatCurrency(p.amount_paid)}
                         </td>
                       </tr>
@@ -332,20 +336,20 @@ export default function PurchaseDetailPage() {
         {!isFullyPaid && (
           <form onSubmit={handleLogPayment} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4 print:hidden animate-fade-in">
             <div className="border-b border-slate-50 pb-2 flex items-center gap-1.5">
-              <BiPlusCircle className="text-emerald-600 text-lg" />
+              <BiPlusCircle className="text-primary text-lg" />
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Log Invoice Payment</h2>
             </div>
             
             <p className="text-slate-500 text-xs">
-              Log an incremental payment received by the supplier against the outstanding due balance of <span className="font-bold text-amber-600">${due.toFixed(2)}</span>.
+              Log an incremental payment received by the supplier against the outstanding due balance of <span className="font-bold text-amber-600">{formatCurrency(due)}</span>.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">Payment Amount *</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450 text-xs">$</span>
-                  <input className="input-style"
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450 text-xs">{currencySymbol}</span>
+                  <input className="input-style pl-7"
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -362,7 +366,7 @@ export default function PurchaseDetailPage() {
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                 >
                   <option value="Cash">Cash</option>
                   <option value="Card">Credit/Debit Card</option>
@@ -385,7 +389,7 @@ export default function PurchaseDetailPage() {
               <button
                 type="submit"
                 disabled={paying}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-sm shadow-emerald-600/10"
+                className="px-5 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-sm font-semibold transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shadow-sm shadow-primary/10"
               >
                 {paying ? (
                   <>

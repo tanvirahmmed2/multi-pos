@@ -28,13 +28,13 @@ export default function POSPageClean() {
 
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
+  const [websiteSettings, setWebsiteSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [barcodeSearch, setBarcodeSearch] = useState('')
   
   const [cart, setCart] = useState([])
-  const [discount, setDiscount] = useState(0)
   const [deliveryCharge, setDeliveryCharge] = useState(0)
   const [paymentType, setPaymentType] = useState('cash')
   const [amountReceived, setAmountReceived] = useState('')
@@ -49,18 +49,34 @@ export default function POSPageClean() {
 
   const barcodeInputRef = useRef(null)
 
-  const fetchData = async () => {
+  useEffect(() => {
+    const fetchInitialMeta = async () => {
+      try {
+        const [catRes, settingsRes] = await Promise.all([
+          axios.get('/api/category'),
+          axios.get('/api/settings')
+        ])
+        setCategories(catRes.data)
+        setWebsiteSettings(settingsRes.data)
+      } catch (err) {
+        console.error('Failed to load metadata:', err)
+      }
+    }
+    fetchInitialMeta()
+  }, [])
+
+  const fetchApiProducts = async () => {
     setLoading(true)
     try {
-      const [prodRes, catRes] = await Promise.all([
-        axios.get('/api/product'),
-        axios.get('/api/category')
-      ])
+      const params = new URLSearchParams()
+      if (searchTerm.trim()) params.append('search', searchTerm.trim())
+      if (activeCategory && activeCategory !== 'all') params.append('category', activeCategory)
+
+      const prodRes = await axios.get(`/api/product?${params.toString()}`)
       setProducts(prodRes.data.filter(p => p.is_active !== false))
-      setCategories(catRes.data)
     } catch (err) {
-      console.error(err)
-      toast.error('Failed to load catalog data')
+      console.error('Failed to fetch products from API:', err)
+      toast.error('Failed to search products')
     } finally {
       setLoading(false)
     }
@@ -68,11 +84,12 @@ export default function POSPageClean() {
 
   useEffect(() => {
     if (user && ['admin', 'manager', 'sales'].includes(user.role)) {
-      fetchData()
+      const timer = setTimeout(() => {
+        fetchApiProducts()
+      }, 300)
+      return () => clearTimeout(timer)
     }
-  }, [user])
-
-
+  }, [user, searchTerm, activeCategory])
 
   const handleBarcodeSubmit = (e) => {
     e.preventDefault()
@@ -176,21 +193,15 @@ export default function POSPageClean() {
     setCart(cart.filter(item => item.cartKey !== key))
   }
 
-  const totalProductDiscount = cart.reduce((sum, item) => sum + ((item.discount || 0) * item.quantity), 0)
-  const extraDiscountVal = parseFloat(discount) || 0
-  const totalDiscount = totalProductDiscount + extraDiscountVal
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const isExcludedTax = websiteSettings?.excluded_tax === true
+  const taxRate = isExcludedTax ? (parseFloat(websiteSettings?.tax_amount) || 0) : 0
+  const taxAmountVal = isExcludedTax ? (subtotal * (taxRate / 100)) : 0
   const deliveryChargeVal = parseFloat(deliveryCharge) || 0
-  const totalAmount = Math.max(0, subtotal + deliveryChargeVal - extraDiscountVal)
+  const totalAmount = Math.max(0, subtotal + deliveryChargeVal + taxAmountVal)
+
   const receivedVal = parseFloat(amountReceived) || 0
   const changeAmount = paymentType === 'cash' && receivedVal > totalAmount ? receivedVal - totalAmount : 0
-
-  const filteredProducts = products.filter(p => {
-    const matchesCategory = activeCategory === 'all' || p.category_id === parseInt(activeCategory, 10) || String(p.category_id) === String(activeCategory) || p.category_slug === activeCategory
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (p.barcode && p.barcode.includes(searchTerm))
-    return matchesCategory && matchesSearch
-  })
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -226,7 +237,6 @@ export default function POSPageClean() {
       toast.success('Sale Completed!')
 
       setCart([])
-      setDiscount(0)
       setDeliveryCharge(0)
       setAmountReceived('')
       setNote('')
@@ -242,8 +252,6 @@ export default function POSPageClean() {
     }
   }
 
-
-
   if (userLoading) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center bg-white">
@@ -258,8 +266,6 @@ export default function POSPageClean() {
       <div className="w-full flex flex-col gap-6">
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-          
-
           <div className="flex items-center gap-3">
             <form onSubmit={handleBarcodeSubmit} className="flex items-center border border-slate-200 bg-white rounded-lg px-2.5 py-1">
               <BiBarcode className="text-slate-400 mr-2 text-base" />
@@ -274,7 +280,7 @@ export default function POSPageClean() {
             </form>
 
             <button
-              onClick={fetchData}
+              onClick={fetchApiProducts}
               disabled={loading}
               className="p-1.5 border border-slate-200 hover:bg-slate-100 bg-white rounded-lg text-slate-500 transition cursor-pointer"
             >
@@ -308,7 +314,6 @@ export default function POSPageClean() {
                   <button
                     onClick={() => {
                       setCart([])
-                      setDiscount(0)
                       setDeliveryCharge(0)
                       setAmountReceived('')
                       setNote('')
@@ -331,7 +336,6 @@ export default function POSPageClean() {
                         <th className="py-2 px-2.5 text-left">Title</th>
                         <th className="py-2 px-2 text-center">Variant</th>
                         <th className="py-2 px-2 text-center">Price</th>
-                        <th className="py-2 px-2 text-center">Discount</th>
                         <th className="py-2 px-2 text-center">Quantity</th>
                         <th className="py-2 px-2 text-right">Total Price</th>
                         <th className="py-2 px-2 text-center w-8">Action</th>
@@ -368,16 +372,6 @@ export default function POSPageClean() {
 
                           <td className="py-2.5 px-2 text-center font-mono text-slate-600 text-xs whitespace-nowrap">
                             ৳{item.price.toFixed(2)}
-                          </td>
-
-                          <td className="py-2.5 px-2 text-center font-mono text-xs whitespace-nowrap">
-                            {item.discount > 0 ? (
-                              <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 px-1 py-0.5 rounded">
-                                -৳{(item.discount * item.quantity).toFixed(2)}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300 text-[10px]">-</span>
-                            )}
                           </td>
 
                           <td className="py-2.5 px-2 text-center">
@@ -428,42 +422,26 @@ export default function POSPageClean() {
               )}
 
               <div className="border-t border-slate-100 pt-3 mt-auto flex flex-col gap-2">
-                <div className="flex justify-between items-center text-xs font-medium text-slate-500">
-                  <span>Product Discounts</span>
-                  <span className="font-mono text-emerald-600 font-bold">
-                    {totalProductDiscount > 0 ? `-৳${totalProductDiscount.toFixed(2)}` : '৳0.00'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3.5 my-1">
-                  <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Extra Discount (৳)</label>
-                    <input className="input-style"
-                      type="number"
-                      min="0"
-                      value={discount}
-                      onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Delivery Charge (৳)</label>
-                    <input className="input-style"
-                      type="number"
-                      min="0"
-                      value={deliveryCharge}
-                      onChange={(e) => setDeliveryCharge(Math.max(0, parseFloat(e.target.value) || 0))}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 border-t border-slate-100 pt-2">
-                  <span>Total Discount</span>
-                  <span className="font-mono text-emerald-600 font-bold">-৳{totalDiscount.toFixed(2)}</span>
-                </div>
-
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
                   <span>Sub Total</span>
                   <span className="font-mono text-slate-800">৳{subtotal.toFixed(2)}</span>
+                </div>
+
+                {isExcludedTax && taxRate > 0 && (
+                  <div className="flex justify-between items-center text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200/60">
+                    <span>Tax ({taxRate}%)</span>
+                    <span className="font-mono font-bold">+৳{taxAmountVal.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="my-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Delivery Charge (৳)</label>
+                  <input className="input-style"
+                    type="number"
+                    min="0"
+                    value={deliveryCharge}
+                    onChange={(e) => setDeliveryCharge(Math.max(0, parseFloat(e.target.value) || 0))}
+                  />
                 </div>
 
                 {deliveryChargeVal > 0 && (
@@ -561,7 +539,7 @@ export default function POSPageClean() {
               <div className="relative flex-1">
                 <input className="input-style"
                   type="text"
-                  placeholder="Search catalog by title, brand, or barcode..."
+                  placeholder="Search catalog directly from API by title or barcode..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -586,11 +564,11 @@ export default function POSPageClean() {
             {loading ? (
               <div className="h-84 flex flex-col items-center justify-center text-slate-400 gap-2 bg-white border border-slate-200 rounded-xl">
                 <BiLoaderAlt className="animate-spin text-xl text-slate-900" />
-                <span className="text-xs font-medium">Loading catalog...</span>
+                <span className="text-xs font-medium">Searching products via API...</span>
               </div>
-            ) : filteredProducts.length > 0 ? (
+            ) : products.length > 0 ? (
               <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-                {filteredProducts.map((p) => {
+                {products.map((p) => {
                   const price = parseFloat(p.sale_price)
                   const discountAmt = parseFloat(p.discount_price || 0)
                   const finalP = Math.max(0, price - discountAmt)
@@ -647,7 +625,7 @@ export default function POSPageClean() {
               </div>
             ) : (
               <div className="h-80 flex flex-col items-center justify-center text-slate-400 gap-1.5 bg-white border border-slate-200 rounded-xl">
-                <span className="text-xs font-bold text-slate-600">No matching products found</span>
+                <span className="text-xs font-bold text-slate-600">No matching products found from API</span>
               </div>
             )}
 
@@ -708,8 +686,7 @@ export default function POSPageClean() {
         </div>
       )}
 
-
-
     </div>
   )
 }
+

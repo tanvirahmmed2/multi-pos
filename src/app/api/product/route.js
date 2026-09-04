@@ -20,10 +20,9 @@ export async function GET(req) {
         p.product_id, p.category_id, p.brand_id, p.name, p.slug, p.description, p.is_active, p.created_at, p.updated_at,
         c.name AS category_name, b.name AS brand_name,
         v.variant_id, v.variant_name, v.barcode, v.purchase_price, v.sale_price,
-
         v.discount_price, v.wholesale_price, v.dealer_price, v.retail_price,
-        v.stock, v.image, v.image_id, v.weight, v.unit,
-        COALESCE((SELECT SUM(stock)::integer FROM product_variants WHERE product_id = p.product_id), 0) AS total_stock
+        v.image, v.image_id, v.weight, v.unit,
+        COALESCE((SELECT SUM(st.stock)::integer FROM stocks st JOIN product_variants pv ON st.variant_id = pv.variant_id WHERE pv.product_id = p.product_id), 0) AS total_stock
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id
@@ -34,8 +33,9 @@ export async function GET(req) {
 
     const url = new URL(req.url);
     const category = url.searchParams.get('category');
+    const search = url.searchParams.get('search') || url.searchParams.get('q');
 
-    if (category) {
+    if (category && category !== 'all') {
       const isNumeric = /^\d+$/.test(category);
       const catRes = await query(
         isNumeric 
@@ -57,6 +57,12 @@ export async function GET(req) {
       } else {
         whereClauses.push(`1=0`);
       }
+    }
+
+    if (search && search.trim()) {
+      const searchParam = `%${search.trim().toLowerCase()}%`;
+      whereClauses.push(`(LOWER(p.name) LIKE $${params.length + 1} OR LOWER(COALESCE(v.barcode, '')) LIKE $${params.length + 1})`);
+      params.push(searchParam);
     }
 
     if (whereClauses.length > 0) {
@@ -104,7 +110,6 @@ export async function POST(req) {
 
     const unit = formData.get('unit') || 'Pcs';
     let barcode = formData.get('barcode') || '';
-    const stock = formData.get('stock') ? parseInt(formData.get('stock'), 10) : 0;
     const variantsStr = formData.get('variants');
 
     let variants = [];
@@ -129,7 +134,6 @@ export async function POST(req) {
         wholesale_price,
         dealer_price,
         retail_price,
-        stock,
         unit
       }];
     }
@@ -169,6 +173,9 @@ export async function POST(req) {
 
     const product = productResult.rows[0];
 
+    const branchRes = await query('SELECT branch_id FROM branches');
+    const branches = branchRes.rows.length > 0 ? branchRes.rows : [{ branch_id: 1 }];
+
     let index = 0;
     let firstVariantInserted = null;
     for (const variant of variants) {
@@ -180,7 +187,6 @@ export async function POST(req) {
       const vWholesalePrice = parseFloat(variant.wholesale_price) || 0;
       const vDealerPrice = parseFloat(variant.dealer_price) || 0;
       const vRetailPrice = parseFloat(variant.retail_price) || 0;
-      const vStock = parseInt(variant.stock, 10) || 0;
       const vUnit = variant.unit || unit || 'Pcs';
       const vWeight = (variant.weight !== undefined && variant.weight !== null && variant.weight !== '') ? parseFloat(variant.weight) : null;
       const vIsActive = variant.is_active !== false;
@@ -200,17 +206,25 @@ export async function POST(req) {
       const insertedVariant = await query(
         `INSERT INTO product_variants (
           product_id, variant_name, barcode, purchase_price, sale_price, 
-          discount_price, wholesale_price, dealer_price, retail_price, stock, weight, unit, image, image_id, is_active
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          discount_price, wholesale_price, dealer_price, retail_price, weight, unit, image, image_id, is_active
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
           product.product_id, vName, vBarcode, vPurchasePrice, vSalePrice,
-          vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vStock, vWeight, vUnit, vImage, vImageId, vIsActive
+          vDiscountPrice, vWholesalePrice, vDealerPrice, vRetailPrice, vWeight, vUnit, vImage, vImageId, vIsActive
         ]
       );
 
+      const newVar = insertedVariant.rows[0];
+      for (const b of branches) {
+        await query(
+          `INSERT INTO stocks (variant_id, branch_id, stock) VALUES ($1, $2, 0) ON CONFLICT (variant_id, branch_id) DO NOTHING`,
+          [newVar.variant_id, b.branch_id]
+        );
+      }
+
       if (index === 0) {
-        firstVariantInserted = insertedVariant.rows[0];
+        firstVariantInserted = newVar;
       }
       index++;
     }
@@ -228,7 +242,7 @@ export async function POST(req) {
       retail_price: firstVar.retail_price || 0,
       unit: firstVar.unit || 'Pcs',
       barcode: firstVar.barcode,
-      stock: firstVar.stock,
+      stock: 0,
       image: firstVar.image || null,
       image_id: firstVar.image_id || null
     }, { status: 201 });

@@ -129,7 +129,7 @@ export async function GET(req) {
             v.wholesale_price, 
             v.dealer_price, 
             v.retail_price, 
-            v.stock, 
+            COALESCE((SELECT SUM(stock)::integer FROM stocks WHERE variant_id = v.variant_id), 0) AS stock, 
             v.unit,
             v.is_active AS variant_active, 
             p.created_at

@@ -55,15 +55,15 @@ CREATE TABLE categories (
   parent_id INT REFERENCES categories(category_id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   slug VARCHAR(100) NOT NULL,
-  image TEXT NOT NULL,
-  image_id TEXT NOT NULL,
+  image TEXT,
+  image_id TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE brands (
   brand_id SERIAL PRIMARY KEY,
-  image TEXT NOT NULL,
-  image_id TEXT NOT NULL,
+  image TEXT,
+  image_id TEXT,
   name VARCHAR(100) NOT NULL,
   description TEXT,
   is_active BOOLEAN DEFAULT TRUE,
@@ -174,11 +174,11 @@ CREATE TABLE purchase_payments (
 -- =====================================================
 -- ORDERS & ORDER ITEMS
 -- =====================================================
-CREATE TABLE public.orders (
+CREATE TABLE orders (
   order_id            SERIAL PRIMARY KEY,
-  branch_id           INTEGER REFERENCES public.branches(branch_id) ON DELETE SET NULL,
-  customer_id         INTEGER REFERENCES public.customers(customer_id),
-  staff_id            INTEGER REFERENCES public.staffs(staff_id) ON DELETE SET NULL,
+  branch_id           INTEGER REFERENCES branches(branch_id) ON DELETE SET NULL,
+  customer_id         INTEGER REFERENCES customers(customer_id),
+  staff_id            INTEGER REFERENCES staffs(staff_id) ON DELETE SET NULL,
   phone               VARCHAR(20) NOT NULL,
   shipping_address    TEXT NOT NULL,
   shipping_city       VARCHAR(100),
@@ -215,9 +215,9 @@ CREATE TABLE order_items (
 -- =====================================================
 -- PAYMENTS
 -- =====================================================
-CREATE TABLE public.payments (
+CREATE TABLE payments (
   payment_id       SERIAL PRIMARY KEY,
-  order_id         INTEGER NOT NULL REFERENCES public.orders(order_id) ON DELETE CASCADE,
+  order_id         INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
   payment_method   VARCHAR(50),
   transaction_id   VARCHAR(100), 
   amount           NUMERIC(10, 2) NOT NULL,
@@ -286,6 +286,7 @@ CREATE TABLE withdrawals (
   staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
   investor_name VARCHAR(150),
   amount NUMERIC(10,2) NOT NULL,
+  withdrawal_type VARCHAR(30) DEFAULT 'investment' CHECK (withdrawal_type IN ('investment', 'profit')),
   payment_method VARCHAR(50) DEFAULT 'cash',
   account_details TEXT,
   status VARCHAR(30) DEFAULT 'completed'
@@ -315,8 +316,8 @@ CREATE TABLE investments (
   updated_at TIMESTAMP DEFAULT now()
 );
 
-CREATE INDEX idx_payments_order_id ON public.payments(order_id);
-CREATE INDEX idx_payments_payment_method ON public.payments(payment_method);
+CREATE INDEX idx_payments_order_id ON payments(order_id);
+CREATE INDEX idx_payments_payment_method ON payments(payment_method);
 CREATE INDEX idx_stocks_variant_branch ON stocks(variant_id, branch_id);
 CREATE INDEX idx_orders_branch_id ON orders(branch_id);
 CREATE INDEX idx_orders_staff_id ON orders(staff_id);
@@ -410,6 +411,9 @@ CREATE TABLE websites (
   sociallink TEXT,
   email TEXT,
   phone TEXT,
+  is_share_investment BOOLEAN DEFAULT FALSE,
+  excluded_tax BOOLEAN DEFAULT FALSE,
+  tax_amount NUMERIC(10,2) DEFAULT 0,
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );
@@ -487,3 +491,90 @@ CREATE INDEX idx_staff_salaries_staff_id ON staff_salaries(staff_id);
 CREATE INDEX idx_staff_salaries_salary_id ON staff_salaries(salary_id);
 CREATE INDEX idx_salary_payments_staff_salary_id ON salary_payments(staff_salary_id);
 CREATE INDEX idx_salary_payments_staff_id ON salary_payments(staff_id);
+
+-- =====================================================
+-- SHARES & EQUITY ALLOCATION
+-- =====================================================
+CREATE TABLE shares (
+  share_id SERIAL PRIMARY KEY,
+  investor_id INT REFERENCES investors(investor_id) ON DELETE CASCADE,
+  share_percentage NUMERIC(5,2) NOT NULL DEFAULT 0.00,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX idx_shares_investor_id ON shares(investor_id);
+
+-- =====================================================
+-- FINANCIAL AVAILABLE BALANCE
+-- =====================================================
+CREATE TABLE available_balance (
+  balance_id SERIAL PRIMARY KEY,
+  available_balance NUMERIC(14,2) NOT NULL DEFAULT 0.00,
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+-- =====================================================
+-- INVESTOR PROFITS ALLOCATION
+-- =====================================================
+CREATE TABLE profits (
+  profit_id SERIAL PRIMARY KEY,
+  investor_id INT REFERENCES investors(investor_id) ON DELETE CASCADE,
+  profit_date DATE DEFAULT CURRENT_DATE,
+  amount NUMERIC(14,2) NOT NULL DEFAULT 0.00,
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX idx_profits_investor_id ON profits(investor_id);
+
+-- =====================================================
+-- EXPENSES MANAGEMENT
+-- =====================================================
+CREATE TABLE expenses (
+  expense_id SERIAL PRIMARY KEY,
+  branch_id INT REFERENCES branches(branch_id) ON DELETE SET NULL,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  title VARCHAR(200) NOT NULL,
+  category VARCHAR(100) DEFAULT 'General',
+  expense_date DATE DEFAULT CURRENT_DATE,
+  total_amount NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  paid_amount NUMERIC(12,2) DEFAULT 0.00,
+  due_amount NUMERIC(12,2) DEFAULT 0.00,
+  payment_method VARCHAR(50) DEFAULT 'cash',
+  status VARCHAR(20) DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'partial', 'cancelled')),
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE expense_items (
+  expense_item_id SERIAL PRIMARY KEY,
+  expense_id INT REFERENCES expenses(expense_id) ON DELETE CASCADE,
+  item_name VARCHAR(200) NOT NULL,
+  quantity INT DEFAULT 1,
+  unit_cost NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  total_cost NUMERIC(12,2) NOT NULL DEFAULT 0.00
+);
+
+CREATE TABLE expense_payments (
+  payment_id SERIAL PRIMARY KEY,
+  expense_id INT REFERENCES expenses(expense_id) ON DELETE CASCADE,
+  amount NUMERIC(12,2) NOT NULL DEFAULT 0.00,
+  payment_method VARCHAR(50) DEFAULT 'cash',
+  transaction_id VARCHAR(100),
+  payment_date TIMESTAMP DEFAULT now(),
+  note TEXT,
+  created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX idx_expenses_branch_id ON expenses(branch_id);
+CREATE INDEX idx_expenses_staff_id ON expenses(staff_id);
+CREATE INDEX idx_expense_items_expense_id ON expense_items(expense_id);
+CREATE INDEX idx_expense_payments_expense_id ON expense_payments(expense_id);
+
+
+
