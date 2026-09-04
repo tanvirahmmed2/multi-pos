@@ -1,7 +1,7 @@
 import { query } from '@/lib/db';
 import { isManagerOrAdmin } from '@/lib/auth';
 import { recordActivityLog } from '@/lib/logger';
-import { updateAvailableBalance } from '@/lib/financial';
+import { updateAvailableBalance, getAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
@@ -60,6 +60,16 @@ export async function POST(req) {
 
     if (!items || items.length === 0) {
       return Response.json({ error: 'At least one purchase item is required' }, { status: 400 });
+    }
+
+    const initialPaid = parseFloat(amount_paid) || 0;
+    if (initialPaid > 0) {
+      const currentBal = await getAvailableBalance();
+      if (initialPaid > currentBal) {
+        return Response.json({ 
+          error: `Insufficient available balance (৳${currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Initial purchase payment (৳${initialPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds available balance.` 
+        }, { status: 400 });
+      }
     }
 
     let effectiveBranchId = branch_id ? parseInt(branch_id, 10) : staffBranchId;
@@ -151,7 +161,6 @@ export async function POST(req) {
       );
     }
 
-    const initialPaid = parseFloat(amount_paid) || 0;
     if (initialPaid > 0) {
       await query(
         `INSERT INTO purchase_payments (purchase_id, payment_method, amount_paid, transaction_id)

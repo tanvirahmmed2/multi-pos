@@ -1,7 +1,7 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
-import { updateAvailableBalance } from '@/lib/financial';
+import { updateAvailableBalance, getAvailableBalance } from '@/lib/financial';
 
 export async function POST(req, { params }) {
   try {
@@ -22,6 +22,13 @@ export async function POST(req, { params }) {
     const paymentAmount = parseFloat(amount);
     if (isNaN(paymentAmount) || paymentAmount <= 0) {
       return Response.json({ error: 'Valid payment amount is required' }, { status: 400 });
+    }
+
+    const currentBal = await getAvailableBalance();
+    if (paymentAmount > currentBal) {
+      return Response.json({ 
+        error: `Insufficient available balance (৳${currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Expense payment (৳${paymentAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds available balance.` 
+      }, { status: 400 });
     }
 
     const existing = await query('SELECT * FROM expenses WHERE expense_id = $1', [expenseId]);

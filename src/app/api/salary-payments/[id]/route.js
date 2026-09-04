@@ -64,10 +64,10 @@ export async function PUT(req, { params }) {
       return Response.json({ error: 'Salary payment not found' }, { status: 404 });
     }
     const oldPayment = existingRes.rows[0];
-    const oldAmount = oldPayment.status === 'completed' ? parseFloat(oldPayment.amount || 0) : 0;
+    const oldAmount = (oldPayment.status || '').trim().toLowerCase() === 'completed' ? parseFloat(oldPayment.amount || 0) : 0;
 
     const parsedAmount = parseFloat(amount) || 0;
-    const newAmount = status === 'completed' ? parsedAmount : 0;
+    const newAmount = (status || '').trim().toLowerCase() === 'completed' ? parsedAmount : 0;
     const balanceDelta = oldAmount - newAmount;
 
     const result = await query(
@@ -127,7 +127,7 @@ export async function DELETE(req, { params }) {
     }
 
     const deleted = result.rows[0];
-    if (deleted.status === 'completed' && parseFloat(deleted.amount || 0) > 0) {
+    if ((deleted.status || '').trim().toLowerCase() === 'completed' && parseFloat(deleted.amount || 0) > 0) {
       await updateAvailableBalance(parseFloat(deleted.amount));
     }
 

@@ -1,6 +1,6 @@
 import { query } from '@/lib/db';
 import { isManager } from '@/lib/auth';
-import { updateAvailableBalance } from '@/lib/financial';
+import { updateAvailableBalance, getAvailableBalance } from '@/lib/financial';
 
 export async function POST(req, { params }) {
   try {
@@ -18,6 +18,13 @@ export async function POST(req, { params }) {
     const amount = parseFloat(amount_paid);
     if (isNaN(amount) || amount <= 0) {
       return Response.json({ error: 'Valid payment amount is required' }, { status: 400 });
+    }
+
+    const currentBal = await getAvailableBalance();
+    if (amount > currentBal) {
+      return Response.json({ 
+        error: `Insufficient available balance (৳${currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Purchase payment (৳${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds available balance.` 
+      }, { status: 400 });
     }
 
     const purchaseRes = await query(`
@@ -44,7 +51,7 @@ export async function POST(req, { params }) {
     }
 
     if (amount > due + 0.01) { 
-      return Response.json({ error: `Payment amount $${amount} exceeds remaining due amount $${due.toFixed(2)}` }, { status: 400 });
+      return Response.json({ error: `Payment amount ৳${amount} exceeds remaining due amount ৳${due.toFixed(2)}` }, { status: 400 });
     }
 
     const result = await query(

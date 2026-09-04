@@ -153,6 +153,25 @@ export default function DashboardSalaryPaymentsPage() {
     }
   }
 
+  const handleMarkAsCompleted = async (payment) => {
+    if (!window.confirm(`Mark salary payment #${payment.payment_id} for ${payment.staff_name || 'Staff'} as completed (${formatCurrency(payment.amount)})?`)) {
+      return
+    }
+
+    try {
+      await axios.put(`/api/salary-payments/${payment.payment_id}`, {
+        ...payment,
+        status: 'completed',
+        payment_date: payment.payment_date ? new Date(payment.payment_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      })
+      toast.success('Salary payment marked as completed! Available balance updated.')
+      fetchData()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to complete payment')
+      console.error(err)
+    }
+  }
+
   const filteredPayments = payments.filter((p) => {
     const term = search.toLowerCase()
     return (
@@ -271,6 +290,15 @@ export default function DashboardSalaryPaymentsPage() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {p.status !== 'completed' && (
+                            <button
+                              onClick={() => handleMarkAsCompleted(p)}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase shadow-xs transition flex items-center gap-1 cursor-pointer"
+                              title="Mark as Completed"
+                            >
+                              <BiCheckCircle className="text-xs" /> Pay Now
+                            </button>
+                          )}
                           <button
                             onClick={() => handleOpenEditModal(p)}
                             className="p-1.5 hover:bg-slate-100 text-slate-600 transition cursor-pointer border border-slate-200 shadow-xs"

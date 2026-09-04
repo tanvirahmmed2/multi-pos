@@ -1,7 +1,7 @@
 import { query } from '@/lib/db';
 import { isManagementRole } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
-import { updateAvailableBalance } from '@/lib/financial';
+import { updateAvailableBalance, getAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
@@ -64,6 +64,15 @@ export async function POST(req) {
     const paid = parseFloat(paid_amount || 0);
     if (isNaN(total) || total <= 0) {
       return Response.json({ error: 'Valid total expense amount is required' }, { status: 400 });
+    }
+
+    if (paid > 0) {
+      const currentBal = await getAvailableBalance();
+      if (paid > currentBal) {
+        return Response.json({ 
+          error: `Insufficient available balance (৳${currentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Paid expense amount (৳${paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}) exceeds available balance.` 
+        }, { status: 400 });
+      }
     }
 
     const due = Math.max(0, total - paid);

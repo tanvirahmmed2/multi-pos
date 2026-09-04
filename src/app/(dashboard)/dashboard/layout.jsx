@@ -9,24 +9,24 @@ import { BiShieldX, BiLoaderAlt, BiHome } from 'react-icons/bi'
 
 export const ROLE_PERMISSIONS = {
   admin: [
-    'branches', 'people', 'category', 'brands', 'product', 'stock',
+    'modules', 'branches', 'people', 'category', 'brands', 'product', 'stock',
     'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits', 'balance'
   ],
   manager: [
-    'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'overview', 'purchase', 'purchase-payments', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'expenses', 'expense-payments', 'profits'
+    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'expenses', 'expense-payments', 'profits'
   ],
   sales: [
-    'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
+    'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'overview'
+    'profile', 'orders'
   ],
   staff: [
-    'profile', 'issue', 'orders', 'overview'
+    'modules', 'profile', 'issue', 'orders'
   ]
 }
 

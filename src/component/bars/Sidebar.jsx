@@ -14,6 +14,7 @@ import {
   BiHome,
   BiUser,
   BiDollarCircle,
+  BiWallet,
   BiFile,
   BiCog,
   BiUserVoice,
@@ -28,10 +29,13 @@ import {
   BiUndo, 
   BiShieldQuarter, 
   BiKey,
-  BiPieChartAlt2
+  BiPieChartAlt2,
+  BiGridAlt
 } from 'react-icons/bi'
 
 export const MODULE_LINKS = {
+  modules: { name: 'Module Center', path: '/dashboard/modules', icon: <BiGridAlt /> },
+  balance: { name: 'Balance Management', path: '/dashboard/balance', icon: <BiWallet /> },
   overview: { name: 'Overview', path: '/dashboard/overview', icon: <BiHome /> },
   branches: { name: 'Branches', path: '/dashboard/branches', icon: <BiStoreAlt /> },
   people: { name: 'People (Accounts)', path: '/dashboard/people', icon: <BiUser /> },

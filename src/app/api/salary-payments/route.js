@@ -81,7 +81,7 @@ export async function POST(req) {
     const payment = result.rows[0];
 
     // Deduct from available balance if payment status is completed
-    if (payment.status === 'completed' && parsedAmount > 0) {
+    if ((payment.status || '').trim().toLowerCase() === 'completed' && parsedAmount > 0) {
       await updateAvailableBalance(-parsedAmount);
     }
 

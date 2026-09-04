@@ -2,13 +2,15 @@
 import React, { useContext, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import axios from 'axios'
 import {
   BiMenu,
   BiSearch,
   BiX,
   BiChevronRight,
   BiShieldAlt2,
-  BiCommand
+  BiCommand,
+  BiWallet
 } from 'react-icons/bi'
 import { Context } from '../helper/Context'
 import { ROLE_PERMISSIONS } from '@/app/(dashboard)/dashboard/layout'
@@ -21,12 +23,21 @@ const Navbar = () => {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [balance, setBalance] = useState(null)
 
   const searchRef = useRef(null)
   const inputRef = useRef(null)
 
   const role = user?.role || 'staff'
   const allowedKeys = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.staff
+
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      axios.get('/api/available-balance')
+        .then(res => setBalance(res.data.available_balance))
+        .catch(err => console.error('Error fetching navbar balance:', err))
+    }
+  }, [user])
 
   const allowedModules = allowedKeys
     .map(key => ({ key, ...MODULE_LINKS[key] }))
@@ -184,6 +195,17 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-3">
+        {user?.role === 'admin' && balance !== null && (
+          <Link 
+            href="/dashboard/balance" 
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-black/20 hover:bg-black/35 text-white font-bold text-xs transition border border-white/20 shadow-xs cursor-pointer"
+            title="Available System Balance"
+          >
+            <BiWallet className="text-sm" />
+            <span>৳{parseFloat(balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </Link>
+        )}
+
         <div className="flex items-center gap-2">
           {user?.name && (
             <Link href="/dashboard/profile" className="flex items-center gap-2 hover:opacity-90 transition cursor-pointer">

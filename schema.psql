@@ -576,5 +576,22 @@ CREATE INDEX idx_expenses_staff_id ON expenses(staff_id);
 CREATE INDEX idx_expense_items_expense_id ON expense_items(expense_id);
 CREATE INDEX idx_expense_payments_expense_id ON expense_payments(expense_id);
 
+-- =====================================================
+-- MANUAL BALANCE TRANSACTIONS
+-- =====================================================
+CREATE TABLE balance_transactions (
+  transaction_id SERIAL PRIMARY KEY,
+  staff_id INT REFERENCES staffs(staff_id) ON DELETE SET NULL,
+  type VARCHAR(50) DEFAULT 'deposit',
+  amount NUMERIC(14,2) NOT NULL DEFAULT 0.00,
+  payment_method VARCHAR(50) DEFAULT 'cash',
+  reference_no VARCHAR(100),
+  note TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_balance_transactions_staff_id ON balance_transactions(staff_id);
+
+
 
 
