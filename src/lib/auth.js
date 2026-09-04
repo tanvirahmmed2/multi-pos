@@ -37,20 +37,34 @@ export const authenticateStaff = async () => {
 
     const decoded = verifyToken(token);
     const staffId = decoded?.staff_id || decoded?.user_id;
+    const sessionToken = decoded?.session_token;
+
     if (!decoded || !staffId) {
       return { success: false, message: 'Invalid or expired token' };
     }
 
+    if (!sessionToken) {
+      return { success: false, message: 'No active session token found. Please log in again.' };
+    }
+
     const result = await query(
-      'SELECT staff_id, branch_id, name, email, phone, role, is_active, is_banned FROM staffs WHERE staff_id = $1',
-      [staffId]
+      `SELECT st.staff_id, st.branch_id, st.name, st.email, st.phone, st.role, st.is_active, st.is_banned, s.session_id
+       FROM staffs st
+       JOIN staff_sessions s ON st.staff_id = s.staff_id
+       WHERE st.staff_id = $1 AND s.session_token = $2`,
+      [staffId, sessionToken]
     );
 
     if (result.rows.length === 0) {
-      return { success: false, message: 'Staff member not found' };
+      return { success: false, message: 'Session expired or logged out from another device' };
     }
 
     const staff = result.rows[0];
+    const sessionId = staff.session_id;
+
+    // Update last active time (fire and forget)
+    query('UPDATE staff_sessions SET last_active = NOW() WHERE session_id = $1', [sessionId]).catch(() => { });
+
     if (staff.is_banned) {
       return { success: false, message: 'Staff account is banned' };
     }
@@ -58,7 +72,8 @@ export const authenticateStaff = async () => {
       return { success: false, message: 'Staff account is deactivated' };
     }
 
-    return { success: true, staff, user: staff };
+    const fullStaff = { ...staff, current_session_token: sessionToken, current_session_id: sessionId };
+    return { success: true, staff: fullStaff, user: fullStaff };
   } catch (error) {
     return { success: false, message: error.message };
   }

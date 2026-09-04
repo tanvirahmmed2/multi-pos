@@ -7,37 +7,36 @@ import crypto from 'crypto';
 
 export async function GET(req) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('ecom_token')?.value;
+    const auth = await authenticateStaff();
 
-    if (!token) {
-      return Response.json({ staff: null, user: null }, { status: 200 });
+    if (!auth.success || !auth.staff) {
+      const cookieStore = await cookies();
+      cookieStore.set('ecom_token', '', { expires: new Date(0), path: '/' });
+      return Response.json({ staff: null, user: null, error: auth.message }, { status: 401 });
     }
 
-    const decoded = verifyToken(token);
-    const staffId = decoded?.staff_id || decoded?.user_id;
-    if (!decoded || !staffId) {
-      return Response.json({ staff: null, user: null }, { status: 200 });
-    }
-
+    const staffId = auth.staff.staff_id;
     const result = await query(
-      'SELECT staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, "2fa_active", created_at, updated_at FROM staffs WHERE staff_id = $1',
+      `SELECT s.staff_id, s.branch_id, b.name as branch_name, s.name, s.email, s.phone, s.role, s.is_active, s.is_varified, s.is_banned, s."2fa_active", s.created_at, s.updated_at 
+       FROM staffs s 
+       LEFT JOIN branches b ON s.branch_id = b.branch_id 
+       WHERE s.staff_id = $1`,
       [staffId]
     );
 
     if (result.rows.length === 0) {
-      return Response.json({ staff: null, user: null }, { status: 200 });
+      const cookieStore = await cookies();
+      cookieStore.set('ecom_token', '', { expires: new Date(0), path: '/' });
+      return Response.json({ staff: null, user: null }, { status: 401 });
     }
 
     const staff = result.rows[0];
-    if (staff.is_banned) {
-      return Response.json({ error: 'Account is banned' }, { status: 403 });
-    }
-    if (!staff.is_active) {
-      return Response.json({ error: 'Account is deactivated' }, { status: 403 });
-    }
-
-    const responseStaff = { ...staff, user_id: staff.staff_id };
+    const responseStaff = { 
+      ...staff, 
+      user_id: staff.staff_id, 
+      current_session_token: auth.staff.current_session_token,
+      current_session_id: auth.staff.current_session_id 
+    };
 
     return Response.json({ staff: responseStaff, user: responseStaff }, { status: 200 });
   } catch (error) {

@@ -15,7 +15,10 @@ import {
   BiCalendar,
   BiBadgeCheck,
   BiShieldAlt2,
-  BiX
+  BiX,
+  BiLaptop,
+  BiMobileAlt,
+  BiLogOut
 } from 'react-icons/bi'
 
 export default function UserProfilePage() {
@@ -37,6 +40,100 @@ export default function UserProfilePage() {
   const [twoFaCode, setTwoFaCode] = useState('')
   const [sending2fa, setSending2fa] = useState(false)
   const [verifying2fa, setVerifying2fa] = useState(false)
+
+  // Sessions state
+  const [sessions, setSessions] = useState([])
+  const [loadingSessions, setLoadingSessions] = useState(true)
+  const [revokingSession, setRevokingSession] = useState(false)
+
+  const fetchSessions = async () => {
+    try {
+      setLoadingSessions(true)
+      const res = await axios.get('/api/staff/sessions')
+      const sessList = Array.isArray(res.data.sessions) ? res.data.sessions : []
+      setSessions(sessList)
+
+      if (sessList.length === 0) {
+        toast.error('No active session found. Automatically logging out...')
+        if (setStaff) setStaff(null)
+        if (setUser) setUser(null)
+        window.location.replace('/')
+      }
+    } catch (err) {
+      console.error('Failed to load active sessions:', err)
+      if (err.response?.status === 401) {
+        toast.error('Session expired or logged out. Redirecting to login...')
+        if (setStaff) setStaff(null)
+        if (setUser) setUser(null)
+        window.location.replace('/')
+      }
+    } finally {
+      setLoadingSessions(false)
+    }
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchSessions()
+    }
+  }, [user])
+
+  const handleRevokeSession = async (sessionId) => {
+    if (revokingSession) return
+    setRevokingSession(true)
+    const toastId = toast.loading('Logging out device...')
+
+    try {
+      const res = await axios.delete(`/api/staff/sessions/${sessionId}`)
+      toast.success(res.data.message || 'Device session logged out successfully', { id: toastId })
+
+      if (res.data.is_current_device) {
+        window.location.replace('/')
+        return
+      }
+
+      setSessions(prev => prev.filter(s => s.session_id !== sessionId))
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to revoke device session', { id: toastId })
+    } finally {
+      setRevokingSession(false)
+    }
+  }
+
+  const handleRevokeAllOtherSessions = async () => {
+    if (revokingSession) return
+    setRevokingSession(true)
+    const toastId = toast.loading('Logging out all other devices...')
+
+    try {
+      const res = await axios.delete('/api/staff/sessions')
+      toast.success(res.data.message || 'Logged out from all other devices', { id: toastId })
+      setSessions(prev => prev.filter(s => s.is_current_device))
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to log out other devices', { id: toastId })
+    } finally {
+      setRevokingSession(false)
+    }
+  }
+
+  const getDeviceLabel = (ua) => {
+    if (!ua) return { label: 'Unknown Device', isMobile: false }
+    const lower = ua.toLowerCase()
+    if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) {
+      let browser = 'Mobile Browser'
+      if (lower.includes('chrome')) browser = 'Chrome Mobile'
+      else if (lower.includes('safari')) browser = 'Safari Mobile'
+      else if (lower.includes('firefox')) browser = 'Firefox Mobile'
+      return { label: browser, isMobile: true }
+    } else {
+      let browser = 'Desktop Browser'
+      if (lower.includes('chrome')) browser = 'Chrome on Desktop'
+      else if (lower.includes('firefox')) browser = 'Firefox on Desktop'
+      else if (lower.includes('safari')) browser = 'Safari on Mac'
+      else if (lower.includes('edg')) browser = 'Edge on Desktop'
+      return { label: browser, isMobile: false }
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -178,7 +275,7 @@ export default function UserProfilePage() {
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-2 sm:px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-64' : 'lg:pl-8'}`}>
-      <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6">
         
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -402,6 +499,86 @@ export default function UserProfilePage() {
           </div>
 
         </form>
+
+        {/* Logged-in Devices & Active Sessions Card */}
+        <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col gap-5 mt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2">
+                <BiLaptop className="text-xl text-slate-800" />
+                <h3 className="text-base font-bold text-slate-800">Logged-in Devices & Active Sessions</h3>
+              </div>
+              <p className="text-slate-500 text-xs mt-0.5">
+                Manage all devices and browser sessions where your staff account is currently signed in.
+              </p>
+            </div>
+
+            {sessions.filter(s => !s.is_current_device).length > 0 && (
+              <button
+                type="button"
+                disabled={revokingSession}
+                onClick={handleRevokeAllOtherSessions}
+                className="px-4 py-2 border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+              >
+                <BiLogOut className="text-sm" />
+                Log Out All Other Devices
+              </button>
+            )}
+          </div>
+
+          {loadingSessions ? (
+            <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-xs font-medium">
+              <BiLoaderAlt className="animate-spin text-lg text-slate-700" /> Loading active device sessions...
+            </div>
+          ) : sessions.length > 0 ? (
+            <div className="flex flex-col divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
+              {sessions.map((sess) => {
+                const devInfo = getDeviceLabel(sess.user_agent)
+                return (
+                  <div key={sess.session_id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition">
+                    <div className="flex items-center gap-3.5">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                        sess.is_current_device ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {devInfo.isMobile ? <BiMobileAlt /> : <BiLaptop />}
+                      </div>
+
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-slate-800">{devInfo.label}</span>
+                          {sess.is_current_device && (
+                            <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                              ● Current Device
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          IP: {sess.ip_address || 'Unknown'} • Last Active: {sess.last_active ? new Date(sess.last_active).toLocaleString('en-GB') : 'Just now'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={revokingSession}
+                      onClick={() => handleRevokeSession(sess.session_id)}
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer shrink-0 flex items-center gap-1 ${
+                        sess.is_current_device
+                          ? 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+                          : 'border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100'
+                      }`}
+                    >
+                      <BiLogOut className="text-xs" />
+                      {sess.is_current_device ? 'Sign Out This Device' : 'Log Out Device'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 text-center py-6">No active session history found.</p>
+          )}
+        </div>
 
       </div>
 

@@ -11,7 +11,8 @@ import {
   BiCheckCircle,
   BiLoaderAlt,
   BiPlus,
-  BiStoreAlt
+  BiStoreAlt,
+  BiTrash
 } from 'react-icons/bi'
 
 export default function DashboardAdminPeoplePage() {
@@ -102,6 +103,35 @@ export default function DashboardAdminPeoplePage() {
       fetchUsers()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update account status')
+      console.error(err)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleDeleteStaff = async (userId, userName, userRole) => {
+    if (currentUser && userId === currentUser.staff_id) {
+      toast.error('You cannot delete your own account while logged in')
+      return
+    }
+
+    const adminCount = users.filter(u => u.role === 'admin').length
+    if (userRole === 'admin' && adminCount <= 1) {
+      toast.error('Cannot delete staff account. At least one admin account must remain in the system.')
+      return
+    }
+
+    if (!window.confirm(`Are you sure you want to delete staff account "${userName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setUpdatingId(userId)
+    try {
+      const res = await axios.delete(`/api/people/${userId}`)
+      toast.success(res.data?.message || 'Staff account deleted successfully')
+      fetchUsers()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete staff account')
       console.error(err)
     } finally {
       setUpdatingId(null)
@@ -211,6 +241,7 @@ export default function DashboardAdminPeoplePage() {
                   <th className="hidden md:table-cell px-3 md:px-4 py-3 text-center">Banned Status</th>
                   <th className="hidden md:table-cell px-3 md:px-4 py-3 text-center">Active Status</th>
                   <th className="hidden lg:table-cell px-3 md:px-4 py-3 text-right">Created</th>
+                  <th className="px-3 md:px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -315,6 +346,22 @@ export default function DashboardAdminPeoplePage() {
                         <span className="text-[10px] text-slate-400 font-mono">
                           {new Date(u.created_at).toLocaleDateString()}
                         </span>
+                      </td>
+
+                      <td className="px-3 md:px-4 py-3.5 text-right">
+                        <button
+                          type="button"
+                          disabled={isSelf || updatingId === u.staff_id}
+                          onClick={() => handleDeleteStaff(u.staff_id, u.name, u.role)}
+                          title={isSelf ? "You cannot delete your own account" : "Delete Staff Account"}
+                          className="p-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 hover:border-rose-300 transition disabled:opacity-40 disabled:cursor-not-allowed rounded"
+                        >
+                          {updatingId === u.staff_id ? (
+                            <BiLoaderAlt className="animate-spin text-sm" />
+                          ) : (
+                            <BiTrash className="text-sm" />
+                          )}
+                        </button>
                       </td>
 
                     </tr>

@@ -4,6 +4,7 @@ import { comparePassword, generateToken } from '@/lib/auth';
 import { recordLoginLog, recordActivityLog } from '@/lib/logger';
 import { sendEmail } from '@/lib/mailer';
 import { STORE_NAME } from '@/lib/secret';
+import crypto from 'crypto';
 
 export async function POST(req) {
   try {
@@ -16,7 +17,13 @@ export async function POST(req) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = typeof password === 'string' ? password.trim() : password;
 
-    const result = await query('SELECT * FROM staffs WHERE LOWER(email) = $1', [cleanEmail]);
+    const result = await query(
+      `SELECT s.*, b.name as branch_name 
+       FROM staffs s 
+       LEFT JOIN branches b ON s.branch_id = b.branch_id 
+       WHERE LOWER(s.email) = $1`, 
+      [cleanEmail]
+    );
 
     if (result.rows.length === 0) {
       await recordLoginLog(req, { email: cleanEmail, status: 'failed' });
@@ -95,12 +102,25 @@ export async function POST(req) {
       );
     }
 
+    // Generate Session Token and store in staff_sessions
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const userAgent = req.headers.get('user-agent') || 'Unknown Device';
+    const rawIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+    const ipAddress = rawIp.split(',')[0].trim();
+
+    await query(
+      `INSERT INTO staff_sessions (staff_id, session_token, user_agent, ip_address)
+       VALUES ($1, $2, $3, $4)`,
+      [staff.staff_id, sessionToken, userAgent, ipAddress]
+    );
+
     const token = generateToken({
       staff_id: staff.staff_id,
       user_id: staff.staff_id,
       email: staff.email,
       role: staff.role,
-      branch_id: staff.branch_id
+      branch_id: staff.branch_id,
+      session_token: sessionToken
     });
 
     const cookieStore = await cookies();

@@ -33,9 +33,24 @@ export default function DashboardHomePage() {
   const [activities, setActivities] = useState([])
   const [logins, setLogins] = useState([])
   const [loadingData, setLoadingData] = useState(true)
+  const [branchName, setBranchName] = useState(user?.branch_name || '')
 
   const role = user?.role || 'staff'
   const userBranchId = user?.branch_id
+
+  useEffect(() => {
+    if (user?.branch_name) {
+      setBranchName(user.branch_name)
+    } else if (user?.branch_id) {
+      axios.get('/api/branch')
+        .then(res => {
+          const list = Array.isArray(res.data) ? res.data : []
+          const found = list.find(b => String(b.branch_id) === String(user.branch_id))
+          if (found) setBranchName(found.name)
+        })
+        .catch(() => {})
+    }
+  }, [user])
 
   useEffect(() => {
     if (userLoading || !user) return
@@ -125,11 +140,17 @@ export default function DashboardHomePage() {
               <BiUser />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold text-slate-800">{user?.name || 'Staff User'}</h1>
                 <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-primary/10 text-primary border border-primary/20">
                   {role}
                 </span>
+                {role !== 'admin' && (user?.branch_name || branchName) && (
+                  <span className="px-2.5 py-0.5 text-[10px] md:text-xs font-bold uppercase rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+                    <BiBuilding className="text-xs text-slate-500" />
+                    {user?.branch_name || branchName}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 font-mono mt-1">
                 {user?.email || 'N/A'} {user?.phone ? `• ${user.phone}` : ''}

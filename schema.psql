@@ -39,6 +39,20 @@ CREATE TABLE staffs (
 );
 
 -- =====================================================
+-- STAFF SESSIONS
+-- =====================================================
+CREATE TABLE staff_sessions (
+  session_id SERIAL PRIMARY KEY,
+  staff_id INT NOT NULL REFERENCES staffs(staff_id) ON DELETE CASCADE,
+  session_token TEXT UNIQUE NOT NULL,
+  user_agent TEXT,
+  ip_address VARCHAR(50),
+  device_info VARCHAR(100),
+  last_active TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- =====================================================
 -- CUSTOMERS
 -- =====================================================
 CREATE TABLE customers (

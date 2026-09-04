@@ -27,8 +27,14 @@ export function proxy(request) {
   const hasInvalidSessionParam = request.nextUrl.searchParams.has('invalid_session') || 
                                 request.nextUrl.searchParams.has('logout');
 
+  if (path === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
   const isDashboardPath = path.startsWith('/dashboard');
-  const isAuthPath = path === '/' || path === '/login' || path === '/register';
+  const isAuthPath = path === '/' || path === '/register';
 
   const tokenValid = !isTokenExpiredOrInvalid(token);
 

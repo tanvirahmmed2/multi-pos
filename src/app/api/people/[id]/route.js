@@ -35,6 +35,23 @@ export async function PUT(req, { params }) {
       return Response.json({ error: 'Branch assignment is required for non-admin staff roles' }, { status: 400 });
     }
 
+    if (existingStaff.role === 'admin') {
+      const isDemoting = role !== undefined && role !== 'admin';
+      const isDeactivating = is_active === false;
+      const isBanning = is_banned === true;
+
+      if (isDemoting || isDeactivating || isBanning) {
+        const adminCountRes = await query("SELECT COUNT(*)::int AS count FROM staffs WHERE role = 'admin' AND is_active = true AND is_banned = false");
+        const activeAdminCount = adminCountRes.rows[0]?.count || 0;
+        if (activeAdminCount <= 1) {
+          return Response.json(
+            { error: 'Action denied. At least one active admin account must remain in the system.' },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     const fieldsToUpdate = [];
     const values = [];
     let placeholderCounter = 1;
@@ -80,6 +97,48 @@ export async function PUT(req, { params }) {
 
   } catch (error) {
     console.error('Error updating staff member:', error);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req, { params }) {
+  try {
+    const auth = await isAdmin();
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const targetStaffId = parseInt(id, 10);
+    const currentStaffId = auth.staff ? auth.staff.staff_id : auth.user.user_id;
+
+    if (currentStaffId === targetStaffId) {
+      return Response.json({ error: 'You cannot delete your own account while logged in' }, { status: 400 });
+    }
+
+    const checkStaff = await query('SELECT staff_id, role, name FROM staffs WHERE staff_id = $1', [targetStaffId]);
+    if (checkStaff.rows.length === 0) {
+      return Response.json({ error: 'Staff member not found' }, { status: 404 });
+    }
+
+    const targetStaff = checkStaff.rows[0];
+
+    if (targetStaff.role === 'admin') {
+      const adminCountRes = await query("SELECT COUNT(*)::int AS count FROM staffs WHERE role = 'admin'");
+      const adminCount = adminCountRes.rows[0]?.count || 0;
+      if (adminCount <= 1) {
+        return Response.json(
+          { error: 'Cannot delete staff account. At least one admin account must remain in the system.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    await query('DELETE FROM staffs WHERE staff_id = $1', [targetStaffId]);
+
+    return Response.json({ message: 'Staff account deleted successfully' }, { status: 200 });
+  } catch (error) {
+    console.error('Error deleting staff member:', error);
     return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,12 +1,19 @@
 import { cookies } from 'next/headers';
 import { authenticateUser } from '@/lib/auth';
 import { recordActivityLog } from '@/lib/logger';
+import { query } from '@/lib/db';
 
 export async function POST(req) {
   try {
     const auth = await authenticateUser();
     if (auth.success && auth.user) {
       const staffId = auth.user.staff_id || auth.user.user_id;
+      const currentToken = auth.user.current_session_token;
+
+      if (currentToken) {
+        await query('DELETE FROM staff_sessions WHERE session_token = $1', [currentToken]);
+      }
+
       await recordActivityLog(req, {
         staffId,
         action: 'STAFF_LOGOUT',
