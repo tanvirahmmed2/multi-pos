@@ -64,6 +64,50 @@ export async function PUT(req, { params }) {
 
     const assignment = result.rows[0];
 
+    // Synchronize pending payment record for this staff_salary_id
+    try {
+      const salResult = await query(`SELECT net_salary FROM salaries WHERE salary_id = $1`, [parseInt(salary_id, 10)]);
+      const netSalary = salResult.rows.length > 0 ? parseFloat(salResult.rows[0].net_salary) || 0 : 0;
+
+      const dateObj = new Date(effective_date);
+      const paymentMonth = !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+        : new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      const checkPending = await query(
+        `SELECT payment_id FROM salary_payments WHERE staff_salary_id = $1 AND status = 'pending'`,
+        [id]
+      );
+
+      if (checkPending.rows.length > 0) {
+        await query(
+          `UPDATE salary_payments
+           SET staff_id = $1, amount = $2, payment_month = $3, payment_date = $4
+           WHERE staff_salary_id = $5 AND status = 'pending'`,
+          [parseInt(staff_id, 10), netSalary, paymentMonth, effective_date, id]
+        );
+      } else {
+        await query(
+          `INSERT INTO salary_payments (staff_salary_id, staff_id, amount, payment_month, payment_method, account_details, transaction_id, status, payment_date, note)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            id,
+            parseInt(staff_id, 10),
+            netSalary,
+            paymentMonth,
+            'bank_transfer',
+            '',
+            '',
+            'pending',
+            effective_date,
+            'Auto-generated pending salary payment'
+          ]
+        );
+      }
+    } catch (payErr) {
+      console.error('Failed to sync pending salary payment:', payErr);
+    }
+
     await logActivity(req, {
       staffId: auth.staff.staff_id,
       action: 'UPDATE_STAFF_SALARY',
@@ -87,6 +131,14 @@ export async function DELETE(req, { params }) {
     }
 
     const { id } = await params;
+
+    // Delete associated pending payments first
+    try {
+      await query(`DELETE FROM salary_payments WHERE staff_salary_id = $1 AND status = 'pending'`, [id]);
+    } catch (payErr) {
+      console.error('Failed to delete pending salary payments:', payErr);
+    }
+
     const result = await query('DELETE FROM staff_salaries WHERE staff_salary_id = $1 RETURNING *', [id]);
 
     if (result.rows.length === 0) {

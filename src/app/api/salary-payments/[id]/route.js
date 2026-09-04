@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import { isManagerOrAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req, { params }) {
   try {
@@ -58,7 +59,16 @@ export async function PUT(req, { params }) {
       note = ''
     } = body;
 
+    const existingRes = await query('SELECT amount, status FROM salary_payments WHERE payment_id = $1', [id]);
+    if (existingRes.rows.length === 0) {
+      return Response.json({ error: 'Salary payment not found' }, { status: 404 });
+    }
+    const oldPayment = existingRes.rows[0];
+    const oldAmount = oldPayment.status === 'completed' ? parseFloat(oldPayment.amount || 0) : 0;
+
     const parsedAmount = parseFloat(amount) || 0;
+    const newAmount = status === 'completed' ? parsedAmount : 0;
+    const balanceDelta = oldAmount - newAmount;
 
     const result = await query(
       `UPDATE salary_payments
@@ -81,11 +91,11 @@ export async function PUT(req, { params }) {
       ]
     );
 
-    if (result.rows.length === 0) {
-      return Response.json({ error: 'Salary payment not found' }, { status: 404 });
-    }
-
     const payment = result.rows[0];
+
+    if (balanceDelta !== 0) {
+      await updateAvailableBalance(balanceDelta);
+    }
 
     await logActivity(req, {
       staffId: auth.staff.staff_id,
@@ -114,6 +124,11 @@ export async function DELETE(req, { params }) {
 
     if (result.rows.length === 0) {
       return Response.json({ error: 'Salary payment not found' }, { status: 404 });
+    }
+
+    const deleted = result.rows[0];
+    if (deleted.status === 'completed' && parseFloat(deleted.amount || 0) > 0) {
+      await updateAvailableBalance(parseFloat(deleted.amount));
     }
 
     await logActivity(req, {

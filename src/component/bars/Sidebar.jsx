@@ -70,7 +70,9 @@ export const MODULE_LINKS = {
   'salary-payments': { name: 'Salary Payments', path: '/dashboard/salary-payments', icon: <BiFile /> },
   shares: { name: 'Shares', path: '/dashboard/shares', icon: <BiPieChartAlt2 /> },
   expenses: { name: 'Expenses', path: '/dashboard/expenses', icon: <BiDollarCircle /> },
-  profits: { name: 'Profits', path: '/dashboard/profits', icon: <BiPieChartAlt2 /> }
+  profits: { name: 'Profits', path: '/dashboard/profits', icon: <BiPieChartAlt2 /> },
+  'purchase-payments': { name: 'Purchase Payments', path: '/dashboard/purchase-payments', icon: <BiDollarCircle /> },
+  'expense-payments': { name: 'Expense Payments', path: '/dashboard/expense-payments', icon: <BiDollarCircle /> }
 }
 
 const Sidebar = () => {

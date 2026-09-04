@@ -59,6 +59,36 @@ export async function POST(req) {
 
     const assignment = result.rows[0];
 
+    // Automatically create a pending payment for the staff salary on its effective date
+    try {
+      const salResult = await query(`SELECT net_salary FROM salaries WHERE salary_id = $1`, [parseInt(salary_id, 10)]);
+      const netSalary = salResult.rows.length > 0 ? parseFloat(salResult.rows[0].net_salary) || 0 : 0;
+
+      const dateObj = new Date(effDate);
+      const paymentMonth = !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+        : new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      await query(
+        `INSERT INTO salary_payments (staff_salary_id, staff_id, amount, payment_month, payment_method, account_details, transaction_id, status, payment_date, note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          assignment.staff_salary_id,
+          parseInt(staff_id, 10),
+          netSalary,
+          paymentMonth,
+          'bank_transfer',
+          '',
+          '',
+          'pending',
+          effDate,
+          'Auto-generated pending salary payment'
+        ]
+      );
+    } catch (payErr) {
+      console.error('Failed to auto-create pending salary payment:', payErr);
+    }
+
     await logActivity(req, {
       staffId: auth.staff.staff_id,
       action: 'ASSIGN_STAFF_SALARY',

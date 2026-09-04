@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import { isManagerOrAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
@@ -78,6 +79,11 @@ export async function POST(req) {
     );
 
     const payment = result.rows[0];
+
+    // Deduct from available balance if payment status is completed
+    if (payment.status === 'completed' && parsedAmount > 0) {
+      await updateAvailableBalance(-parsedAmount);
+    }
 
     await logActivity(req, {
       staffId: auth.staff.staff_id,

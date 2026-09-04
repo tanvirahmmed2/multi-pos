@@ -1,9 +1,9 @@
 import { query } from '@/lib/db';
-import { isAdmin, hashPassword } from '@/lib/auth';
+import { isAdmin, isManagerOrAdmin, hashPassword } from '@/lib/auth';
 
 export async function GET(req) {
   try {
-    const auth = await isAdmin();
+    const auth = await isManagerOrAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
     }

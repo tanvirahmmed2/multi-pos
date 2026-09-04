@@ -1,5 +1,7 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
+import Link from 'next/link'
+import { Context } from '@/component/helper/Context'
 import { 
   BiDollarCircle, 
   BiPlus, 
@@ -17,6 +19,7 @@ import {
 import { toast } from 'react-hot-toast'
 
 export default function ExpensesPage() {
+  const { dashSidebar, formatCurrency } = useContext(Context)
   const [expenses, setExpenses] = useState([])
   const [availableBalance, setAvailableBalance] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -236,88 +239,87 @@ export default function ExpensesPage() {
   const grandDue = expenses.reduce((sum, e) => sum + parseFloat(e.due_amount || 0), 0)
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <BiReceipt className="text-primary" /> Expense Management
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Track business operating expenses, line items, payments, and system cash flow.
-          </p>
+    <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
+      <div className="w-full flex flex-col gap-6">
+        {/* Header Card */}
+        <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <BiReceipt className="text-primary text-2xl" /> Expense Management
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Track business operating expenses, line items, payments, and system cash flow.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/expense-payments"
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <BiDollarCircle className="text-base text-primary" /> Expense Payments Ledger
+            </Link>
+            <button
+              onClick={() => { fetchExpenses(); fetchBalance() }}
+              className="p-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs shadow-sm transition cursor-pointer"
+              title="Refresh Data"
+            >
+              <BiRefresh className="text-base" />
+            </button>
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <BiPlus className="text-base" /> Add New Expense
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => { fetchExpenses(); fetchBalance() }}
-            className="p-2.5 bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300 transition cursor-pointer shadow-sm"
-            title="Refresh Data"
-          >
-            <BiRefresh className="text-lg" />
-          </button>
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-2 cursor-pointer"
-          >
-            <BiPlus className="text-lg" /> Add New Expense
-          </button>
-        </div>
-      </div>
 
-      {/* Summary Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Balance</span>
-            <div className="w-8 h-8 bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-lg">
+        {/* Summary Metrics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition">
+            <div className="w-10 h-10 flex items-center justify-center text-xl mb-4 text-white font-bold bg-emerald-600">
               <BiWallet />
             </div>
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Balance</span>
+              <h3 className="text-2xl font-extrabold text-slate-800 mt-1">{formatCurrency(availableBalance)}</h3>
+              <p className="text-slate-500 text-xs mt-1">System Cash Pool Balance</p>
+            </div>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            ৳{availableBalance.toLocaleString('en-BD', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-slate-400">System Cash Pool Balance</span>
-        </div>
 
-        <div className="bg-white border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Expenses</span>
-            <div className="w-8 h-8 bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center text-lg">
+          <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition">
+            <div className="w-10 h-10 flex items-center justify-center text-xl mb-4 text-white font-bold bg-primary">
               <BiReceipt />
             </div>
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Expenses</span>
+              <h3 className="text-2xl font-extrabold text-slate-800 mt-1">{formatCurrency(grandTotal)}</h3>
+              <p className="text-slate-500 text-xs mt-1">{expenses.length} Records Logged</p>
+            </div>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-slate-800 mt-2">
-            ৳{grandTotal.toLocaleString('en-BD', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-slate-400">{expenses.length} Records Logged</span>
-        </div>
 
-        <div className="bg-white border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Paid</span>
-            <div className="w-8 h-8 bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-lg">
+          <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition">
+            <div className="w-10 h-10 flex items-center justify-center text-xl mb-4 text-white font-bold bg-slate-800">
               <BiCreditCard />
             </div>
-          </div>
-          <p className="text-xl sm:text-2xl font-bold text-blue-700 mt-2">
-            ৳{grandPaid.toLocaleString('en-BD', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-blue-500 font-medium">Deducted from balance</span>
-        </div>
-
-        <div className="bg-white border border-slate-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Due</span>
-            <div className="w-8 h-8 bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center text-lg">
-              <BiDollarCircle />
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Paid</span>
+              <h3 className="text-2xl font-extrabold text-primary-dark mt-1">{formatCurrency(grandPaid)}</h3>
+              <p className="text-slate-500 text-xs mt-1">Deducted from balance</p>
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-rose-600 mt-2">
-            ৳{grandDue.toLocaleString('en-BD', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-rose-500 font-medium">Outstanding Expense Dues</span>
+
+          <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition">
+            <div className="w-10 h-10 flex items-center justify-center text-xl mb-4 text-white font-bold bg-rose-600">
+              <BiDollarCircle />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Due</span>
+              <h3 className="text-2xl font-extrabold text-rose-600 mt-1">{formatCurrency(grandDue)}</h3>
+              <p className="text-slate-500 text-xs mt-1">Outstanding Expense Dues</p>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Main Table Container */}
       <div className="bg-white border border-slate-200 shadow-sm">
@@ -786,6 +788,7 @@ export default function ExpensesPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -166,58 +166,58 @@ export default function DashboardSalaryPaymentsPage() {
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
-      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6">
 
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Header Card */}
+        <div className="bg-white border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
-              <BiCreditCard className="text-purple-600 text-3xl" /> Salary Payments
+            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <BiCreditCard className="text-primary text-2xl" /> Salary Payments
             </h1>
-            <p className="text-slate-500 text-xs mt-1 font-medium">
+            <p className="text-xs text-slate-500 mt-0.5">
               Disburse monthly salaries, track payment methods, status, and transaction IDs.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={fetchData}
-              className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+              className="p-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs shadow-sm transition cursor-pointer"
               title="Refresh"
             >
-              <BiRefresh className="text-lg" />
+              <BiRefresh className="text-base" />
             </button>
             <button
               onClick={handleOpenAddModal}
-              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
-              <BiPlus className="text-lg" /> Disburse Salary
+              <BiPlus className="text-base" /> Disburse Salary
             </button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="bg-white border border-slate-200 shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
-            <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+            <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search staff, transaction ID, month..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
             />
           </div>
-          <span className="text-xs font-bold text-slate-500">
+          <span className="text-xs font-semibold text-slate-500">
             Showing {filteredPayments.length} of {payments.length} payment disbursements
           </span>
         </div>
 
         {/* Payments Table */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+        <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-12 flex flex-col items-center justify-center text-slate-400 gap-2 font-medium">
-              <BiLoaderAlt className="animate-spin text-2xl text-purple-600" />
+              <BiLoaderAlt className="animate-spin text-2xl text-primary" />
               <span className="text-xs">Loading salary payment history...</span>
             </div>
           ) : filteredPayments.length === 0 ? (
@@ -226,62 +226,61 @@ export default function DashboardSalaryPaymentsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black uppercase text-slate-500 tracking-wider">
-                    <th className="py-3.5 px-4">Staff Member</th>
-                    <th className="py-3.5 px-4">Payment Month</th>
-                    <th className="py-3.5 px-4">Amount Paid</th>
-                    <th className="py-3.5 px-4">Method & Account</th>
-                    <th className="py-3.5 px-4">Transaction ID</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+              <table className="w-full border-collapse text-left text-xs text-slate-600">
+                <thead className="bg-slate-100/70 text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Staff Member</th>
+                    <th className="py-3 px-4">Payment Month</th>
+                    <th className="py-3 px-4">Amount Paid</th>
+                    <th className="py-3 px-4">Method & Account</th>
+                    <th className="py-3 px-4">Transaction ID</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                <tbody className="divide-y divide-slate-100 border-t border-slate-100 font-medium">
                   {filteredPayments.map((p) => (
-                    <tr key={p.payment_id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900">{p.staff_name || `Staff #${p.staff_id}`}</div>
+                    <tr key={p.payment_id} className="border-b border-slate-200 text-xs text-slate-700 hover:bg-slate-50 transition">
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-slate-800">{p.staff_name || `Staff #${p.staff_id}`}</div>
                         <div className="text-[10px] text-slate-400 font-mono">{p.salary_title || `Assignment #${p.staff_salary_id || 'N/A'}`}</div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-800">
+                      <td className="py-3 px-4 font-bold text-slate-800">
                         {p.payment_month}
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-black text-emerald-700 text-sm">
+                      <td className="py-3 px-4 font-mono font-bold text-emerald-700 text-xs">
                         {formatCurrency(p.amount)}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <span className="font-bold capitalize text-slate-800">{p.payment_method?.replace('_', ' ')}</span>
                         {p.account_details && <div className="text-[10px] text-slate-400 font-mono line-clamp-1">{p.account_details}</div>}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-600 font-semibold">
+                      <td className="py-3 px-4 font-mono text-slate-600 font-semibold">
                         {p.transaction_id || <span className="text-slate-300 font-normal">N/A</span>}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      <td className="py-3 px-4">
+                        <span className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase border ${
                           p.status === 'completed' 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                             : p.status === 'pending'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
                         }`}>
-                          {p.status === 'completed' ? <BiCheckCircle /> : p.status === 'pending' ? <BiTimeFive /> : <BiXCircle />}
                           {p.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenEditModal(p)}
-                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition cursor-pointer"
+                            className="p-1.5 hover:bg-slate-100 text-slate-600 transition cursor-pointer border border-slate-200 shadow-xs"
                             title="Edit Record"
                           >
                             <BiEdit className="text-base" />
                           </button>
                           <button
                             onClick={() => handleDelete(p.payment_id, p.staff_name, p.payment_month)}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition cursor-pointer"
+                            className="p-1.5 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition cursor-pointer border border-slate-200 shadow-xs"
                             title="Delete Record"
                           >
                             <BiTrash className="text-base" />
@@ -298,18 +297,18 @@ export default function DashboardSalaryPaymentsPage() {
 
         {/* Modal Form */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
-            <div className="bg-white border border-slate-200 w-full max-w-md p-6 rounded-2xl shadow-2xl flex flex-col gap-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white border border-slate-200 w-full max-w-md p-6 shadow-xl flex flex-col gap-4">
               
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  <BiCreditCard className="text-purple-600 text-lg" />
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <BiCreditCard className="text-primary text-xl" />
                   {editingItem ? 'Edit Salary Payment Record' : 'Disburse Salary Payment'}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 text-xl cursor-pointer"
                 >
                   <BiX />
                 </button>
@@ -322,7 +321,7 @@ export default function DashboardSalaryPaymentsPage() {
                     required
                     value={formData.staff_salary_id}
                     onChange={(e) => handleSelectStaffSalary(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                   >
                     <option value="">-- Select Staff Assignment --</option>
                     {staffSalariesList.map((ss) => (
@@ -344,7 +343,7 @@ export default function DashboardSalaryPaymentsPage() {
                       value={formData.amount}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                       placeholder="e.g. 25000"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-mono font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                     />
                   </div>
 
@@ -356,7 +355,7 @@ export default function DashboardSalaryPaymentsPage() {
                       value={formData.payment_month}
                       onChange={(e) => setFormData({ ...formData, payment_month: e.target.value })}
                       placeholder="e.g. January 2026"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                     />
                   </div>
                 </div>
@@ -367,7 +366,7 @@ export default function DashboardSalaryPaymentsPage() {
                     <select
                       value={formData.payment_method}
                       onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                     >
                       <option value="bank_transfer">Bank Transfer</option>
                       <option value="cash">Cash</option>
@@ -381,7 +380,7 @@ export default function DashboardSalaryPaymentsPage() {
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                     >
                       <option value="completed">Completed</option>
                       <option value="pending">Pending</option>
@@ -399,7 +398,7 @@ export default function DashboardSalaryPaymentsPage() {
                       value={formData.transaction_id}
                       onChange={(e) => setFormData({ ...formData, transaction_id: e.target.value })}
                       placeholder="e.g. TXN-998823"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-mono font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                     />
                   </div>
 
@@ -409,7 +408,7 @@ export default function DashboardSalaryPaymentsPage() {
                       type="date"
                       value={formData.payment_date}
                       onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                     />
                   </div>
                 </div>
@@ -421,22 +420,22 @@ export default function DashboardSalaryPaymentsPage() {
                     value={formData.account_details}
                     onChange={(e) => setFormData({ ...formData, account_details: e.target.value })}
                     placeholder="e.g. A/C 123-456-7890 (DBBL)"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none transition"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-4">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {submitting ? 'Processing...' : editingItem ? 'Update Record' : 'Disburse Payment'}
                   </button>

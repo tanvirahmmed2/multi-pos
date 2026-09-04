@@ -10,15 +10,15 @@ import { BiShieldX, BiLoaderAlt, BiHome } from 'react-icons/bi'
 export const ROLE_PERMISSIONS = {
   admin: [
     'branches', 'people', 'category', 'brands', 'product', 'stock',
-    'purchase', 'supplier', 'customers', 'support', 'contact', 'reviews',
+    'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
-    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'profits'
+    'returned-sale', 'history', 'issue', 'profile', 'orders', 'overview', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'shares', 'expenses', 'expense-payments', 'profits'
   ],
   manager: [
     'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'overview', 'purchase', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'expenses', 'profits'
+    'profile', 'orders', 'overview', 'purchase', 'purchase-payments', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'investor', 'investments', 'withdrawls', 'withdrawals', 'salaries', 'staff-salaries', 'salary-payments', 'expenses', 'expense-payments', 'profits'
   ],
   sales: [
     'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
