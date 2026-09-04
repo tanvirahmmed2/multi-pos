@@ -31,6 +31,9 @@ CREATE TABLE staffs (
     CHECK (role IN ('admin','manager','sales','staff')),
   is_active BOOLEAN DEFAULT TRUE,
   is_banned BOOLEAN DEFAULT FALSE,
+  "2fa_active" BOOLEAN DEFAULT FALSE,
+  "2fa_code" VARCHAR(10) DEFAULT NULL,
+  "2fa_expires_at" TIMESTAMP DEFAULT NULL,
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now()
 );

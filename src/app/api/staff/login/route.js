@@ -2,6 +2,8 @@ import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 import { comparePassword, generateToken } from '@/lib/auth';
 import { recordLoginLog, recordActivityLog } from '@/lib/logger';
+import { sendEmail } from '@/lib/mailer';
+import { STORE_NAME } from '@/lib/secret';
 
 export async function POST(req) {
   try {
@@ -48,6 +50,49 @@ export async function POST(req) {
     if (!staff.is_varified) {
       await recordLoginLog(req, { staffId: staff.staff_id, email: staff.email, role: staff.role, status: 'failed' });
       return Response.json({ error: 'Please verify your email address first' }, { status: 403 });
+    }
+
+    // Check if Two-Factor Authentication is enabled for staff
+    if (staff['2fa_active'] === true) {
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      await query(
+        `UPDATE staffs 
+         SET "2fa_code" = $1, "2fa_expires_at" = NOW() + INTERVAL '10 minutes' 
+         WHERE staff_id = $2`,
+        [otpCode, staff.staff_id]
+      );
+
+      const mailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+          <h2 style="color: #0f172a; font-size: 20px; font-weight: bold; margin-bottom: 8px;">${STORE_NAME} Login Verification</h2>
+          <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">Hi ${staff.name},</p>
+          <p style="color: #475569; font-size: 14px;">Your 2FA login verification code is:</p>
+          <div style="background-color: #f1f5f9; text-align: center; padding: 16px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #0f172a; margin: 20px 0;">
+            ${otpCode}
+          </div>
+          <p style="color: #64748b; font-size: 12px; margin-top: 20px;">This code will expire in 10 minutes. If you did not attempt to log in, please secure your account password immediately.</p>
+        </div>
+      `;
+
+      try {
+        await sendEmail({
+          to: staff.email,
+          subject: `[${STORE_NAME}] Your Login 2FA Code`,
+          htmlContent: mailHtml,
+        });
+      } catch (emailErr) {
+        console.error('Failed to send login 2FA email via Brevo:', emailErr);
+      }
+
+      return Response.json(
+        {
+          require_2fa: true,
+          email: staff.email,
+          message: 'Two-factor verification code sent to your email'
+        },
+        { status: 200 }
+      );
     }
 
     const token = generateToken({

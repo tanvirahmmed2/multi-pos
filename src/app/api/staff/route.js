@@ -21,7 +21,7 @@ export async function GET(req) {
     }
 
     const result = await query(
-      'SELECT staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, created_at, updated_at FROM staffs WHERE staff_id = $1',
+      'SELECT staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, "2fa_active", created_at, updated_at FROM staffs WHERE staff_id = $1',
       [staffId]
     );
 
@@ -173,7 +173,7 @@ export async function PUT(req) {
         `UPDATE staffs 
          SET name = $1, email = $2, phone = $3, password = $4, updated_at = NOW() 
          WHERE staff_id = $5 
-         RETURNING staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, created_at, updated_at`,
+         RETURNING staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, "2fa_active", created_at, updated_at`,
         [name.trim(), email.trim(), cleanPhone, passwordHashToSave, auth.staff.staff_id]
       );
     } else {
@@ -181,7 +181,7 @@ export async function PUT(req) {
         `UPDATE staffs 
          SET name = $1, email = $2, phone = $3, updated_at = NOW() 
          WHERE staff_id = $4 
-         RETURNING staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, created_at, updated_at`,
+         RETURNING staff_id, branch_id, name, email, phone, role, is_active, is_varified, is_banned, "2fa_active", created_at, updated_at`,
         [name.trim(), email.trim(), cleanPhone, auth.staff.staff_id]
       );
     }
