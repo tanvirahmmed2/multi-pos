@@ -15,7 +15,9 @@ import {
   BiBarcode, 
   BiLoaderAlt, 
   BiRefresh, 
-  BiShow
+  BiShow,
+  BiX,
+  BiCheck
 } from 'react-icons/bi'
 
 export default function PriceTagPageClean() {
@@ -31,6 +33,12 @@ export default function PriceTagPageClean() {
 
   const [queue, setQueue] = useState([])
   const [previewIndex, setPreviewIndex] = useState(0)
+
+  // Variant Modal State
+  const [selectedProductForModal, setSelectedProductForModal] = useState(null)
+  const [modalVariants, setModalVariants] = useState([])
+  const [loadingModalVariants, setLoadingModalVariants] = useState(false)
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
 
   const barcodeInputRef = useRef(null)
   const previewBarcodeRef = useRef(null)
@@ -70,8 +78,15 @@ export default function PriceTagPageClean() {
     return matchesCategory && matchesSearch
   })
 
-  const addToQueue = (product) => {
-    const key = `${product.product_id}-${product.variant_id || 'base'}`
+  const addToQueue = (product, variant = null, availableVariants = []) => {
+    const vId = variant?.variant_id || product.variant_id || null
+    const vName = variant ? variant.variant_name : (product.variant_name || '')
+    const vBarcode = variant?.barcode || product.barcode || `PROD-${product.product_id}`
+    const vPrice = parseFloat(variant ? (variant.sale_price || variant.retail_price) : (product.sale_price || product.retail_price || 0))
+    const key = `${product.product_id}-${vId || 'base'}`
+
+    const varsList = availableVariants.length > 0 ? availableVariants : (product.variants || [])
+
     setQueue(prev => {
       const existingIndex = prev.findIndex(item => item.key === key)
       if (existingIndex > -1) {
@@ -84,21 +99,73 @@ export default function PriceTagPageClean() {
           {
             key,
             product_id: product.product_id,
-            variant_id: product.variant_id || null,
+            variant_id: vId,
             product_name: product.name,
-            variant_name: product.variant_name || '',
-            barcode: product.barcode || `PROD-${product.product_id}`,
-            price: parseFloat(product.sale_price || product.retail_price || 0),
+            variant_name: vName,
+            barcode: vBarcode,
+            price: vPrice,
             quantity: 1,
-            image: product.image
+            image: variant?.image || product.image,
+            available_variants: varsList
           }
         ]
       }
     })
-    toast.success(`Added ${product.name} to tag queue`)
+    toast.success(`Added ${product.name}${vName ? ` (${vName})` : ''} to tag queue`)
   }
 
-  const handleBarcodeSubmit = (e) => {
+  const handleProductClick = async (product) => {
+    setLoadingModalVariants(true)
+    try {
+      const res = await axios.get(`/api/product/${product.slug || product.product_id}`)
+      const fetchedVariants = (res.data?.variants || []).filter(v => v.is_active !== false)
+
+      if (fetchedVariants.length > 1) {
+        setSelectedProductForModal(product)
+        setModalVariants(fetchedVariants)
+        setIsVariantModalOpen(true)
+      } else if (fetchedVariants.length === 1) {
+        addToQueue(product, fetchedVariants[0], fetchedVariants)
+      } else {
+        addToQueue(product, null, [])
+      }
+    } catch (err) {
+      console.error(err)
+      addToQueue(product, null, [])
+    } finally {
+      setLoadingModalVariants(false)
+    }
+  }
+
+  const changeItemVariant = (itemKey, newVariantId) => {
+    setQueue(prev => prev.map(item => {
+      if (item.key === itemKey) {
+        const newVar = item.available_variants?.find(v => String(v.variant_id) === String(newVariantId))
+        if (!newVar) return item
+        const newKey = `${item.product_id}-${newVar.variant_id}`
+        return {
+          ...item,
+          key: newKey,
+          variant_id: newVar.variant_id,
+          variant_name: newVar.variant_name,
+          barcode: newVar.barcode || item.barcode,
+          price: parseFloat(newVar.sale_price || newVar.retail_price || 0),
+          image: newVar.image || item.image
+        }
+      }
+      return item
+    }))
+    toast.success('Product variant updated')
+  }
+
+  const addAllVariantsToQueue = (product, variants) => {
+    variants.forEach(v => {
+      addToQueue(product, v, variants)
+    })
+    setIsVariantModalOpen(false)
+  }
+
+  const handleBarcodeSubmit = async (e) => {
     e.preventDefault()
     if (!barcodeSearch.trim()) return
 
@@ -106,7 +173,7 @@ export default function PriceTagPageClean() {
     const product = products.find(p => p.barcode === cleanBarcode)
 
     if (product) {
-      addToQueue(product)
+      await handleProductClick(product)
       setBarcodeSearch('')
       barcodeInputRef.current?.focus()
     } else {
@@ -279,10 +346,28 @@ export default function PriceTagPageClean() {
                             <p className="font-semibold text-slate-800 text-xs leading-tight" title={item.product_name}>
                               {item.product_name}
                             </p>
-                            {item.variant_name && (
-                              <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded leading-none inline-block mt-0.5">
-                                {item.variant_name}
-                              </span>
+
+                            {/* Changeable Variant Selector */}
+                            {item.available_variants && item.available_variants.length > 1 ? (
+                              <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                                <select
+                                  value={item.variant_id || ''}
+                                  onChange={(e) => changeItemVariant(item.key, e.target.value)}
+                                  className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer outline-none focus:border-primary"
+                                >
+                                  {item.available_variants.map(v => (
+                                    <option key={v.variant_id} value={v.variant_id}>
+                                      {v.variant_name || 'Default'} ({v.barcode || 'No Code'}) - {currencySymbol}{parseFloat(v.sale_price || 0).toFixed(2)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : (
+                              item.variant_name && (
+                                <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded leading-none inline-block mt-0.5">
+                                  {item.variant_name}
+                                </span>
+                              )
                             )}
                           </td>
 
@@ -455,7 +540,7 @@ export default function PriceTagPageClean() {
                   return (
                     <div 
                       key={p.product_id || p.variant_id}
-                      onClick={() => addToQueue(p)}
+                      onClick={() => handleProductClick(p)}
                       className={`bg-white border border-slate-200 hover:border-primary rounded-xl p-2.5 flex flex-col justify-between gap-3 transition cursor-pointer select-none shadow-xs group ${isAdded ? 'ring-1 ring-primary/30 border-primary/50 bg-slate-50/30' : ''}`}
                     >
                       <div className="flex flex-col gap-2">
@@ -498,7 +583,7 @@ export default function PriceTagPageClean() {
                       <div className={`w-full py-1 text-[10px] font-bold rounded-lg transition flex items-center justify-center gap-1 ${
                         isAdded ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 group-hover:bg-primary group-hover:text-white'
                       }`}>
-                        <BiPlus className="text-xs" /> {isAdded ? 'Add More' : '+ Add Tag'}
+                        <BiPlus className="text-xs" /> {isAdded ? 'Add / Select Variant' : '+ Add Tag'}
                       </div>
                     </div>
                   )
@@ -515,6 +600,94 @@ export default function PriceTagPageClean() {
         </div>
 
       </div>
+
+      {/* Select Variant Modal */}
+      {isVariantModalOpen && selectedProductForModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl max-w-lg w-full p-6 flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <BiTag className="text-primary text-xl" /> Select Variant for {selectedProductForModal.name}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Choose specific product variant to add to price tag print queue.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsVariantModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <BiX className="text-2xl" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
+              {modalVariants.map((v) => {
+                const vPrice = parseFloat(v.sale_price || v.retail_price || 0)
+                const vBarcode = v.barcode || `PROD-${selectedProductForModal.product_id}`
+                const isInQueue = queue.some(item => String(item.product_id) === String(selectedProductForModal.product_id) && String(item.variant_id) === String(v.variant_id))
+
+                return (
+                  <div
+                    key={v.variant_id}
+                    className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between hover:border-primary/50 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      {v.image ? (
+                        <Image src={v.image} width={40} height={40} alt={v.variant_name} className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+                      ) : (
+                        <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                          <BiBarcode className="text-xl" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900">{v.variant_name || 'Default Variant'}</h4>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono mt-0.5">
+                          <span>Barcode: {vBarcode}</span>
+                          <span>•</span>
+                          <span className="font-bold text-slate-800">{currencySymbol}{vPrice.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => addToQueue(selectedProductForModal, v, modalVariants)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                        isInQueue 
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-primary hover:bg-primary-dark text-white shadow-xs'
+                      }`}
+                    >
+                      <BiPlus className="text-sm" /> Add to Queue
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => addAllVariantsToQueue(selectedProductForModal, modalVariants)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                + Add All ({modalVariants.length}) Variants to Queue
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsVariantModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
