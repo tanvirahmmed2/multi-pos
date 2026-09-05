@@ -9,7 +9,7 @@ import { BiShieldX, BiLoaderAlt, BiHome } from 'react-icons/bi'
 
 export const ROLE_PERMISSIONS = {
   admin: [
-    'modules', 'branches', 'people', 'category', 'brands', 'product', 'stock',
+    'modules', 'branches', 'people', 'category', 'brands', 'product', 'price-tag', 'stock',
     'purchase', 'purchase-payments', 'supplier', 'customers', 'support', 'contact', 'reviews',
     'payments', 'return', 'report', 'backup', 'settings', 'sale',
     'pending-sale', 'confirmed-sale', 'out_for_delivery', 'completed-sale',
@@ -18,15 +18,15 @@ export const ROLE_PERMISSIONS = {
   manager: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'customers', 'activity-logs', 'login-logs', 'expenses', 'expense-payments', 'notices', 'my-salary'
+    'profile', 'orders', 'purchase', 'purchase-payments', 'return', 'stock', 'price-tag', 'customers', 'activity-logs', 'login-logs', 'expenses', 'expense-payments', 'notices', 'my-salary'
   ],
   sales: [
     'modules', 'sale', 'pending-sale', 'confirmed-sale', 'out_for_delivery',
     'completed-sale', 'returned-sale', 'payments', 'history', 'issue',
-    'profile', 'orders', 'notices', 'activity-logs', 'login-logs', 'my-salary'
+    'profile', 'orders', 'price-tag', 'notices', 'activity-logs', 'login-logs', 'my-salary'
   ],
   staff: [
-    'modules', 'profile', 'issue', 'orders', 'notices', 'activity-logs', 'login-logs', 'my-salary'
+    'modules', 'profile', 'issue', 'orders', 'price-tag', 'notices', 'activity-logs', 'login-logs', 'my-salary'
   ]
 }
 

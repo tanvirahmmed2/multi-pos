@@ -11,7 +11,8 @@ import {
   BiTrash, 
   BiLoaderAlt, 
   BiPackage,
-  BiFilterAlt
+  BiFilterAlt,
+  BiTag
 } from 'react-icons/bi'
 
 export default function DashboardManagerProductPage() {
@@ -89,12 +90,20 @@ export default function DashboardManagerProductPage() {
             </h1>
             <p className="text-slate-500 text-xs mt-0.5">Manage items inventory, variants, barcodes, and pricing configurations.</p>
           </div>
-          <Link
-            href="/dashboard/product/create"
-            className="px-4 py-2 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto bg-primary hover:bg-primary-dark"
-          >
-            <BiPlus className="text-base" /> Create Product
-          </Link>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Link
+              href="/dashboard/price-tag"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <BiTag className="text-base" /> Print Price Tags
+            </Link>
+            <Link
+              href="/dashboard/product/create"
+              className="px-4 py-2 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm bg-primary hover:bg-primary-dark"
+            >
+              <BiPlus className="text-base" /> Create Product
+            </Link>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-4 border border-slate-200 shadow-sm">

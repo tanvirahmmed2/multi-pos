@@ -42,6 +42,7 @@ export const MODULE_LINKS = {
   category: { name: 'Categories', path: '/dashboard/category', icon: <BiCategory /> },
   brands: { name: 'Brands', path: '/dashboard/brands', icon: <BiTag /> },
   product: { name: 'Products', path: '/dashboard/product', icon: <BiPackage /> },
+  'price-tag': { name: 'Price Tags', path: '/dashboard/price-tag', icon: <BiTag /> },
   stock: { name: 'Stock', path: '/dashboard/stock', icon: <BiPackage /> },
   purchase: { name: 'Purchases', path: '/dashboard/purchase', icon: <BiDollarCircle /> },
   supplier: { name: 'Suppliers', path: '/dashboard/supplier', icon: <BiStoreAlt /> },

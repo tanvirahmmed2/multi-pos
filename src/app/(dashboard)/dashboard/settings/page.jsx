@@ -44,7 +44,9 @@ export default function DashboardAdminSettingsPage() {
   const [existingLogoUrl, setExistingLogoUrl] = useState('')
 
   const [fetching, setFetching] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [savingIdentity, setSavingIdentity] = useState(false)
+  const [savingHero, setSavingHero] = useState(false)
+  const [savingLogo, setSavingLogo] = useState(false)
 
   const fetchCurrenciesList = async () => {
     try {
@@ -138,36 +140,67 @@ export default function DashboardAdminSettingsPage() {
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSaveIdentity = async (e) => {
     e.preventDefault()
-    setSaving(true)
-    
+    setSavingIdentity(true)
+    try {
+      await axios.post('/api/settings/identity', {
+        email,
+        phone,
+        address,
+        sociallink,
+        is_share_investment: isShareInvestment,
+        is_sale_active: isSaleActive,
+        excluded_tax: excludedTax,
+        tax_amount: taxAmount
+      })
+      toast.success('General identity settings updated successfully!')
+      if (fetchWebsite) {
+        fetchWebsite()
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save identity settings')
+      console.error(err)
+    } finally {
+      setSavingIdentity(false)
+    }
+  }
+
+  const handleSaveHero = async (e) => {
+    e.preventDefault()
+    setSavingHero(true)
+    try {
+      await axios.post('/api/settings/hero', {
+        hero_title: heroTitle,
+        hero_subtitle: heroSubtitle
+      })
+      toast.success('Hero section settings updated successfully!')
+      if (fetchWebsite) {
+        fetchWebsite()
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save hero section')
+      console.error(err)
+    } finally {
+      setSavingHero(false)
+    }
+  }
+
+  const handleSaveLogo = async (e) => {
+    e.preventDefault()
+    if (!logoFile) {
+      toast.error('Please select a new logo image file first.')
+      return
+    }
+    setSavingLogo(true)
     const formData = new FormData()
-    formData.append('email', email)
-    formData.append('phone', phone)
-    formData.append('address', address)
-    formData.append('sociallink', sociallink)
-    formData.append('hero_title', heroTitle)
-    formData.append('hero_subtitle', heroSubtitle)
-    formData.append('is_share_investment', isShareInvestment ? 'true' : 'false')
-    formData.append('is_sale_active', isSaleActive ? 'true' : 'false')
-    formData.append('excluded_tax', excludedTax ? 'true' : 'false')
-    formData.append('tax_amount', taxAmount)
-    formData.append('currency_symbol', currencySymbol)
-    formData.append('currency_code', currencyCode)
-    if (currencyId) {
-      formData.append('currency_id', currencyId)
-    }
-    
-    if (logoFile) {
-      formData.append('logo', logoFile)
-    }
+    formData.append('logo', logoFile)
 
     try {
-      const res = await axios.post('/api/settings', formData, {
+      const res = await axios.post('/api/settings/logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      toast.success('Website settings updated successfully!')
+      toast.success('Website logo updated successfully!')
       if (res.data && (res.data.logo || res.data.logo_url)) {
         const newUrl = res.data.logo || res.data.logo_url
         setExistingLogoUrl(newUrl)
@@ -178,10 +211,10 @@ export default function DashboardAdminSettingsPage() {
         fetchWebsite()
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save settings')
+      toast.error(err.response?.data?.error || 'Failed to upload and save logo')
       console.error(err)
     } finally {
-      setSaving(false)
+      setSavingLogo(false)
     }
   }
 
@@ -205,14 +238,15 @@ export default function DashboardAdminSettingsPage() {
             <BiCog className="text-primary" />
             Website Settings & Configuration
           </h1>
-          <p className="text-slate-500 text-xs md:text-sm mt-0.5">Configure store branding logo, contact details, and landing page banner headers.</p>
+          <p className="text-slate-500 text-xs md:text-sm mt-0.5">Configure store branding logo, contact details, and landing page banner headers with independent section controls.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
           <div className="lg:col-span-2 flex flex-col gap-6">
             
-            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
+            {/* General Identity Section */}
+            <form onSubmit={handleSaveIdentity} className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiGlobe className="text-base text-primary" /> General Identity
               </h2>
@@ -361,8 +395,26 @@ export default function DashboardAdminSettingsPage() {
                 )}
               </div>
 
-            </div>
+              <div className="border-t border-slate-100 pt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingIdentity}
+                  className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2 shadow-xs disabled:opacity-50"
+                >
+                  {savingIdentity ? (
+                    <>
+                      <BiLoaderAlt className="animate-spin text-base" /> Saving Identity...
+                    </>
+                  ) : (
+                    <>
+                      <BiSave className="text-base" /> Save Identity Settings
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
 
+            {/* Store Currency Manager Section */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
@@ -570,7 +622,8 @@ export default function DashboardAdminSettingsPage() {
 
             </div>
 
-            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
+            {/* Landing Hero Section */}
+            <form onSubmit={handleSaveHero} className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiLayout className="text-base text-primary" /> Landing Hero Section
               </h2>
@@ -594,13 +647,33 @@ export default function DashboardAdminSettingsPage() {
                   className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:border-slate-400 rounded-xl transition resize-none"
                 />
               </div>
-            </div>
+
+              <div className="border-t border-slate-100 pt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingHero}
+                  className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2 shadow-xs disabled:opacity-50"
+                >
+                  {savingHero ? (
+                    <>
+                      <BiLoaderAlt className="animate-spin text-base" /> Saving Hero Section...
+                    </>
+                  ) : (
+                    <>
+                      <BiSave className="text-base" /> Save Hero Section
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
 
           </div>
 
+          {/* Right Column: Logo & Live Preview */}
           <div className="flex flex-col gap-6">
             
-            <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
+            {/* Website Logo Section */}
+            <form onSubmit={handleSaveLogo} className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-5 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiUpload className="text-base text-primary" /> Website Logo (Cloudinary)
               </h2>
@@ -632,31 +705,32 @@ export default function DashboardAdminSettingsPage() {
                       onChange={handleLogoChange}
                     />
                   </label>
-                  <p className="text-[10px] text-slate-400 text-center">Uploading a new logo will delete the old image from Cloudinary automatically.</p>
+                  <p className="text-[10px] text-slate-400 text-center">Uploading a new logo will replace the old image on Cloudinary.</p>
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4 mt-1 flex flex-col gap-2">
+              <div className="border-t border-slate-100 pt-4 flex flex-col gap-2">
                 <button
                   type="submit"
-                  disabled={saving}
-                  className="w-full py-3 text-white text-xs md:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-2 shadow-md rounded-xl disabled:opacity-50 bg-primary hover:bg-primary-dark"
+                  disabled={savingLogo || !logoFile}
+                  className="w-full py-3 text-white text-xs md:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-2 shadow-xs rounded-xl disabled:opacity-50 bg-primary hover:bg-primary-dark"
                 >
-                  {saving ? (
+                  {savingLogo ? (
                     <>
                       <BiLoaderAlt className="animate-spin text-lg" />
-                      Saving settings...
+                      Uploading & Saving Logo...
                     </>
                   ) : (
                     <>
-                      <BiSave className="text-lg" /> Save Changes
+                      <BiSave className="text-lg" /> Save Website Logo
                     </>
                   )}
                 </button>
               </div>
 
-            </div>
+            </form>
 
+            {/* Live Preview Card */}
             <div className="bg-white border border-slate-200 shadow-sm p-5 md:p-6 flex flex-col gap-4 rounded-2xl">
               <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <BiShow className="text-base text-primary" /> Live Preview
@@ -681,7 +755,7 @@ export default function DashboardAdminSettingsPage() {
 
           </div>
 
-        </form>
+        </div>
 
       </div>
     </div>
