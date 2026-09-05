@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
-import { hashPassword, comparePassword, verifyToken, authenticateStaff } from '@/lib/auth';
+import { hashPassword, comparePassword, verifyToken, authenticateStaff, isAdmin } from '@/lib/auth';
 import { sendEmail } from '@/lib/mailer';
 import { getBaseUrl, STORE_NAME } from '@/lib/secret';
 import crypto from 'crypto';
@@ -60,7 +60,19 @@ export async function POST(req) {
 
     const hashedPassword = await hashPassword(password);
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const validRole = role && ['admin', 'manager', 'sales', 'staff'].includes(role) ? role : 'staff';
+    
+    // Only admins can assign elevated roles (admin, manager, sales)
+    let validRole = 'staff';
+    if (role && ['admin', 'manager', 'sales'].includes(role)) {
+      const adminAuth = await isAdmin();
+      if (adminAuth.success) {
+        validRole = role;
+      } else {
+        return Response.json({ error: 'Access denied: Admin role required to create management/admin staff accounts' }, { status: 403 });
+      }
+    } else if (role && role === 'staff') {
+      validRole = 'staff';
+    }
     const branchIdVal = branch_id ? parseInt(branch_id, 10) : null;
 
     const result = await query(

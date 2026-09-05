@@ -1,8 +1,13 @@
 import { query } from '@/lib/db';
-import { isAdmin } from '@/lib/auth';
+import { isAdmin, isManagementRole } from '@/lib/auth';
 
 export async function GET(req, { params }) {
   try {
+    const auth = await isManagementRole();
+    if (!auth.success) {
+      return Response.json({ error: auth.message }, { status: 403 });
+    }
+
     const { id } = await params;
     const branchId = parseInt(id, 10);
 

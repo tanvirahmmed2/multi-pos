@@ -1,10 +1,14 @@
 import { query } from '@/lib/db';
 import pool from '@/lib/db';
-import { authenticateUser } from '@/lib/auth';
+import { authenticateUser, authenticateStaff, isManagerOrAdmin } from '@/lib/auth';
 import { updateAvailableBalance, allocateOrderProfit } from '@/lib/financial';
 
 export async function GET(req, { params }) {
   try {
+    const auth = await authenticateStaff();
+    if (!auth.success) {
+      return Response.json({ error: auth.message || 'Unauthorized' }, { status: 401 });
+    }
     const { orderId } = await params;
     const orderRes = await query(
       `SELECT o.*, 
@@ -48,6 +52,11 @@ export async function GET(req, { params }) {
 }
 
 export async function PUT(req, { params }) {
+  const auth = await authenticateStaff();
+  if (!auth.success) {
+    return Response.json({ error: auth.message || 'Unauthorized' }, { status: 401 });
+  }
+
   const client = await pool.connect();
   try {
     const { orderId } = await params;
@@ -224,6 +233,11 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  const auth = await isManagerOrAdmin();
+  if (!auth.success) {
+    return Response.json({ error: auth.message || 'Access denied' }, { status: 403 });
+  }
+
   const client = await pool.connect();
   try {
     const { orderId } = await params;
