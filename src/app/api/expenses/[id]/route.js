@@ -133,7 +133,14 @@ export async function DELETE(req, { params }) {
     }
 
     const expense = existing.rows[0];
-    const paidAmount = parseFloat(expense.paid_amount || 0);
+
+    const payRes = await query(
+      `SELECT COALESCE(SUM(amount), 0)::numeric AS total_paid FROM expense_payments WHERE expense_id = $1`,
+      [expenseId]
+    );
+    const paymentsPaid = parseFloat(payRes.rows[0]?.total_paid || 0);
+    const expensePaid = parseFloat(expense.paid_amount || 0);
+    const paidAmount = Math.max(expensePaid, paymentsPaid);
 
     // Delete expense (cascades items & payments)
     await query('DELETE FROM expenses WHERE expense_id = $1', [expenseId]);

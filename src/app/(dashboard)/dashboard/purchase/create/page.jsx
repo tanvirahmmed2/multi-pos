@@ -24,11 +24,13 @@ export default function PurchaseCreatePage() {
   
   const [suppliers, setSuppliers] = useState([])
   const [branches, setBranches] = useState([])
+  const [availableBalance, setAvailableBalance] = useState(0)
   
   const [branchId, setBranchId] = useState('')
   const [supplierId, setSupplierId] = useState('')
   const [invoiceNo, setInvoiceNo] = useState('')
   const [note, setNote] = useState('')
+  const [paymentStatusOption, setPaymentStatusOption] = useState('paid')
   const [extraDiscount, setExtraDiscount] = useState(0)
   const [amountPaid, setAmountPaid] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState('Cash')
@@ -49,15 +51,19 @@ export default function PurchaseCreatePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [supRes, branchRes] = await Promise.all([
+        const [supRes, branchRes, balRes] = await Promise.all([
           axios.get('/api/supplier'),
-          axios.get('/api/branch')
+          axios.get('/api/branch'),
+          axios.get('/api/available-balance')
         ])
         const activeSuppliers = supRes.data.filter(s => s.is_active !== false)
         const activeBranches = Array.isArray(branchRes.data) ? branchRes.data.filter(b => b.is_active !== false) : []
         
         setSuppliers(activeSuppliers)
         setBranches(activeBranches)
+        if (balRes.data && balRes.data.available_balance !== undefined) {
+          setAvailableBalance(parseFloat(balRes.data.available_balance) || 0)
+        }
 
         // Pre-select branch if manager/admin has a branch assigned
         if (user?.branch_id) {
@@ -182,7 +188,8 @@ export default function PurchaseCreatePage() {
   }, 0)
 
   const total = Math.max(0, subtotal - (parseFloat(extraDiscount) || 0))
-  const due = Math.max(0, total - (parseFloat(amountPaid) || 0))
+  const effectivePaid = paymentStatusOption === 'paid' ? total : Math.min(parseFloat(amountPaid) || 0, total)
+  const due = Math.max(0, total - effectivePaid)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -212,8 +219,13 @@ export default function PurchaseCreatePage() {
       return
     }
 
-    if (parseFloat(amountPaid) > total + 0.01) {
+    if (paymentStatusOption === 'unpaid' && parseFloat(amountPaid) > total + 0.01) {
       toast.error('Initial payment amount cannot exceed total purchase invoice amount')
+      return
+    }
+
+    if (effectivePaid > 0 && effectivePaid > availableBalance + 0.01) {
+      toast.error(`Insufficient available balance (${formatCurrency(availableBalance)}). Purchase payment (${formatCurrency(effectivePaid)}) exceeds available store balance.`)
       return
     }
 
@@ -227,7 +239,9 @@ export default function PurchaseCreatePage() {
         note,
         payment_method: paymentMethod,
         transaction_id: transactionId || '',
-        amount_paid: parseFloat(amountPaid) || 0,
+        is_paid: paymentStatusOption === 'paid',
+        payment_status: paymentStatusOption,
+        amount_paid: effectivePaid,
         items: rows.map(r => ({
           product_id: parseInt(r.product_id, 10),
           variant_id: r.variant_id ? parseInt(r.variant_id, 10) : null,
@@ -571,24 +585,89 @@ export default function PurchaseCreatePage() {
               </div>
 
               <div className="flex flex-col gap-4 mt-2 border-t border-slate-50 pt-4">
-                <h3 className="text-xs font-bold text-slate-700 uppercase">Payment Logging</h3>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Amount Paid Now</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
-                    <input className="input-style pl-8"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max={total}
-                      value={amountPaid}
-                      onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-bold text-slate-700 uppercase">Payment & Stock Status *</h3>
                 </div>
 
-                {amountPaid > 0 && (
+                {/* Available Balance Banner */}
+                <div className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                  <span className="font-semibold text-slate-600">Store Available Balance:</span>
+                  <span className={`font-mono font-bold ${availableBalance >= effectivePaid ? 'text-emerald-700' : 'text-rose-600'}`}>
+                    {formatCurrency(availableBalance)}
+                  </span>
+                </div>
+
+                {/* Paid vs Unpaid Toggle */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentStatusOption('paid')
+                      setAmountPaid(total)
+                    }}
+                    className={`py-2 px-3 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      paymentStatusOption === 'paid'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>✓ Paid</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentStatusOption('unpaid')
+                      setAmountPaid(0)
+                    }}
+                    className={`py-2 px-3 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      paymentStatusOption === 'unpaid'
+                        ? 'bg-rose-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>✕ Unpaid</span>
+                  </button>
+                </div>
+
+                {/* Dynamic Status Explanation Banner */}
+                {paymentStatusOption === 'paid' ? (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex flex-col gap-1">
+                    <span className="font-bold flex items-center gap-1 text-emerald-700">
+                      ✓ Paid — Immediate Stock Ingestion
+                    </span>
+                    <p className="text-[11px] text-emerald-600">
+                      Products will be added directly to store stock inventory upon creation.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex flex-col gap-1">
+                    <span className="font-bold flex items-center gap-1 text-amber-700">
+                      ⚠️ Unpaid — Stock Will NOT Be Added
+                    </span>
+                    <p className="text-[11px] text-amber-600">
+                      Product items will <strong>NOT</strong> enter store stock. Stock will be ingested automatically when payment is completed later.
+                    </p>
+                  </div>
+                )}
+
+                {paymentStatusOption === 'unpaid' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Initial Partial Amount Paid (Optional)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
+                      <input className="input-style pl-8"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max={total}
+                        value={amountPaid}
+                        onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {(paymentStatusOption === 'paid' || effectivePaid > 0) && (
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-slate-600">Payment Method</label>

@@ -1,6 +1,7 @@
 import { query } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
+import { updateAvailableBalance, recalculateInvestorShares } from '@/lib/financial';
 
 export async function PUT(req, { params }) {
   try {
@@ -79,13 +80,32 @@ export async function DELETE(req, { params }) {
       return Response.json({ error: 'Withdrawal record not found' }, { status: 404 });
     }
 
+    const deleted = result.rows[0];
+    const amountToRestore = parseFloat(deleted.amount || 0);
+
+    if (!isNaN(amountToRestore) && amountToRestore > 0) {
+      await updateAvailableBalance(amountToRestore);
+    }
+
+    if (deleted.investor_id) {
+      await query(
+        `DELETE FROM profits WHERE investor_id = $1 AND note = $2`,
+        [deleted.investor_id, `Profit withdrawal #${id}`]
+      );
+      await query(
+        `DELETE FROM investments WHERE investor_id = $1 AND note = $2`,
+        [deleted.investor_id, `Capital investment reduction #${id}`]
+      );
+      await recalculateInvestorShares();
+    }
+
     await logActivity({
       req,
       staffId: auth.staff.staff_id,
       action: 'DELETE_WITHDRAWAL',
       entity: 'withdrawals',
       entityId: id,
-      details: `Deleted withdrawal record ID ${id}`
+      details: `Deleted withdrawal record ID ${id} and restored ৳${amountToRestore} to available balance`
     });
 
     return Response.json({ message: 'Withdrawal deleted successfully' }, { status: 200 });

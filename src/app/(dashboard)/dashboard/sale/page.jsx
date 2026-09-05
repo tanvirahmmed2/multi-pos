@@ -3,8 +3,8 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Context } from '@/component/helper/Context'
+import { printReceipt } from '@/lib/printreceipt'
 import { 
   BiSearch, 
   BiTrash, 
@@ -23,8 +23,7 @@ import {
 import Image from 'next/image'
 
 export default function POSPageClean() {
-  const router = useRouter()
-  const { user, loading: userLoading, dashSidebar } = useContext(Context)
+  const { user, loading: userLoading, dashSidebar, website } = useContext(Context)
 
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -251,9 +250,16 @@ export default function POSPageClean() {
       const res = await axios.post('/api/sale', payload)
       toast.success('Sale Completed!')
 
-      resetForm()
+      const orderId = res.data.order_id
+      try {
+        const orderRes = await axios.get(`/api/sale/${orderId}`)
+        printReceipt(orderRes.data, website)
+      } catch (printErr) {
+        console.error('Failed to fetch created order for printing receipt:', printErr)
+      }
 
-      router.push(`/dashboard/sale/${res.data.order_id}`)
+      resetForm()
+      fetchApiProducts()
 
     } catch (err) {
       console.error(err)

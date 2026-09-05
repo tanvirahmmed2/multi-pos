@@ -89,11 +89,11 @@ export default function DashboardLoginLogsPage() {
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
-      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-6">
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
+            <h1 className="text-2xl font-semibold text-slate-800 tracking-tight flex items-center gap-2.5">
               <BiKey className="text-primary text-3xl" /> Staff Login & Authentication Logs
             </h1>
             <p className="text-slate-500 text-xs mt-1 font-medium">
@@ -104,13 +104,13 @@ export default function DashboardLoginLogsPage() {
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <Link
               href="/dashboard/activity-logs"
-              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
             >
               <BiShieldQuarter className="text-base text-primary" /> View Activity Logs
             </Link>
             <button
               onClick={fetchLogs}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl shadow-sm hover:bg-slate-100 transition cursor-pointer"
             >
               <BiRefresh className={`text-base ${loading ? 'animate-spin' : ''}`} /> Refresh
             </button>
@@ -146,7 +146,7 @@ export default function DashboardLoginLogsPage() {
               </div>
             )}
 
-            <div className="text-xs font-bold text-slate-500">
+            <div className="text-xs font-semibold text-slate-500">
               Total Records: <span className="text-slate-800">{filteredLogs.length}</span>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function DashboardLoginLogsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                   <tr>
                     <th className="py-3.5 px-4">Timestamp</th>
                     <th className="py-3.5 px-4">Staff / Email</th>
@@ -204,17 +204,17 @@ export default function DashboardLoginLogsPage() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold uppercase text-[10px] rounded-md">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-semibold uppercase text-[10px] rounded-md">
                           {log.role || log.staff_role || 'Staff'}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
                         {log.status === 'success' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[11px] rounded-full">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-semibold text-[11px] rounded-full">
                             <BiCheckCircle /> Success
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-rose-50 text-rose-700 font-bold text-[11px] rounded-full">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-rose-50 text-rose-700 font-semibold text-[11px] rounded-full">
                             <BiXCircle /> Failed
                           </span>
                         )}

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/component/helper/Context'
+import { printPurchaseReceipt } from '@/lib/purchasereceipt'
 import { 
   BiPlus, 
   BiSearch, 
@@ -13,11 +14,12 @@ import {
   BiShow,
   BiCalendar,
   BiUser,
+  BiPrinter,
   BiDollarCircle
 } from 'react-icons/bi'
 
 export default function DashboardManagerPurchasePage() {
-  const { dashSidebar } = useContext(Context)
+  const { dashSidebar, website } = useContext(Context)
   const [purchases, setPurchases] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -191,22 +193,37 @@ export default function DashboardManagerPurchasePage() {
                         </td>
                         <td className="px-4 py-3">
                           {isFullyPaid ? (
-                            <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase border bg-emerald-50 text-emerald-700 border-emerald-200">
-                              Paid
-                            </span>
-                          ) : (
-                            <div className="flex flex-col">
-                              <span className="font-bold text-amber-600 text-xs">
-                                {formatCurrency(purchase.due_amount)}
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                ✓ Paid
                               </span>
-                              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase border bg-amber-50 text-amber-700 border-amber-200 mt-1 w-fit">
-                                Unpaid Balance
+                              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                                Stock Ingested
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-start gap-1">
+                              <span className="font-bold text-amber-600 text-xs">
+                                Due: {formatCurrency(purchase.due_amount)}
+                              </span>
+                              <span className="inline-block px-2 py-0.5 text-[10px] font-bold uppercase border bg-rose-50 text-rose-700 border-rose-200 w-fit">
+                                {purchase.payment_status === 'partial' ? 'Partial Paid' : 'Unpaid'}
+                              </span>
+                              <span className="text-[10px] text-slate-400 italic">
+                                Stock Not Added
                               </span>
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => printPurchaseReceipt(purchase, website)}
+                              title="Print Thermal Purchase Receipt"
+                              className="p-1.5 hover:bg-slate-100 text-slate-600 transition cursor-pointer border border-slate-200 shadow-xs"
+                            >
+                              <BiPrinter className="text-base" />
+                            </button>
                             <Link
                               href={`/dashboard/purchase/${purchase.purchase_id}`}
                               title="View Invoice & Payments"

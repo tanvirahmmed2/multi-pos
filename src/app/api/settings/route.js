@@ -31,8 +31,6 @@ export async function POST(req) {
     const sociallink = formData.get('sociallink') || '';
     const email = formData.get('email') || '';
     const phone = formData.get('phone') || '';
-    const isShareInvestmentRaw = formData.get('is_share_investment');
-    const is_share_investment = isShareInvestmentRaw === 'true' || isShareInvestmentRaw === true;
     const isSaleActiveRaw = formData.get('is_sale_active');
     const is_sale_active = isSaleActiveRaw === null ? true : (isSaleActiveRaw === 'true' || isSaleActiveRaw === true);
     const excludedTaxRaw = formData.get('excluded_tax');
@@ -68,17 +66,17 @@ export async function POST(req) {
         `UPDATE websites 
          SET logo = $1, logo_id = $2, hero_title = $3, hero_subtitle = $4,
              address = $5, sociallink = $6, email = $7, phone = $8,
-             is_share_investment = $9, is_sale_active = $10, excluded_tax = $11, tax_amount = $12, updated_at = now()
-         WHERE website_id = $13
+             is_sale_active = $9, excluded_tax = $10, tax_amount = $11, updated_at = now()
+         WHERE website_id = $12
          RETURNING *`,
-        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, is_share_investment, is_sale_active, excluded_tax, tax_amount, existing.website_id]
+        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, is_sale_active, excluded_tax, tax_amount, existing.website_id]
       );
     } else {
       result = await query(
-        `INSERT INTO websites (logo, logo_id, hero_title, hero_subtitle, address, sociallink, email, phone, is_share_investment, is_sale_active, excluded_tax, tax_amount)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `INSERT INTO websites (logo, logo_id, hero_title, hero_subtitle, address, sociallink, email, phone, is_sale_active, excluded_tax, tax_amount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
-        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, is_share_investment, is_sale_active, excluded_tax, tax_amount]
+        [logoUrl, logoId, hero_title, hero_subtitle, address, sociallink, email, phone, is_sale_active, excluded_tax, tax_amount]
       );
     }
 

@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { isManager } from '@/lib/auth';
+import { updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req, { params }) {
   try {
@@ -76,39 +77,49 @@ export async function DELETE(req, { params }) {
     const { id } = await params;
     const purchaseId = parseInt(id, 10);
 
-    const purchaseCheck = await query('SELECT branch_id FROM purchases WHERE purchase_id = $1', [purchaseId]);
+    const purchaseCheck = await query('SELECT branch_id, stock_added FROM purchases WHERE purchase_id = $1', [purchaseId]);
     if (purchaseCheck.rows.length === 0) {
       return Response.json({ error: 'Purchase invoice not found' }, { status: 404 });
     }
-    const purchaseBranchId = purchaseCheck.rows[0].branch_id || 1;
+    const purchaseRecord = purchaseCheck.rows[0];
+    const purchaseBranchId = purchaseRecord.branch_id || 1;
+    const stockWasAdded = purchaseRecord.stock_added === true;
+
+    const paymentCheck = await query(
+      `SELECT COALESCE(SUM(amount_paid), 0)::numeric AS total_paid FROM purchase_payments WHERE purchase_id = $1`,
+      [purchaseId]
+    );
+    const totalPaid = parseFloat(paymentCheck.rows[0]?.total_paid || 0);
 
     const itemsRes = await query('SELECT * FROM purchase_items WHERE purchase_id = $1', [purchaseId]);
 
     await query('BEGIN');
 
-    for (const item of itemsRes.rows) {
-      let targetVarId = item.variant_id;
-      if (!targetVarId) {
-        const defaultVarRes = await query(
-          `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
-          [item.product_id]
-        );
-        if (defaultVarRes.rows.length > 0) {
-          targetVarId = defaultVarRes.rows[0].variant_id;
+    if (stockWasAdded) {
+      for (const item of itemsRes.rows) {
+        let targetVarId = item.variant_id;
+        if (!targetVarId) {
+          const defaultVarRes = await query(
+            `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
+            [item.product_id]
+          );
+          if (defaultVarRes.rows.length > 0) {
+            targetVarId = defaultVarRes.rows[0].variant_id;
+          }
+        }
+
+        if (targetVarId) {
+          await query(
+            `UPDATE stocks 
+             SET stock = GREATEST(stock - $1, 0), updated_at = NOW() 
+             WHERE variant_id = $2 AND branch_id = $3`,
+            [item.quantity, targetVarId, purchaseBranchId]
+          );
         }
       }
 
-      if (targetVarId) {
-        await query(
-          `UPDATE stocks 
-           SET stock = GREATEST(stock - $1, 0), updated_at = NOW() 
-           WHERE variant_id = $2 AND branch_id = $3`,
-          [item.quantity, targetVarId, purchaseBranchId]
-        );
-      }
+      await query('DELETE FROM inventory_logs WHERE reference_id = $1 AND type = \'purchase\'', [purchaseId]);
     }
-
-    await query('DELETE FROM inventory_logs WHERE reference_id = $1 AND type = \'purchase\'', [purchaseId]);
 
     await query('DELETE FROM purchase_payments WHERE purchase_id = $1', [purchaseId]);
 
@@ -118,7 +129,11 @@ export async function DELETE(req, { params }) {
 
     await query('COMMIT');
 
-    return Response.json({ message: 'Purchase invoice deleted and inventory reverted successfully' }, { status: 200 });
+    if (totalPaid > 0) {
+      await updateAvailableBalance(totalPaid);
+    }
+
+    return Response.json({ message: stockWasAdded ? 'Purchase invoice deleted, inventory reverted, and payments restored to balance' : 'Unpaid purchase invoice deleted successfully' }, { status: 200 });
 
   } catch (error) {
     await query('ROLLBACK');

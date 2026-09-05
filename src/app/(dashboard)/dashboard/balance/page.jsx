@@ -38,15 +38,6 @@ export default function DashboardBalancePage() {
 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-
-  const [formData, setFormData] = useState({
-    amount: '',
-    payment_method: 'cash',
-    reference_no: '',
-    note: ''
-  })
 
   const fetchData = async () => {
     try {
@@ -73,42 +64,6 @@ export default function DashboardBalancePage() {
   const handleRefresh = () => {
     setRefreshing(true)
     fetchData()
-  }
-
-  const handleOpenModal = () => {
-    if (data.is_share_investment) {
-      toast.error('Manual balance addition is disabled when Share Investment mode is enabled')
-      return
-    }
-    setFormData({
-      amount: '',
-      payment_method: 'cash',
-      reference_no: '',
-      note: ''
-    })
-    setIsModalOpen(true)
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const amt = parseFloat(formData.amount)
-    if (isNaN(amt) || amt <= 0) {
-      toast.error('Please enter a valid positive amount')
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      await axios.post('/api/balance', formData)
-      toast.success('Balance added successfully!')
-      setIsModalOpen(false)
-      fetchData()
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to add balance')
-      console.error(err)
-    } finally {
-      setSubmitting(false)
-    }
   }
 
   const handleDeleteTx = async (txId, amount) => {
@@ -185,46 +140,23 @@ export default function DashboardBalancePage() {
               <BiWallet className="text-primary" /> Balance Management
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Monitor real-time store balance, manual capital deposits, and transaction ledgers.
+              Monitor real-time store balance, sales collections, purchases, expenses, and withdrawals.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="p-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition cursor-pointer shadow-sm disabled:opacity-50"
+              className="p-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-1.5 text-xs font-bold"
               title="Refresh Balance Data"
             >
-              <BiRefresh className={`text-xl ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-
-            <button
-              onClick={handleOpenModal}
-              disabled={data.is_share_investment}
-              className={`px-4 py-2.5 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm ${
-                data.is_share_investment
-                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed border border-slate-300'
-                  : 'bg-primary hover:bg-primary-dark cursor-pointer'
-              }`}
-              title={data.is_share_investment ? 'Disabled in Share Investment Mode' : 'Add Cash/Balance'}
-            >
-              <BiPlus className="text-base" /> Add Balance
+              <BiRefresh className={`text-xl ${refreshing ? 'animate-spin' : ''}`} /> Refresh Balance
             </button>
           </div>
         </div>
 
-        {/* Share Investment Mode Alert Banner */}
-        {data.is_share_investment && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 shadow-sm flex items-center gap-3">
-            <BiInfoCircle className="text-xl shrink-0 text-amber-600" />
-            <div className="text-xs leading-relaxed">
-              <span className="font-bold">Share Investment Mode is enabled.</span> Manual balance addition is disabled because store capital and equity funding are managed via the Share Investments module.
-            </div>
-          </div>
-        )}
-
         {/* Summary KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
           
           <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
             <div>
@@ -234,17 +166,6 @@ export default function DashboardBalancePage() {
             </div>
             <div className="w-11 h-11 text-white flex items-center justify-center text-2xl shrink-0 font-bold bg-primary">
               <BiWallet />
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Manual Added Balance</p>
-              <h2 className="text-xl font-bold text-emerald-700 mt-1">{formatMoney(data.total_manual_added)}</h2>
-              <p className="text-[10px] text-slate-500 mt-0.5">Direct Deposits Logged</p>
-            </div>
-            <div className="w-11 h-11 bg-emerald-600 text-white flex items-center justify-center text-2xl shrink-0 font-bold">
-              <BiTrendingUp />
             </div>
           </div>
 
@@ -304,171 +225,7 @@ export default function DashboardBalancePage() {
           </div>
 
         </div>
-
-        {/* Balance Additions Table */}
-        <div className="bg-white border border-slate-200 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-800">Manual Balance Additions Ledger</h3>
-              <p className="text-xs text-slate-500 mt-0.5">History of all direct cash additions and deposits added to available balance.</p>
-            </div>
-            <button
-              onClick={handleOpenModal}
-              disabled={data.is_share_investment}
-              className={`px-3 py-1.5 text-xs font-bold transition flex items-center gap-1 shadow-sm ${
-                data.is_share_investment
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-primary hover:bg-primary-dark text-white cursor-pointer'
-              }`}
-            >
-              <BiPlus /> Add Balance
-            </button>
-          </div>
-
-          {data.balance_transactions.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-10">No manual balance additions recorded yet.</p>
-          ) : (
-            <div className="w-full border border-slate-200">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="px-3 py-2.5 text-center">ID</th>
-                    <th className="px-3 py-2.5">Added By</th>
-                    <th className="px-3 py-2.5">Type</th>
-                    <th className="hidden sm:table-cell px-3 py-2.5">Method</th>
-                    <th className="hidden md:table-cell px-3 py-2.5">Reference / Trx No</th>
-                    <th className="hidden lg:table-cell px-3 py-2.5">Note</th>
-                    <th className="px-3 py-2.5 text-right">Amount</th>
-                    <th className="hidden sm:table-cell px-3 py-2.5 text-center">Date & Time</th>
-                    <th className="px-3 py-2.5 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {data.balance_transactions.map((tx) => (
-                    <tr key={tx.transaction_id} className="hover:bg-slate-50 transition">
-                      <td className="px-3 py-2.5 text-center font-mono font-bold text-slate-800">#{tx.transaction_id}</td>
-                      <td className="px-3 py-2.5 font-semibold text-slate-800">{tx.staff_name || 'Admin'}</td>
-                      <td className="px-3 py-2.5 font-medium uppercase text-slate-600">
-                        <span className="px-2 py-0.5 text-[9px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {tx.type || 'Deposit'}
-                        </span>
-                      </td>
-                      <td className="hidden sm:table-cell px-3 py-2.5 uppercase font-medium text-slate-600">{tx.payment_method || 'Cash'}</td>
-                      <td className="hidden md:table-cell px-3 py-2.5 font-mono text-slate-500">{tx.reference_no || 'N/A'}</td>
-                      <td className="hidden lg:table-cell px-3 py-2.5 text-slate-500 max-w-[200px] truncate">{tx.note || '—'}</td>
-                      <td className="px-3 py-2.5 text-right font-bold text-emerald-700">+{formatMoney(tx.amount)}</td>
-                      <td className="hidden sm:table-cell px-3 py-2.5 text-center text-slate-500">{formatDate(tx.created_at)}</td>
-                      <td className="px-3 py-2.5 text-center">
-                        <button
-                          onClick={() => handleDeleteTx(tx.transaction_id, tx.amount)}
-                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition cursor-pointer"
-                          title="Delete Transaction & Deduct Balance"
-                        >
-                          <BiTrash className="text-sm" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
       </div>
-
-      {/* Add Balance Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 shadow-xl max-w-md w-full p-6 flex flex-col gap-4 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <BiPlus className="text-primary text-lg" /> Add Balance / Capital
-              </h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <BiX className="text-xl" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Amount (৳) <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  required
-                  placeholder="e.g. 50000"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Payment Method</label>
-                <select
-                  value={formData.payment_method}
-                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary font-semibold"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="mobile_banking">Mobile Banking (bKash/Nagad/Rocket)</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Reference / Trx No (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="Bank Reference or Transaction ID"
-                  value={formData.reference_no}
-                  onChange={(e) => setFormData({ ...formData, reference_no: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Note (Optional)</label>
-                <textarea
-                  rows={2}
-                  placeholder="Reason or description for adding balance..."
-                  value={formData.note}
-                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {submitting ? <BiLoaderAlt className="animate-spin text-base" /> : <BiPlus className="text-base" />}
-                  Confirm Add Balance
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   )
 }

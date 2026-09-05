@@ -14,7 +14,6 @@ export async function POST(req) {
     let phone = '';
     let address = '';
     let sociallink = '';
-    let is_share_investment = false;
     let is_sale_active = true;
     let excluded_tax = false;
     let tax_amount = 0;
@@ -26,7 +25,6 @@ export async function POST(req) {
       phone = body.phone || '';
       address = body.address || '';
       sociallink = body.sociallink || '';
-      is_share_investment = body.is_share_investment === true;
       is_sale_active = body.is_sale_active !== false;
       excluded_tax = body.excluded_tax === true;
       tax_amount = parseFloat(body.tax_amount) || 0;
@@ -36,8 +34,6 @@ export async function POST(req) {
       phone = formData.get('phone') || '';
       address = formData.get('address') || '';
       sociallink = formData.get('sociallink') || '';
-      const isShareRaw = formData.get('is_share_investment');
-      is_share_investment = isShareRaw === 'true' || isShareRaw === true;
       const isSaleRaw = formData.get('is_sale_active');
       is_sale_active = isSaleRaw === null ? true : (isSaleRaw === 'true' || isSaleRaw === true);
       const excludedTaxRaw = formData.get('excluded_tax');
@@ -53,17 +49,17 @@ export async function POST(req) {
       result = await query(
         `UPDATE websites 
          SET email = $1, phone = $2, address = $3, sociallink = $4,
-             is_share_investment = $5, is_sale_active = $6, excluded_tax = $7, tax_amount = $8, updated_at = now()
-         WHERE website_id = $9
+             is_sale_active = $5, excluded_tax = $6, tax_amount = $7, updated_at = now()
+         WHERE website_id = $8
          RETURNING *`,
-        [email, phone, address, sociallink, is_share_investment, is_sale_active, excluded_tax, tax_amount, existing.website_id]
+        [email, phone, address, sociallink, is_sale_active, excluded_tax, tax_amount, existing.website_id]
       );
     } else {
       result = await query(
-        `INSERT INTO websites (email, phone, address, sociallink, is_share_investment, is_sale_active, excluded_tax, tax_amount)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO websites (email, phone, address, sociallink, is_sale_active, excluded_tax, tax_amount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
-        [email, phone, address, sociallink, is_share_investment, is_sale_active, excluded_tax, tax_amount]
+        [email, phone, address, sociallink, is_sale_active, excluded_tax, tax_amount]
       );
     }
 

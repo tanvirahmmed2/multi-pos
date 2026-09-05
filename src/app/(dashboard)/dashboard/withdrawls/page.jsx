@@ -1,5 +1,6 @@
 'use client'
 import React, { useContext, useEffect, useState } from 'react'
+import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/component/helper/Context'
@@ -16,9 +17,9 @@ import {
   BiX, 
   BiCheckCircle,
   BiRefresh,
-  BiDollarCircle
+  BiDollarCircle,
+  BiInfoCircle
 } from 'react-icons/bi'
-import ShareInvestmentDisabled from '@/component/helper/ShareInvestmentDisabled'
 
 export default function DashboardWithdrawalsPage() {
   const { dashSidebar, formatCurrency, currencySymbol } = useContext(Context)
@@ -27,43 +28,24 @@ export default function DashboardWithdrawalsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedInvestorFilter, setSelectedInvestorFilter] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingWithdrawal, setEditingWithdrawal] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
 
-  const [formData, setFormData] = useState({
-    investor_id: '',
-    investor_name: '',
-    amount: '',
-    payment_method: 'cash',
-    account_details: '',
-    status: 'completed',
-    note: ''
-  })
-
-  const [isShareInvestment, setIsShareInvestment] = useState(false)
+  const [isShareInvestment, setIsShareInvestment] = useState(true)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const settingsRes = await axios.get('/api/settings')
-      const isEnabled = settingsRes.data && settingsRes.data.is_share_investment === true
+      const [settingsRes, wRes, investorRes] = await Promise.all([
+        axios.get('/api/settings'),
+        axios.get('/api/withdrawals'),
+        axios.get('/api/investor').catch(() => ({ data: [] }))
+      ])
+      const isEnabled = settingsRes.data && settingsRes.data.is_share_investment !== false
       setIsShareInvestment(isEnabled)
-      if (isEnabled) {
-        const [wRes, investorRes] = await Promise.all([
-          axios.get('/api/withdrawals'),
-          axios.get('/api/investor')
-        ])
-        setWithdrawals(wRes.data)
-        setInvestors(investorRes.data)
-      }
+      setWithdrawals(Array.isArray(wRes.data) ? wRes.data : [])
+      setInvestors(Array.isArray(investorRes.data) ? investorRes.data : [])
     } catch (err) {
-      if (err.response?.status === 403) {
-        setIsShareInvestment(false)
-      } else {
-        toast.error('Failed to load withdrawals data')
-        console.error(err)
-      }
+      toast.error('Failed to load withdrawals data')
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -73,87 +55,14 @@ export default function DashboardWithdrawalsPage() {
     fetchData()
   }, [])
 
-  const handleOpenModal = (withdrawal = null) => {
-    if (withdrawal) {
-      setEditingWithdrawal(withdrawal)
-      setFormData({
-        investor_id: withdrawal.investor_id || '',
-        investor_name: withdrawal.investor_name || withdrawal.investor_display_name || '',
-        amount: withdrawal.amount || '',
-        payment_method: withdrawal.payment_method || 'cash',
-        account_details: withdrawal.account_details || '',
-        status: withdrawal.status || 'completed',
-        note: withdrawal.note || ''
-      })
-    } else {
-      setEditingWithdrawal(null)
-      setFormData({
-        investor_id: '',
-        investor_name: '',
-        amount: '',
-        payment_method: 'cash',
-        account_details: '',
-        status: 'completed',
-        note: ''
-      })
-    }
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setEditingWithdrawal(null)
-  }
-
-  const handleInvestorSelect = (e) => {
-    const invId = e.target.value
-    if (!invId) {
-      setFormData({ ...formData, investor_id: '', investor_name: '' })
-      return
-    }
-
-    const selectedInv = investors.find(i => String(i.investor_id) === String(invId))
-    setFormData({
-      ...formData,
-      investor_id: invId,
-      investor_name: selectedInv ? selectedInv.name : ''
-    })
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      return toast.error('Please enter a valid withdrawal amount')
-    }
-
-    setSubmitting(true)
-    try {
-      if (editingWithdrawal) {
-        await axios.put(`/api/withdrawals/${editingWithdrawal.withdrawal_id}`, formData)
-        toast.success('Withdrawal record updated successfully')
-      } else {
-        await axios.post('/api/withdrawals', formData)
-        toast.success('Withdrawal recorded successfully')
-      }
-      handleCloseModal()
-      fetchData()
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save withdrawal')
-      console.error(err)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this withdrawal record?')) return
-
     try {
       await axios.delete(`/api/withdrawals/${id}`)
-      toast.success('Withdrawal record deleted successfully')
+      toast.success('Withdrawal record deleted')
       fetchData()
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to delete withdrawal')
+      toast.error(err.response?.data?.error || 'Failed to delete withdrawal record')
       console.error(err)
     }
   }
@@ -180,8 +89,15 @@ export default function DashboardWithdrawalsPage() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  if (!loading && !isShareInvestment) {
-    return <ShareInvestmentDisabled moduleName="Withdrawals System" />
+  if (loading) {
+    return (
+      <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 flex items-center justify-center transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
+        <div className="flex items-center gap-2 text-slate-500 font-semibold">
+          <BiLoaderAlt className="animate-spin text-2xl text-slate-800" />
+          <span>Loading withdrawals records...</span>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -191,10 +107,10 @@ export default function DashboardWithdrawalsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2.5">
-              <BiUndo className="text-amber-600 text-3xl" /> Capital Withdrawals
+              <BiUndo className="text-amber-600 text-3xl" /> Capital & Balance Withdrawals
             </h1>
             <p className="text-slate-500 text-xs mt-1 font-medium">
-              Track money withdrawals, profit distributions, and capital returns to investors or staff.
+              Track money withdrawals, admin direct balance payouts, and equity profit distributions.
             </p>
           </div>
 
@@ -206,14 +122,16 @@ export default function DashboardWithdrawalsPage() {
             >
               <BiRefresh className={`text-lg ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button
-              onClick={() => handleOpenModal()}
+            <Link
+              href="/dashboard/withdrawals/create"
               className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-amber-700 transition cursor-pointer"
             >
               <BiPlus className="text-lg" /> Record Withdrawal
-            </button>
+            </Link>
           </div>
         </div>
+
+
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -228,103 +146,92 @@ export default function DashboardWithdrawalsPage() {
               />
             </div>
 
-            <select
-              value={selectedInvestorFilter}
-              onChange={(e) => setSelectedInvestorFilter(e.target.value)}
-              className="w-full sm:w-56 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-            >
-              <option value="">All Investors / Direct</option>
-              {investors.map(inv => (
-                <option key={inv.investor_id} value={inv.investor_id}>
-                  {inv.name}
-                </option>
-              ))}
-            </select>
+            {isShareInvestment && investors.length > 0 && (
+              <select
+                value={selectedInvestorFilter}
+                onChange={(e) => setSelectedInvestorFilter(e.target.value)}
+                className="w-full sm:w-56 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-500 transition cursor-pointer"
+              >
+                <option value="">All Investors</option>
+                {investors.map((inv) => (
+                  <option key={inv.investor_id} value={inv.investor_id}>
+                    {inv.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          <div className="flex items-center gap-3 bg-amber-50/70 border border-amber-100 px-4 py-2 rounded-xl text-amber-800 self-start md:self-auto">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600">Total Filtered:</span>
-            <span className="text-base font-black">{formatCurrency(totalAmountWithdrawn)}</span>
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200/60 px-4 py-2 rounded-xl">
+            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Filtered Total:</span>
+            <span className="text-sm font-black font-mono text-amber-900">{formatCurrency ? formatCurrency(totalAmountWithdrawn) : `${currencySymbol}${totalAmountWithdrawn.toFixed(2)}`}</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <BiLoaderAlt className="text-3xl text-amber-600 animate-spin" />
-              <p className="text-xs font-medium text-slate-500">Loading withdrawal records...</p>
-            </div>
-          ) : filteredWithdrawals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-2 text-slate-400">
-              <BiUndo className="text-4xl" />
-              <p className="text-sm font-semibold text-slate-600">No withdrawal records found</p>
-              <p className="text-xs">Record a new withdrawal to start tracking.</p>
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          {filteredWithdrawals.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 font-medium text-xs">
+              No withdrawal records found matching your search.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                  <tr>
-                    <th className="py-3.5 px-4">Date</th>
-                    <th className="py-3.5 px-4">Investor / Recipient</th>
-                    <th className="py-3.5 px-4">Payment Method</th>
-                    <th className="py-3.5 px-4">Account Details</th>
-                    <th className="py-3.5 px-4 text-right">Amount</th>
-                    <th className="py-3.5 px-4 text-center">Status</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-4">Withdrawal ID</th>
+                    <th className="py-3 px-4">Investor / Recipient</th>
+                    <th className="py-3 px-4">Method</th>
+                    <th className="py-3 px-4 text-right">Amount</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {filteredWithdrawals.map((w) => (
                     <tr key={w.withdrawal_id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
-                        <span className="flex items-center gap-1.5">
-                          <BiCalendar className="text-slate-400" /> {formatDate(w.created_at)}
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900">#{w.withdrawal_id}</td>
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-slate-800">{w.investor_display_name || w.investor_name || 'Admin Balance Withdrawal'}</div>
+                        {w.investor_phone_contact && (
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{w.investor_phone_contact}</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold uppercase rounded font-mono">
+                          {w.payment_method}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-800">
-                        <div className="flex items-center gap-1.5">
-                          <BiUser className="text-slate-400 shrink-0" />
-                          <span>{w.investor_display_name || w.investor_name || 'General Withdrawal'}</span>
-                        </div>
+                      <td className="py-3 px-4 text-right font-mono font-extrabold text-slate-900">
+                        {formatCurrency ? formatCurrency(w.amount) : `${currencySymbol}${parseFloat(w.amount).toFixed(2)}`}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[11px] font-medium capitalize">
-                          {w.payment_method ? w.payment_method.replace('_', ' ') : 'Cash'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600 max-w-xs truncate" title={w.account_details}>
-                        {w.account_details || '-'}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-black text-amber-600 text-sm whitespace-nowrap">
-                        {formatCurrency(w.amount)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <span className={`px-2.5 py-0.5 font-bold text-[11px] rounded-full uppercase ${
-                          w.status === 'completed' || w.status === 'approved'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : w.status === 'pending'
-                            ? 'bg-amber-50 text-amber-700'
-                            : 'bg-rose-50 text-rose-700'
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border ${
+                          w.status === 'completed' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
-                          {w.status || 'completed'}
+                          {w.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                        {formatDate(w.created_at || w.withdrawal_date)}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => handleOpenModal(w)}
-                            className="p-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm transition cursor-pointer"
-                            title="Edit Withdrawal"
+                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                            title="Edit Record"
                           >
-                            <BiEdit />
+                            <BiEdit className="text-base" />
                           </button>
                           <button
                             onClick={() => handleDelete(w.withdrawal_id)}
-                            className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-sm transition cursor-pointer"
-                            title="Delete Withdrawal"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="Delete Record"
                           >
-                            <BiTrash />
+                            <BiTrash className="text-base" />
                           </button>
                         </div>
                       </td>
@@ -335,141 +242,6 @@ export default function DashboardWithdrawalsPage() {
             </div>
           )}
         </div>
-
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-fade-in flex flex-col gap-5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <BiUndo className="text-amber-600 text-xl" />
-                  {editingWithdrawal ? 'Edit Withdrawal Record' : 'Record Capital Withdrawal'}
-                </h3>
-                <button
-                  onClick={handleCloseModal}
-                  className="p-1 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 text-lg transition cursor-pointer"
-                >
-                  <BiX />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Select Investor (Optional)</label>
-                  <select
-                    value={formData.investor_id}
-                    onChange={handleInvestorSelect}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                  >
-                    <option value="">-- General / Non-Investor Withdrawal --</option>
-                    {investors.map(inv => (
-                      <option key={inv.investor_id} value={inv.investor_id}>
-                        {inv.name} {inv.phone ? `(${inv.phone})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Recipient Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. John Doe (or leave blank if investor selected)"
-                    value={formData.investor_name}
-                    onChange={(e) => setFormData({ ...formData, investor_name: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Withdrawal Amount (৳) *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
-                      placeholder="0.00"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Payment Method</label>
-                    <select
-                      value={formData.payment_method}
-                      onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="cheque">Cheque</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Bank / Account Details</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Bank Asia Acc #4920"
-                      value={formData.account_details}
-                      onChange={(e) => setFormData({ ...formData, account_details: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Withdrawal Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                    >
-                      <option value="completed">Completed</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Notes / Internal Description</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Reason for withdrawal or profit payout notes..."
-                    value={formData.note}
-                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 mt-2">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
-                  >
-                    {submitting ? <BiLoaderAlt className="animate-spin text-sm" /> : <BiCheckCircle className="text-sm" />}
-                    {editingWithdrawal ? 'Update Withdrawal' : 'Save Withdrawal'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   )

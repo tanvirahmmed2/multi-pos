@@ -207,16 +207,14 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       toast.error('Category name is required')
       return
     }
-    if (!newCatImage) {
-      toast.error('Category image is required')
-      return
-    }
 
     setCreatingCategory(true)
     const formData = new FormData()
     formData.append('name', newCatName.trim())
     formData.append('parent_id', newCatParentId || '')
-    formData.append('image', newCatImage)
+    if (newCatImage) {
+      formData.append('image', newCatImage)
+    }
 
     try {
       const res = await axios.post('/api/category', formData, {
@@ -249,17 +247,15 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
       toast.error('Brand name is required')
       return
     }
-    if (!newBrandImage) {
-      toast.error('Brand logo image is required')
-      return
-    }
 
     setCreatingBrand(true)
     const formData = new FormData()
     formData.append('name', newBrandName.trim())
     formData.append('description', newBrandDesc.trim())
     formData.append('is_active', newBrandIsActive)
-    formData.append('image', newBrandImage)
+    if (newBrandImage) {
+      formData.append('image', newBrandImage)
+    }
 
     try {
       const res = await axios.post('/api/brand', formData, {
@@ -1186,7 +1182,7 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-705 uppercase">Category Image *</label>
+                <label className="text-xs font-bold text-slate-705 uppercase">Category Image (Optional)</label>
                 <div className="flex items-center gap-3">
                   {newCatImagePreview ? (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0">
@@ -1310,7 +1306,7 @@ export default function ProductForm({ initialData, onSubmit, loading }) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-705 uppercase">Brand Logo Image *</label>
+                <label className="text-xs font-bold text-slate-705 uppercase">Brand Logo Image (Optional)</label>
                 <div className="flex items-center gap-3">
                   {newBrandImagePreview ? (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0">

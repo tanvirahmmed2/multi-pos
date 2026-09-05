@@ -242,18 +242,30 @@ export default function DashboardHomePage() {
                           <th className="px-3 py-2 text-center">ID</th>
                           <th className="px-3 py-2">Supplier</th>
                           <th className="px-3 py-2 text-right">Total</th>
+                          <th className="px-3 py-2 text-center">Status</th>
                           <th className="px-3 py-2 text-center">Date</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
-                        {purchases.slice(0, 5).map(p => (
-                          <tr key={p.purchase_id} className="hover:bg-slate-50 transition">
-                            <td className="px-3 py-2 text-center font-mono font-bold text-slate-800">#{p.purchase_id}</td>
-                            <td className="px-3 py-2 font-semibold text-slate-800 truncate max-w-[120px]">{p.supplier_name || 'Supplier'}</td>
-                            <td className="px-3 py-2 text-right font-bold text-slate-900">{formatMoney(p.total_amount)}</td>
-                            <td className="px-3 py-2 text-center text-slate-500">{formatDate(p.created_at)}</td>
-                          </tr>
-                        ))}
+                        {purchases.slice(0, 5).map(p => {
+                          const due = parseFloat(p.due_amount) || 0
+                          const isPaid = due <= 0 || p.is_paid
+                          return (
+                            <tr key={p.purchase_id} className="hover:bg-slate-50 transition">
+                              <td className="px-3 py-2 text-center font-mono font-bold text-slate-800">#{p.purchase_id}</td>
+                              <td className="px-3 py-2 font-semibold text-slate-800 truncate max-w-[100px]">{p.supplier_name || 'Supplier'}</td>
+                              <td className="px-3 py-2 text-right font-bold text-slate-900">{formatMoney(p.total_amount)}</td>
+                              <td className="px-3 py-2 text-center">
+                                <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase border ${
+                                  isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+                                }`}>
+                                  {isPaid ? 'Paid' : 'Unpaid'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center text-slate-500">{formatDate(p.created_at)}</td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

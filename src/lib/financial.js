@@ -1,19 +1,10 @@
 import { query } from '@/lib/db';
 
 /**
- * Check if is_share_investment feature flag is active in websites table.
+ * Check if share investment system is active. Always returns true as share system is core.
  */
 export async function checkShareInvestmentEnabled() {
-  try {
-    const res = await query('SELECT is_share_investment FROM websites ORDER BY website_id ASC LIMIT 1');
-    if (res.rows.length > 0) {
-      return res.rows[0].is_share_investment === true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error checking share investment feature flag:', error);
-    return false;
-  }
+  return true;
 }
 
 /**
@@ -116,9 +107,6 @@ export async function recalculateInvestorShares() {
  */
 export async function allocateDailySalesProfit(grossProfitAmount, orderRef = '') {
   try {
-    const isEnabled = await checkShareInvestmentEnabled();
-    if (!isEnabled) return false;
-
     const profit = parseFloat(grossProfitAmount || 0);
     if (profit <= 0) return true;
 
@@ -158,9 +146,6 @@ export async function allocateDailySalesProfit(grossProfitAmount, orderRef = '')
  */
 export async function allocateOrderProfit(orderId) {
   try {
-    const isEnabled = await checkShareInvestmentEnabled();
-    if (!isEnabled) return false;
-
     const res = await query(`
       SELECT 
         COALESCE(SUM((oi.price - COALESCE(pv.purchase_price, 0)) * oi.quantity), 0) AS gross_profit
@@ -187,11 +172,6 @@ export async function allocateOrderProfit(orderId) {
  */
 export async function transferProfitToInvestment(investorId, amountToTransfer, staffId = null) {
   try {
-    const isEnabled = await checkShareInvestmentEnabled();
-    if (!isEnabled) {
-      return { success: false, error: 'Share Investment Mode is disabled' };
-    }
-
     const transferAmount = parseFloat(amountToTransfer || 0);
     if (transferAmount <= 0) {
       return { success: false, error: 'Transfer amount must be greater than zero' };

@@ -1,7 +1,6 @@
 import { query } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
-import { logActivity } from '@/lib/logger';
-import { getAvailableBalance, checkShareInvestmentEnabled, updateAvailableBalance } from '@/lib/financial';
+import { getAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
@@ -10,7 +9,6 @@ export async function GET(req) {
       return Response.json({ error: auth.message }, { status: 403 });
     }
 
-    const isEnabled = await checkShareInvestmentEnabled();
     const balance = await getAvailableBalance();
 
     const [manualRes, salesRes, purRes, expRes, wdrRes, salRes, txRes] = await Promise.all([
@@ -30,7 +28,6 @@ export async function GET(req) {
     ]);
 
     return Response.json({
-      is_share_investment: isEnabled,
       available_balance: balance,
       total_manual_added: manualRes.rows[0]?.total || 0,
       total_sales_payments: salesRes.rows[0]?.total || 0,
@@ -48,61 +45,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  try {
-    const auth = await isAdmin();
-    if (!auth.success) {
-      return Response.json({ error: auth.message }, { status: 403 });
-    }
-
-    const isEnabled = await checkShareInvestmentEnabled();
-    if (isEnabled) {
-      return Response.json({ 
-        error: 'Manual balance addition is disabled when Share Investment mode is enabled', 
-        disabled: true 
-      }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { amount, payment_method = 'cash', reference_no = '', note = '' } = body;
-
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      return Response.json({ error: 'Valid positive amount is required to add balance' }, { status: 400 });
-    }
-
-    const staffId = auth.staff.staff_id;
-
-    const result = await query(
-      `INSERT INTO balance_transactions (staff_id, type, amount, payment_method, reference_no, note)
-       VALUES ($1, 'deposit', $2, $3, $4, $5)
-       RETURNING *`,
-      [
-        staffId,
-        parsedAmount,
-        (payment_method || 'cash').trim(),
-        (reference_no || '').trim() || null,
-        (note || '').trim() || null
-      ]
-    );
-
-    const transaction = result.rows[0];
-
-    // Atomically update available balance
-    await updateAvailableBalance(parsedAmount);
-
-    await logActivity({
-      req,
-      staffId,
-      action: 'ADD_BALANCE',
-      entity: 'balance_transactions',
-      entityId: transaction.transaction_id,
-      details: `Added manual balance of ৳${parsedAmount} via ${payment_method}`
-    });
-
-    return Response.json(transaction, { status: 201 });
-
-  } catch (error) {
-    console.error('Error adding balance:', error);
-    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+  return Response.json({ 
+    error: 'Manual balance deposit is disabled. Store balance increases automatically through customer sales and investor capital investments.', 
+    disabled: true 
+  }, { status: 400 });
 }

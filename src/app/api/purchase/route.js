@@ -55,6 +55,8 @@ export async function POST(req) {
       payment_method = 'Cash', 
       transaction_id = '', 
       amount_paid = 0, 
+      is_paid: isPaidInput,
+      payment_status: paymentStatusInput,
       items = [] 
     } = body;
 
@@ -62,7 +64,25 @@ export async function POST(req) {
       return Response.json({ error: 'At least one purchase item is required' }, { status: 400 });
     }
 
-    const initialPaid = parseFloat(amount_paid) || 0;
+    let subtotal = 0;
+    for (const item of items) {
+      const q = parseInt(item.quantity, 10) || 0;
+      const price = parseFloat(item.purchase_price) || 0;
+      subtotal += q * price;
+    }
+
+    const total = Math.max(0, subtotal - parseFloat(extra_discount));
+
+    // Determine payment status and stock addition
+    const isPaidChoice = isPaidInput === true || paymentStatusInput === 'paid' || (parseFloat(amount_paid) >= total && total > 0);
+    const initialPaid = isPaidChoice ? total : Math.min(parseFloat(amount_paid) || 0, total);
+
+    const paymentStatus = isPaidChoice 
+      ? 'paid' 
+      : (initialPaid > 0 ? 'partial' : 'unpaid');
+    const isPaid = isPaidChoice;
+    const stockAdded = isPaidChoice;
+
     if (initialPaid > 0) {
       const currentBal = await getAvailableBalance();
       if (initialPaid > currentBal) {
@@ -97,24 +117,17 @@ export async function POST(req) {
 
     await query('BEGIN');
 
-    let subtotal = 0;
-    for (const item of items) {
-      const q = parseInt(item.quantity, 10) || 0;
-      const price = parseFloat(item.purchase_price) || 0;
-      subtotal += q * price;
-    }
-
-    const total = subtotal - parseFloat(extra_discount);
-
     const purchaseRes = await query(
       `INSERT INTO purchases (
         branch_id, supplier_id, staff_id, supplier_name, supplier_phone, invoice_no, 
-        subtotal_amount, extra_discount, total_amount, payment_method, transaction_id, note
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        subtotal_amount, extra_discount, total_amount, payment_method, transaction_id, note,
+        payment_status, is_paid, stock_added
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
       [
         effectiveBranchId, parsedSupplierId, staffId, sName, sPhone, invoice_no || null,
-        subtotal, extra_discount, total, payment_method, transaction_id, note
+        subtotal, extra_discount, total, payment_method, transaction_id, note,
+        paymentStatus, isPaid, stockAdded
       ]
     );
 
@@ -133,32 +146,35 @@ export async function POST(req) {
         [purchaseId, prodId, varId, q, price]
       );
 
-      let targetVarId = varId;
-      if (!targetVarId) {
-        const defaultVarRes = await query(
-          `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
-          [prodId]
-        );
-        if (defaultVarRes.rows.length > 0) {
-          targetVarId = defaultVarRes.rows[0].variant_id;
+      // Add product stock ONLY if the purchase is paid
+      if (stockAdded) {
+        let targetVarId = varId;
+        if (!targetVarId) {
+          const defaultVarRes = await query(
+            `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
+            [prodId]
+          );
+          if (defaultVarRes.rows.length > 0) {
+            targetVarId = defaultVarRes.rows[0].variant_id;
+          }
         }
-      }
 
-      if (targetVarId) {
+        if (targetVarId) {
+          await query(
+            `INSERT INTO stocks (variant_id, branch_id, stock)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (variant_id, branch_id)
+             DO UPDATE SET stock = stocks.stock + EXCLUDED.stock, updated_at = NOW()`,
+            [targetVarId, effectiveBranchId, q]
+          );
+        }
+
         await query(
-          `INSERT INTO stocks (variant_id, branch_id, stock)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (variant_id, branch_id)
-           DO UPDATE SET stock = stocks.stock + EXCLUDED.stock, updated_at = NOW()`,
-          [targetVarId, effectiveBranchId, q]
+          `INSERT INTO inventory_logs (product_id, type, quantity, reference_id, note)
+           VALUES ($1, 'purchase', $2, $3, $4)`,
+          [prodId, q, purchaseId, `Purchase Invoice #${invoice_no || purchaseId}`]
         );
       }
-
-      await query(
-        `INSERT INTO inventory_logs (product_id, type, quantity, reference_id, note)
-         VALUES ($1, 'purchase', $2, $3, $4)`,
-        [prodId, q, purchaseId, `Purchase Invoice #${invoice_no || purchaseId}`]
-      );
     }
 
     if (initialPaid > 0) {
@@ -177,7 +193,7 @@ export async function POST(req) {
       action: 'CREATE_PURCHASE_INVOICE',
       entity: 'purchases',
       entityId: purchaseId,
-      details: `Purchase Invoice #${invoice_no || purchaseId} logged for supplier ${sName} (Branch #${effectiveBranchId})`
+      details: `Purchase Invoice #${invoice_no || purchaseId} logged as ${paymentStatus.toUpperCase()} (Stock Added: ${stockAdded}) for supplier ${sName} (Branch #${effectiveBranchId})`
     });
 
     return Response.json(purchase, { status: 201 });

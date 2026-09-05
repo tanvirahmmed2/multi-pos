@@ -1,16 +1,10 @@
 import { query } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
 import { logActivity } from '@/lib/logger';
-import { recalculateShares } from '@/lib/shares';
-import { checkShareInvestmentEnabled, updateAvailableBalance } from '@/lib/financial';
+import { recalculateInvestorShares, updateAvailableBalance } from '@/lib/financial';
 
 export async function GET(req) {
   try {
-    const isEnabled = await checkShareInvestmentEnabled();
-    if (!isEnabled) {
-      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
-    }
-
     const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -51,11 +45,6 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const isEnabled = await checkShareInvestmentEnabled();
-    if (!isEnabled) {
-      return Response.json({ error: 'Share Investment Mode is disabled', disabled: true }, { status: 403 });
-    }
-
     const auth = await isAdmin();
     if (!auth.success) {
       return Response.json({ error: auth.message }, { status: 403 });
@@ -64,27 +53,24 @@ export async function POST(req) {
     const body = await req.json();
     const { investor_id, investor_name, investor_phone, investor_email, branch_id, amount, payment_method, reference_no, investment_date, note } = body;
 
+    const parsedInvestorId = investor_id ? parseInt(investor_id, 10) : null;
+    if (!parsedInvestorId || isNaN(parsedInvestorId)) {
+      return Response.json({ error: 'Investor selection is mandatory. Please select an investor or create a new investor first.' }, { status: 400 });
+    }
+
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return Response.json({ error: 'Valid investment amount is required' }, { status: 400 });
     }
 
-    let name = investor_name;
-    let phone = investor_phone;
-    let email = investor_email;
-
-    if (investor_id) {
-      const invRes = await query('SELECT name, phone, email FROM investors WHERE investor_id = $1', [investor_id]);
-      if (invRes.rows.length > 0) {
-        name = invRes.rows[0].name;
-        phone = invRes.rows[0].phone;
-        email = invRes.rows[0].email;
-      }
+    const invRes = await query('SELECT name, phone, email FROM investors WHERE investor_id = $1', [parsedInvestorId]);
+    if (invRes.rows.length === 0) {
+      return Response.json({ error: 'Selected investor record not found' }, { status: 404 });
     }
 
-    if (!name) {
-      return Response.json({ error: 'Investor name or selected investor is required' }, { status: 400 });
-    }
+    const name = invRes.rows[0].name;
+    const phone = investor_phone || invRes.rows[0].phone;
+    const email = investor_email || invRes.rows[0].email;
 
     const staffId = auth.staff.staff_id;
     const branchVal = branch_id ? parseInt(branch_id, 10) : auth.staff.branch_id;
@@ -94,7 +80,7 @@ export async function POST(req) {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
-        investor_id ? parseInt(investor_id, 10) : null,
+        parsedInvestorId,
         branchVal || null,
         staffId || null,
         name,
@@ -119,11 +105,11 @@ export async function POST(req) {
       action: 'CREATE_INVESTMENT',
       entity: 'investments',
       entityId: investment.investment_id,
-      details: `Recorded investment of ৳${parsedAmount} from ${name}`
+      details: `Recorded capital investment of ৳${parsedAmount} from investor ${name}`
     });
 
-    // Automatically recalculate investor shares
-    await recalculateShares();
+    // Automatically recalculate investor equity shares
+    await recalculateInvestorShares();
 
     return Response.json(investment, { status: 201 });
   } catch (error) {

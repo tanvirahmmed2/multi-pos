@@ -27,7 +27,6 @@ export default function DashboardAdminSettingsPage() {
   const [heroTitle, setHeroTitle] = useState('')
   const [heroSubtitle, setHeroSubtitle] = useState('')
   
-  const [isShareInvestment, setIsShareInvestment] = useState(false)
   const [isSaleActive, setIsSaleActive] = useState(true)
   const [excludedTax, setExcludedTax] = useState(false)
   const [taxAmount, setTaxAmount] = useState(0)
@@ -77,7 +76,6 @@ export default function DashboardAdminSettingsPage() {
           setSociallink(data.sociallink || '')
           setHeroTitle(data.hero_title || '')
           setHeroSubtitle(data.hero_subtitle || '')
-          setIsShareInvestment(data.is_share_investment === true)
           setIsSaleActive(data.is_sale_active !== false)
           setExcludedTax(data.excluded_tax === true)
           setTaxAmount(data.tax_amount || 0)
@@ -149,7 +147,6 @@ export default function DashboardAdminSettingsPage() {
         phone,
         address,
         sociallink,
-        is_share_investment: isShareInvestment,
         is_sale_active: isSaleActive,
         excluded_tax: excludedTax,
         tax_amount: taxAmount
@@ -306,29 +303,7 @@ export default function DashboardAdminSettingsPage() {
                 />
               </div>
 
-              <div className="p-4 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl mt-1">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-slate-800">Share Investment Mode</h4>
-                    <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${isShareInvestment ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-secondary text-white border-slate-200'}`}>
-                      {isShareInvestment ? 'ENABLED' : 'DISABLED'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    When enabled, equity share percentages are automatically calculated from investments and displayed on the Investor dashboard.
-                  </p>
-                </div>
 
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={isShareInvestment}
-                    onChange={(e) => setIsShareInvestment(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
-              </div>
 
               <div className="p-4 bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl mt-1">
                 <div>

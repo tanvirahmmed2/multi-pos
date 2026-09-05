@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react'
 import { 
   BiPieChartAlt2, 
   BiDollarCircle, 
-  BiPlus, 
   BiRefresh, 
   BiTransferAlt, 
   BiUser, 
@@ -15,7 +14,7 @@ import {
   BiCheckCircle
 } from 'react-icons/bi'
 import { toast } from 'react-hot-toast'
-import ShareInvestmentDisabled from '@/component/helper/ShareInvestmentDisabled'
+
 
 export default function ProfitsPage() {
   const [isDisabled, setIsDisabled] = useState(false)
@@ -32,11 +31,6 @@ export default function ProfitsPage() {
   const [transferAmount, setTransferAmount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Manual Allocation Modal State
-  const [isAllocateOpen, setIsAllocateOpen] = useState(false)
-  const [allocateAmount, setAllocateAmount] = useState('')
-  const [allocateNote, setAllocateNote] = useState('')
-
   useEffect(() => {
     fetchData()
   }, [])
@@ -44,26 +38,10 @@ export default function ProfitsPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const settingsRes = await fetch('/api/settings')
-      if (settingsRes.ok) {
-        const sData = await settingsRes.json()
-        if (!sData.is_share_investment) {
-          setIsDisabled(true)
-          setLoading(false)
-          return
-        }
-      }
-
       const [profitRes, balRes] = await Promise.all([
         fetch('/api/profits'),
         fetch('/api/available-balance')
       ])
-
-      if (profitRes.status === 403) {
-        setIsDisabled(true)
-        setLoading(false)
-        return
-      }
 
       if (profitRes.ok) {
         const data = await profitRes.json()
@@ -76,8 +54,9 @@ export default function ProfitsPage() {
         const bData = await balRes.json()
         setAvailableBalance(bData.available_balance || 0)
       }
-    } catch (error) {
-      console.error('Error fetching profit data:', error)
+    } catch (err) {
+      toast.error('Failed to load profit data')
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -120,53 +99,13 @@ export default function ProfitsPage() {
     }
   }
 
-  const handleManualAllocation = async (e) => {
-    e.preventDefault()
-    const amt = parseFloat(allocateAmount)
-    if (isNaN(amt) || amt <= 0) {
-      toast.error('Valid profit allocation amount is required')
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      const res = await fetch('/api/profits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profit_amount: amt,
-          note: allocateNote || 'Manual gross profit allocation'
-        })
-      })
-
-      if (res.ok) {
-        toast.success(`Allocated ৳${amt} gross profit across all active investors!`)
-        setIsAllocateOpen(false)
-        setAllocateAmount('')
-        setAllocateNote('')
-        fetchData()
-      } else {
-        const err = await res.json()
-        toast.error(err.error || 'Failed to allocate profit')
-      }
-    } catch (error) {
-      toast.error('Error allocating profit')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  if (isDisabled) {
-    return <ShareInvestmentDisabled moduleName="Investor Profits System" />
-  }
-
   const filteredLogs = profitLogs.filter(log =>
     log.investor_name?.toLowerCase().includes(search.toLowerCase()) ||
     log.note?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 pt-20">
+    <div className="w-full min-h-screen bg-slate-50  px-4 sm:px-6 lg:pt-20 ">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
@@ -183,12 +122,6 @@ export default function ProfitsPage() {
             title="Refresh Data"
           >
             <BiRefresh className="text-lg" />
-          </button>
-          <button
-            onClick={() => setIsAllocateOpen(true)}
-            className="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-2 cursor-pointer"
-          >
-            <BiPlus className="text-lg" /> Allocate Daily Profit
           </button>
         </div>
       </div>
@@ -410,68 +343,7 @@ export default function ProfitsPage() {
           </div>
         </div>
       )}
-
-      {/* Manual Daily Profit Allocation Modal */}
-      {isAllocateOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white border border-slate-200 shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <BiPlus className="text-primary" /> Allocate Gross Sales Profit
-              </h2>
-              <button onClick={() => setIsAllocateOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
-                <BiX className="text-2xl" />
-              </button>
-            </div>
-
-            <form onSubmit={handleManualAllocation} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Total Gross Profit Amount to Allocate (৳) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="e.g. 5000.00"
-                  value={allocateAmount}
-                  onChange={(e) => setAllocateAmount(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none"
-                />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Profit will be divided automatically among active investors based on their equity share percentages.
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Allocation Note / Reference</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Daily sales profit for 04/09/2026"
-                  value={allocateNote}
-                  onChange={(e) => setAllocateNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:bg-white focus:border-primary focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAllocateOpen(false)}
-                  className="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold cursor-pointer disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Allocating...' : 'Distribute Profits'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
+

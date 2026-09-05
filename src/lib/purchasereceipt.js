@@ -2,8 +2,8 @@ import toast from 'react-hot-toast';
 import { STORE_NAME } from '@/lib/secret';
 import { getCurrencySymbol } from '@/lib/currency';
 
-export function printReceipt(order, website) {
-  if (!order || typeof window === 'undefined') return;
+export function printPurchaseReceipt(purchase, website) {
+  if (!purchase || typeof window === 'undefined') return;
 
   const currencySymbol = getCurrencySymbol(website);
 
@@ -13,51 +13,35 @@ export function printReceipt(order, website) {
   const storeAddress = website?.address || '';
   const logoUrl = website?.logo || website?.logo_url || null;
 
-  const branchName = order.branch_name || order.branch || website?.branch_name || order.staff_branch || 'Main Branch';
-
-  const orderId = order.order_id || order.id || 'N/A';
-  const invoiceNo = order.invoice_no || `ORD-${orderId}`;
-  const createdAt = order.created_at ? new Date(order.created_at).toLocaleString('en-US', {
+  const branchName = purchase.branch_name ? `${purchase.branch_name}${purchase.branch_code ? ` (${purchase.branch_code})` : ''}` : 'Main Branch';
+  const purchaseId = purchase.purchase_id || 'N/A';
+  const invoiceNo = purchase.invoice_no ? `#${purchase.invoice_no}` : `INV-PR-${purchaseId}`;
+  const createdAt = purchase.created_at ? new Date(purchase.created_at).toLocaleString('en-US', {
     dateStyle: 'medium',
     timeStyle: 'short'
   }) : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
-  const paymentType = (order.payment_type || order.payment_method || 'cod').replace(/_/g, ' ').toUpperCase();
-  const paymentStatus = (order.payment_status || (parseFloat(order.due_amount || 0) <= 0 ? 'PAID' : 'UNPAID')).toUpperCase();
+  const due = parseFloat(purchase.due_amount || 0);
+  const total = parseFloat(purchase.total_amount || 0);
+  const paid = parseFloat(purchase.total_paid || 0);
+  const subtotal = parseFloat(purchase.subtotal_amount || 0);
+  const extraDiscount = parseFloat(purchase.extra_discount || 0);
 
-  const customerName = order.customer_name || 'Walk-in Customer';
-  const customerPhone = order.phone || order.customer_phone || 'N/A';
-  const customerAddress = order.shipping_address || '';
-  const customerCity = order.shipping_city || '';
-  const customerArea = order.shipping_area || '';
-  const fullAddress = [customerAddress, customerCity, customerArea].filter(Boolean).join(', ');
+  const isPaid = due <= 0 || purchase.is_paid;
+  const paymentStatus = isPaid ? 'PAID' : (paid > 0 ? 'PARTIAL' : 'UNPAID');
+  const stockStatus = purchase.stock_added ? 'STOCK INGESTED' : 'STOCK NOT ADDED';
 
-  const subtotal = parseFloat(order.subtotal_amount || 0);
-  const discount = parseFloat(order.total_discount_amount || order.discount || 0);
-  const tax = parseFloat(order.tax_amount || order.tax || 0);
-  const delivery = parseFloat(order.delivery_charge || 0);
-  const total = parseFloat(order.total_amount || order.total || 0);
-  const due = parseFloat(order.due_amount || 0);
+  const supplierName = purchase.supplier_name || 'Walk-in Supplier';
+  const supplierPhone = purchase.supplier_phone || 'N/A';
+  const staffName = purchase.staff_name ? `${purchase.staff_name} (${purchase.staff_role || 'Staff'})` : 'System Administrator';
 
-  const change = parseFloat(order.change_amount || 0);
-  
-  let paid = 0;
-  if (order.amount_received !== undefined && order.amount_received !== null) {
-    paid = parseFloat(order.amount_received);
-  } else if (order.paid_amount !== undefined && order.paid_amount !== null) {
-    paid = parseFloat(order.paid_amount);
-  } else {
-    paid = Math.max(0, total - due + change);
-  }
-
-  const items = order.items || [];
-
+  const items = purchase.items || [];
   const itemsRows = items.map((item, index) => {
-    const itemName = item.product_name || item.name || 'Product';
+    const itemName = item.product_name || 'Product';
     const variantName = item.variant_name ? ` (${item.variant_name})` : '';
-    const itemQty = parseInt(item.quantity || item.qty || 1, 10);
-    const itemPrice = parseFloat(item.price || item.unit_price || 0);
-    const itemTotal = parseFloat(item.total_price || (itemPrice * itemQty));
+    const itemQty = parseInt(item.quantity || 1, 10);
+    const itemPrice = parseFloat(item.purchase_price || 0);
+    const itemTotal = itemQty * itemPrice;
 
     return `
       <tr>
@@ -77,7 +61,7 @@ export function printReceipt(order, website) {
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Receipt - ${invoiceNo}</title>
+        <title>Purchase Receipt - ${invoiceNo}</title>
         <style>
           @page {
             size: 80mm auto;
@@ -225,9 +209,6 @@ export function printReceipt(order, website) {
             padding-top: 6px;
             border-top: 1px dashed #000000;
           }
-          .cut-margin {
-            margin-bottom: 15px;
-          }
         </style>
       </head>
       <body>
@@ -242,10 +223,10 @@ export function printReceipt(order, website) {
             <div class="branch-badge">Branch: ${branchName}</div>
           </div>
 
-          <!-- 2. Invoice & Customer Info -->
+          <!-- 2. Invoice & Purchase Info -->
           <div class="info-block flex-col">
             <div class="data-row">
-              <span class="data-label">Invoice No:</span>
+              <span class="data-label">Invoice / PR No:</span>
               <span class="data-value">${invoiceNo}</span>
             </div>
             <div class="data-row">
@@ -253,35 +234,37 @@ export function printReceipt(order, website) {
               <span class="data-value">${createdAt}</span>
             </div>
             <div class="data-row">
-              <span class="data-label">Payment Type:</span>
-              <span class="data-value">${paymentType} (${paymentStatus})</span>
+              <span class="data-label">Payment Status:</span>
+              <span class="data-value">${paymentStatus}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Inventory Status:</span>
+              <span class="data-value">${stockStatus}</span>
             </div>
             <div class="divider-dashed"></div>
             <div class="data-row">
-              <span class="data-label">Customer:</span>
-              <span class="data-value" style="font-family: inherit;">${customerName}</span>
+              <span class="data-label">Supplier:</span>
+              <span class="data-value" style="font-family: inherit;">${supplierName}</span>
             </div>
             <div class="data-row">
-              <span class="data-label">Phone:</span>
-              <span class="data-value">${customerPhone}</span>
+              <span class="data-label">Supplier Phone:</span>
+              <span class="data-value">${supplierPhone}</span>
             </div>
-            ${fullAddress ? `
             <div class="data-row">
-              <span class="data-label">Address:</span>
-              <span class="data-value" style="font-family: inherit; font-size: 10px;">${fullAddress}</span>
+              <span class="data-label">Processed By:</span>
+              <span class="data-value" style="font-family: inherit; font-size: 10px;">${staffName}</span>
             </div>
-            ` : ''}
           </div>
 
-          <!-- 3. Items Ordered Table -->
+          <!-- 3. Line Items Table -->
           <div class="flex-col">
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="text-align: left; width: 45%;">Item Description</th>
+                  <th style="text-align: left; width: 45%;">Item Asset</th>
                   <th style="text-align: center; width: 12%;">Qty</th>
-                  <th style="text-align: right; width: 21%;">Price</th>
-                  <th style="text-align: right; width: 22%;">Total</th>
+                  <th style="text-align: right; width: 21%;">Cost</th>
+                  <th style="text-align: right; width: 22%;">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
@@ -290,46 +273,28 @@ export function printReceipt(order, website) {
             </table>
           </div>
 
-          <!-- 4. Payment & Totals Summary -->
+          <!-- 4. Totals Summary -->
           <div class="summary-box flex-col">
             <div class="data-row">
               <span class="data-label">Subtotal:</span>
               <span class="data-value">${currencySymbol}${subtotal.toFixed(2)}</span>
             </div>
-            ${discount > 0 ? `
+            ${extraDiscount > 0 ? `
             <div class="data-row">
               <span class="data-label">Discount:</span>
-              <span class="data-value">-${currencySymbol}${discount.toFixed(2)}</span>
-            </div>
-            ` : ''}
-            ${tax > 0 ? `
-            <div class="data-row">
-              <span class="data-label">Tax:</span>
-              <span class="data-value">${currencySymbol}${tax.toFixed(2)}</span>
-            </div>
-            ` : ''}
-            ${delivery > 0 ? `
-            <div class="data-row">
-              <span class="data-label">Delivery Charge:</span>
-              <span class="data-value">${currencySymbol}${delivery.toFixed(2)}</span>
+              <span class="data-value">-${currencySymbol}${extraDiscount.toFixed(2)}</span>
             </div>
             ` : ''}
             
             <div class="total-row">
-              <span>TOTAL AMOUNT:</span>
+              <span>TOTAL INVOICE:</span>
               <span>${currencySymbol}${total.toFixed(2)}</span>
             </div>
 
             <div class="data-row">
-              <span class="data-label">Paid Amount:</span>
+              <span class="data-label">Amount Paid:</span>
               <span class="data-value">${currencySymbol}${paid.toFixed(2)}</span>
             </div>
-            ${change > 0 ? `
-            <div class="data-row">
-              <span class="data-label">Change Amount:</span>
-              <span class="data-value">${currencySymbol}${change.toFixed(2)}</span>
-            </div>
-            ` : ''}
             ${due > 0 ? `
             <div class="data-row" style="font-weight: 800;">
               <span class="data-label">Due Balance:</span>
@@ -340,22 +305,21 @@ export function printReceipt(order, website) {
 
           <!-- 5. Receipt Footer -->
           <div class="footer-box flex-col">
-            ${order.note ? `<div style="font-style: italic; margin-bottom: 2px;">Note: "${order.note}"</div>` : ''}
-            <div style="font-weight: 700; text-transform: uppercase;">Thank you for shopping with us!</div>
-            <div>Computer generated POS thermal receipt</div>
-            <div style="font-weight: 800; font-size: 11px; margin-top: 4px; border-top: 1px solid #000; padding-top: 4px;">www.disibin.com</div>
+            ${purchase.note ? `<div style="font-style: italic; margin-bottom: 2px;">Note: "${purchase.note}"</div>` : ''}
+            <div style="font-weight: 700; text-transform: uppercase;">Procurement Stock Ingestion Receipt</div>
+            <div>Computer generated POS purchase receipt</div>
           </div>
 
-          <div class="cut-margin"></div>
+          <div style="margin-bottom: 15px;"></div>
         </div>
       </body>
     </html>
   `;
 
-  let iframe = document.getElementById('receipt-print-iframe');
+  let iframe = document.getElementById('purchase-print-iframe');
   if (!iframe) {
     iframe = document.createElement('iframe');
-    iframe.id = 'receipt-print-iframe';
+    iframe.id = 'purchase-print-iframe';
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
     iframe.style.bottom = '0';

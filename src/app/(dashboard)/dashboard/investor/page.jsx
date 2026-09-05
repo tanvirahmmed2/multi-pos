@@ -22,7 +22,7 @@ import {
   BiPieChartAlt2
 } from 'react-icons/bi'
 
-import ShareInvestmentDisabled from '@/component/helper/ShareInvestmentDisabled'
+
 
 export default function DashboardInvestorPage() {
   const { dashSidebar, formatCurrency } = useContext(Context)
@@ -62,20 +62,11 @@ export default function DashboardInvestorPage() {
   const fetchInvestorsAndSettings = async () => {
     setLoading(true)
     try {
-      const settingsRes = await axios.get('/api/settings')
-      const isEnabled = settingsRes.data && settingsRes.data.is_share_investment === true
-      setIsShareInvestment(isEnabled)
-      if (isEnabled) {
-        const invRes = await axios.get('/api/investor')
-        setInvestors(invRes.data)
-      }
+      const invRes = await axios.get('/api/investor')
+      setInvestors(Array.isArray(invRes.data) ? invRes.data : [])
     } catch (err) {
-      if (err.response?.status === 403) {
-        setIsShareInvestment(false)
-      } else {
-        toast.error('Failed to fetch investor data')
-        console.error(err)
-      }
+      toast.error('Failed to fetch investor data')
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -224,10 +215,6 @@ export default function DashboardInvestorPage() {
   const grandTotalWithdrawal = investors.reduce((sum, inv) => sum + parseFloat(inv.total_withdrawal || 0), 0)
   const grandNetCapital = grandTotalInvestment - grandTotalWithdrawal
 
-  if (!loading && !isShareInvestment) {
-    return <ShareInvestmentDisabled moduleName="Investors Management" />
-  }
-
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
@@ -252,14 +239,12 @@ export default function DashboardInvestorPage() {
               <BiRefresh className={`text-lg ${loading ? 'animate-spin' : ''}`} />
             </button>
 
-            {isShareInvestment && (
-              <button
-                onClick={() => handleOpenInvestmentModal()}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold shadow-sm hover:bg-emerald-700 transition cursor-pointer"
-              >
-                <BiDollarCircle className="text-lg" /> Record Investment
-              </button>
-            )}
+            <button
+              onClick={() => handleOpenInvestmentModal()}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white text-xs font-bold shadow-sm hover:bg-emerald-700 transition cursor-pointer"
+            >
+              <BiDollarCircle className="text-lg" /> Record Investment
+            </button>
 
             <button
               onClick={() => handleOpenModal()}
@@ -270,98 +255,84 @@ export default function DashboardInvestorPage() {
           </div>
         </div>
 
-        {/* Feature Flag Info Banner if Share Investment Mode is active */}
-        {isShareInvestment && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-xs font-medium text-emerald-800">
-            <div className="flex items-center gap-2">
-              <BiPieChartAlt2 className="text-xl text-emerald-600 shrink-0" />
-              <span>
-                <strong>Share Investment Mode Active:</strong> Equity share percentages are automatically calculated from investments recorded for each investor.
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Investors</p>
-              <h3 className="text-lg font-bold text-slate-800 mt-0.5">{totalInvestors}</h3>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Investors</p>
+              <h3 className="text-xl font-bold text-slate-800 mt-0.5">{totalInvestors}</h3>
             </div>
-            <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold bg-primary">
+            <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-xl text-xl">
               <BiUser />
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Invested</p>
-              <h3 className="text-lg font-bold text-emerald-600 mt-0.5">{formatCurrency(grandTotalInvestment)}</h3>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Capital Raised</p>
+              <h3 className="text-xl font-bold text-emerald-600 mt-0.5">{formatCurrency(grandTotalInvestment)}</h3>
             </div>
-            <div className="w-10 h-10 text-white flex items-center justify-center text-xl shrink-0 font-bold bg-emerald-600">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 flex items-center justify-center rounded-xl text-xl">
               <BiDollarCircle />
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Withdrawn</p>
-              <h3 className="text-lg font-bold text-amber-600 mt-0.5">{formatCurrency(grandTotalWithdrawal)}</h3>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Withdrawals</p>
+              <h3 className="text-xl font-bold text-amber-600 mt-0.5">{formatCurrency(grandTotalWithdrawal)}</h3>
             </div>
-            <div className="w-10 h-10 bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center text-xl shrink-0 font-bold">
+            <div className="w-10 h-10 bg-amber-50 text-amber-600 flex items-center justify-center rounded-xl text-xl">
               <BiUndo />
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Net Capital</p>
-              <h3 className="text-lg font-bold text-slate-800 mt-0.5">{formatCurrency(grandNetCapital)}</h3>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Net Active Capital</p>
+              <h3 className="text-xl font-bold text-slate-800 mt-0.5">{formatCurrency(grandNetCapital)}</h3>
             </div>
-            <div className="w-10 h-10 bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center text-xl shrink-0 font-bold">
-              <BiDollarCircle />
+            <div className="w-10 h-10 bg-slate-100 text-slate-700 flex items-center justify-center rounded-xl text-xl">
+              <BiPieChartAlt2 />
             </div>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="bg-white p-4 border border-slate-200 shadow-sm flex items-center justify-between gap-4">
-          <div className="relative w-full md:w-96">
-            <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
-            <input
-              type="text"
-              placeholder="Search by name, phone, email, NID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
-            />
+        {/* Filter and Table Card */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-4">
+            <div className="relative max-w-xs w-full">
+              <BiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
+              <input
+                type="text"
+                placeholder="Search investors..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-primary font-medium"
+              />
+            </div>
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+              Showing {filteredInvestors.length} of {totalInvestors} investors
+            </span>
           </div>
-          <div className="text-xs font-bold text-slate-500 hidden md:block">
-            Showing <span className="text-slate-800">{filteredInvestors.length}</span> investors
-          </div>
-        </div>
 
-        {/* Investors Table */}
-        <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <BiLoaderAlt className="text-3xl text-primary animate-spin" />
-              <p className="text-xs font-medium text-slate-500">Loading investors...</p>
+            <div className="p-12 flex flex-col items-center justify-center gap-3 text-slate-500">
+              <BiLoaderAlt className="animate-spin text-2xl text-primary" />
+              <span className="text-xs font-semibold">Loading investor directory...</span>
             </div>
           ) : filteredInvestors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-2 text-slate-400">
-              <BiUser className="text-4xl" />
-              <p className="text-sm font-semibold text-slate-600">No investors found</p>
-              <p className="text-xs">Add a new investor or search using different keywords.</p>
+            <div className="p-12 text-center text-slate-500">
+              <p className="text-sm font-semibold">No investors found.</p>
+              <p className="text-xs text-slate-400 mt-1">Try matching search terms or add a new investor.</p>
             </div>
           ) : (
-            <div className="w-full">
+            <div className="w-full overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead className="bg-slate-100/80 text-slate-650 font-bold border-b border-slate-200">
                   <tr>
                     <th className="px-3 md:px-4 py-3">Investor Name</th>
-                    {isShareInvestment && <th className="px-3 md:px-4 py-3">Auto Share %</th>}
+                    <th className="px-3 md:px-4 py-3">Auto Share %</th>
                     <th className="hidden sm:table-cell px-3 md:px-4 py-3">Contact Info</th>
                     <th className="hidden md:table-cell px-3 md:px-4 py-3">NID / Passport</th>
                     <th className="px-3 md:px-4 py-3 text-right">Total Invested</th>
@@ -387,13 +358,11 @@ export default function DashboardInvestorPage() {
                           </div>
                         </td>
 
-                        {isShareInvestment && (
-                          <td className="px-3 md:px-4 py-3 font-bold">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[11px] font-mono">
-                              <BiPieChartAlt2 /> {sharePct.toFixed(2)}%
-                            </span>
-                          </td>
-                        )}
+                        <td className="px-3 md:px-4 py-3 font-bold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[11px] font-mono">
+                            <BiPieChartAlt2 /> {sharePct.toFixed(2)}%
+                          </span>
+                        </td>
 
                         <td className="hidden sm:table-cell px-3 md:px-4 py-3 font-medium text-slate-600">
                           {inv.phone && (
@@ -432,16 +401,14 @@ export default function DashboardInvestorPage() {
 
                         <td className="px-3 md:px-4 py-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
-                            {isShareInvestment && (
-                              <button
-                                onClick={() => handleOpenInvestmentModal(inv)}
-                                className="p-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer text-xs font-bold flex items-center gap-1"
-                                title="Add Investment for Investor"
-                              >
-                                <BiDollarCircle className="text-base" />
-                                <span className="hidden sm:inline">+ Invest</span>
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleOpenInvestmentModal(inv)}
+                              className="p-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer text-xs font-bold flex items-center gap-1"
+                              title="Add Investment for Investor"
+                            >
+                              <BiDollarCircle className="text-base" />
+                              <span className="hidden sm:inline">+ Invest</span>
+                            </button>
 
                             <button
                               onClick={() => handleOpenModal(inv)}

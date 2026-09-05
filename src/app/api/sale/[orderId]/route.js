@@ -229,16 +229,62 @@ export async function DELETE(req, { params }) {
     const { orderId } = await params;
     await client.query('BEGIN');
 
-    await client.query('DELETE FROM public.order_items WHERE order_id = $1', [orderId]);
-    await client.query('DELETE FROM public.payments WHERE order_id = $1', [orderId]);
+    const orderRes = await client.query(
+      `SELECT order_id, branch_id FROM public.orders WHERE order_id = $1 FOR UPDATE`,
+      [orderId]
+    );
 
-    const res = await client.query('DELETE FROM public.orders WHERE order_id = $1 RETURNING order_id', [orderId]);
-    if (res.rows.length === 0) {
+    if (orderRes.rows.length === 0) {
       await client.query('ROLLBACK');
       return Response.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    const order = orderRes.rows[0];
+    const orderBranchId = order.branch_id || 1;
+
+    const itemsRes = await client.query(
+      `SELECT product_id, variant_id, quantity FROM public.order_items WHERE order_id = $1`,
+      [orderId]
+    );
+
+    for (const item of itemsRes.rows) {
+      let targetVarId = item.variant_id;
+      if (!targetVarId) {
+        const defaultVarRes = await client.query(
+          `SELECT variant_id FROM product_variants WHERE product_id = $1 ORDER BY variant_id ASC LIMIT 1`,
+          [item.product_id]
+        );
+        if (defaultVarRes.rows.length > 0) {
+          targetVarId = defaultVarRes.rows[0].variant_id;
+        }
+      }
+
+      if (targetVarId) {
+        await client.query(
+          `INSERT INTO stocks (variant_id, branch_id, stock) VALUES ($1, $2, $3)
+           ON CONFLICT (variant_id, branch_id)
+           DO UPDATE SET stock = stocks.stock + EXCLUDED.stock, updated_at = NOW()`,
+          [targetVarId, orderBranchId, item.quantity]
+        );
+      }
+    }
+
+    const paymentRes = await client.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total_paid FROM public.payments WHERE order_id = $1 AND payment_status = 'completed'`,
+      [orderId]
+    );
+    const totalPaid = parseFloat(paymentRes.rows[0]?.total_paid || 0);
+
+    await client.query('DELETE FROM public.order_items WHERE order_id = $1', [orderId]);
+    await client.query('DELETE FROM public.payments WHERE order_id = $1', [orderId]);
+    await client.query('DELETE FROM public.orders WHERE order_id = $1', [orderId]);
+
     await client.query('COMMIT');
+
+    if (totalPaid > 0) {
+      await updateAvailableBalance(-totalPaid);
+    }
+
     return Response.json({ message: 'Order deleted successfully' }, { status: 200 });
   } catch (error) {
     await client.query('ROLLBACK');

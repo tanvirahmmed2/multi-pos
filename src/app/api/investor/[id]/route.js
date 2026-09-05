@@ -13,9 +13,12 @@ export async function GET(req, { params }) {
     const result = await query(
       `SELECT 
         inv.*,
-        COALESCE(i.total_investment, 0) AS total_investment,
-        COALESCE(w.total_withdrawal, 0) AS total_withdrawal,
-        (COALESCE(i.total_investment, 0) - COALESCE(w.total_withdrawal, 0)) AS net_balance
+        COALESCE(i.total_investment, 0)::float AS total_investment,
+        COALESCE(i.total_investment, 0)::float AS investment_balance,
+        COALESCE(p.total_profit, 0)::float AS profit_balance,
+        COALESCE(w.total_withdrawal, 0)::float AS total_withdrawal,
+        (COALESCE(i.total_investment, 0) + COALESCE(p.total_profit, 0))::float AS total_balance,
+        (COALESCE(i.total_investment, 0) - COALESCE(w.total_withdrawal, 0))::float AS net_balance
       FROM investors inv
       LEFT JOIN (
         SELECT investor_id, SUM(amount) AS total_investment 
@@ -23,6 +26,12 @@ export async function GET(req, { params }) {
         WHERE investor_id = $1
         GROUP BY investor_id
       ) i ON inv.investor_id = i.investor_id
+      LEFT JOIN (
+        SELECT investor_id, SUM(amount) AS total_profit 
+        FROM profits 
+        WHERE investor_id = $1
+        GROUP BY investor_id
+      ) p ON inv.investor_id = p.investor_id
       LEFT JOIN (
         SELECT investor_id, SUM(amount) AS total_withdrawal 
         FROM withdrawals 

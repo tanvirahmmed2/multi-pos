@@ -18,7 +18,7 @@ import {
   BiRefresh,
   BiCreditCard
 } from 'react-icons/bi'
-import ShareInvestmentDisabled from '@/component/helper/ShareInvestmentDisabled'
+
 
 export default function DashboardInvestmentsPage() {
   const { dashSidebar, formatCurrency, currencySymbol } = useContext(Context)
@@ -41,29 +41,18 @@ export default function DashboardInvestmentsPage() {
     note: ''
   })
 
-  const [isShareInvestment, setIsShareInvestment] = useState(false)
-
   const fetchData = async () => {
     setLoading(true)
     try {
-      const settingsRes = await axios.get('/api/settings')
-      const isEnabled = settingsRes.data && settingsRes.data.is_share_investment === true
-      setIsShareInvestment(isEnabled)
-      if (isEnabled) {
-        const [invRes, investorRes] = await Promise.all([
-          axios.get('/api/investments'),
-          axios.get('/api/investor')
-        ])
-        setInvestments(invRes.data)
-        setInvestors(investorRes.data)
-      }
+      const [invRes, investorRes] = await Promise.all([
+        axios.get('/api/investments'),
+        axios.get('/api/investor').catch(() => ({ data: [] }))
+      ])
+      setInvestments(Array.isArray(invRes.data) ? invRes.data : [])
+      setInvestors(Array.isArray(investorRes.data) ? investorRes.data : [])
     } catch (err) {
-      if (err.response?.status === 403) {
-        setIsShareInvestment(false)
-      } else {
-        toast.error('Failed to load investments data')
-        console.error(err)
-      }
+      toast.error('Failed to load investments data')
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -182,9 +171,7 @@ export default function DashboardInvestmentsPage() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  if (!loading && !isShareInvestment) {
-    return <ShareInvestmentDisabled moduleName="Investments System" />
-  }
+
 
   return (
     <div className={`w-full min-h-screen bg-slate-50 pt-20 pb-12 px-4 md:px-8 transition-all duration-300 ${dashSidebar ? 'lg:pl-68' : 'lg:pl-8'}`}>
@@ -355,31 +342,23 @@ export default function DashboardInvestmentsPage() {
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Select Registered Investor</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Select Registered Investor *</label>
                   <select
+                    required
                     value={formData.investor_id}
                     onChange={handleInvestorSelect}
                     className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                   >
-                    <option value="">-- Custom / Direct Investor --</option>
+                    <option value="">-- Select Investor --</option>
                     {investors.map(inv => (
                       <option key={inv.investor_id} value={inv.investor_id}>
                         {inv.name} {inv.phone ? `(${inv.phone})` : ''}
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Investor Display Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. John Doe"
-                    value={formData.investor_name}
-                    onChange={(e) => setFormData({ ...formData, investor_name: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                  />
+                  {investors.length === 0 && (
+                    <p className="text-[11px] text-rose-600 mt-1 font-medium">No investors found. Please create an investor from the Investor module first.</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

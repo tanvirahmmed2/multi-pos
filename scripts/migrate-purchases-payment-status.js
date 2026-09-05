@@ -33,36 +33,40 @@ const poolConfig = {
 const pool = new Pool(poolConfig);
 
 async function run() {
-  console.log('Connecting to database:', poolConfig.host, poolConfig.database);
+  console.log('Connecting to database...');
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-
-    console.log('Ensuring "websites" table exists...');
+    console.log('Adding payment_status, is_paid, and stock_added columns to purchases table...');
     await client.query(`
-      CREATE TABLE IF NOT EXISTS websites (
-        website_id SERIAL PRIMARY KEY,
-        logo TEXT,
-        logo_id TEXT,
-        hero_title TEXT,
-        hero_subtitle TEXT,
-        address TEXT,
-        sociallink TEXT,
-        email TEXT,
-        phone TEXT,
-        is_share_investment BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT now(),
-        updated_at TIMESTAMP DEFAULT now()
-      );
+      ALTER TABLE purchases 
+      ADD COLUMN IF NOT EXISTS payment_status VARCHAR(30) DEFAULT 'unpaid',
+      ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS stock_added BOOLEAN DEFAULT FALSE;
     `);
 
-    console.log('Adding "is_share_investment" column if not exists...');
-    await client.query('ALTER TABLE websites ADD COLUMN IF NOT EXISTS is_share_investment BOOLEAN DEFAULT TRUE;');
+    console.log('Backfilling payment and stock statuses for existing purchases...');
+    // Existing purchases had stock added on creation
+    await client.query(`
+      UPDATE purchases
+      SET stock_added = TRUE
+      WHERE stock_added IS FALSE OR stock_added IS NULL;
+    `);
 
-    await client.query('COMMIT');
-    console.log('✅ Successfully updated websites table with is_share_investment column!');
+    await client.query(`
+      UPDATE purchases p
+      SET 
+        is_paid = (
+          COALESCE((SELECT SUM(amount_paid) FROM purchase_payments pm WHERE pm.purchase_id = p.purchase_id), 0) >= (p.total_amount - 0.01)
+        ),
+        payment_status = CASE
+          WHEN COALESCE((SELECT SUM(amount_paid) FROM purchase_payments pm WHERE pm.purchase_id = p.purchase_id), 0) >= (p.total_amount - 0.01) THEN 'paid'
+          WHEN COALESCE((SELECT SUM(amount_paid) FROM purchase_payments pm WHERE pm.purchase_id = p.purchase_id), 0) > 0 THEN 'partial'
+          ELSE 'unpaid'
+        END;
+    `);
+
+    console.log('✅ Migration completed successfully!');
   } catch (err) {
-    await client.query('ROLLBACK');
     console.error('❌ Migration failed:', err);
     process.exitCode = 1;
   } finally {

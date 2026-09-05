@@ -5,6 +5,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Context } from '@/component/helper/Context'
+import { printPurchaseReceipt } from '@/lib/purchasereceipt'
 import { 
   BiChevronLeft, 
   BiPrinter, 
@@ -18,9 +19,10 @@ import {
   BiDetail,
   BiStore
 } from 'react-icons/bi'
+import { STORE_NAME, STORE_TAGLINE } from '@/lib/secret'
 
 export default function PurchaseDetailPage() {
-  const { dashSidebar, currencySymbol, formatCurrency } = useContext(Context)
+  const { dashSidebar, currencySymbol, formatCurrency, website } = useContext(Context)
   const router = useRouter()
   const params = useParams()
   const { id } = params
@@ -134,7 +136,7 @@ export default function PurchaseDetailPage() {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 print:hidden">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/purchase" className="p-2 bg-white hover:bg-slate-55 border border-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800">
+            <Link href="/dashboard/purchase" className="p-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition text-slate-500 hover:text-slate-800 shadow-xs">
               <BiChevronLeft className="text-xl" />
             </Link>
             <div>
@@ -148,15 +150,15 @@ export default function PurchaseDetailPage() {
           
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.print()}
-              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-sm flex items-center gap-1.5 cursor-pointer"
+              onClick={() => printPurchaseReceipt(purchase, website)}
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition border border-slate-200 shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
-              <BiPrinter className="text-lg" /> Print Invoice
+              <BiPrinter className="text-lg" /> Print Receipt
             </button>
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-sm font-semibold transition border border-rose-200 shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-sm font-semibold transition border border-rose-200 shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {deleting ? (
                 <BiLoaderAlt className="animate-spin" />
@@ -168,45 +170,53 @@ export default function PurchaseDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-8 flex flex-col gap-6 relative overflow-hidden print:shadow-none print:border-none">
-          
-          <div className="absolute top-4 right-4 print:hidden">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-              isFullyPaid ? 'bg-primary/10 text-primary-dark border border-primary/20' : 'bg-amber-50 text-amber-700 border border-amber-200'
-            }`}>
-              {isFullyPaid ? 'Fully Paid' : 'Due Outstanding'}
-            </span>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8 flex flex-col gap-6 relative print:shadow-none print:border-none">
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-start gap-4 border-b border-slate-100 pb-6">
+            <div>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">{STORE_NAME}</h2>
+              <p className="text-slate-500 text-xs mt-0.5">{STORE_TAGLINE}</p>
+            </div>
+
+            <div className="flex flex-col items-start md:items-end gap-3">
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  isFullyPaid ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                }`}>
+                  {isFullyPaid ? 'Fully Paid' : 'Due Outstanding'}
+                </span>
+                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold ${
+                  purchase.stock_added ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {purchase.stock_added ? '✓ Stock Ingested' : '⚠️ Stock Not Added'}
+                </span>
+              </div>
+
+              <div className="text-left md:text-right">
+                <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider">Purchase Invoice</h3>
+                <p className="font-mono text-slate-800 text-lg font-bold mt-0.5">
+                  {purchase.invoice_no ? `#${purchase.invoice_no}` : `INV-PR-${purchase.purchase_id}`}
+                </p>
+                <p className="text-slate-500 text-xs mt-1 flex items-center md:justify-end gap-1">
+                  <BiCalendar className="text-slate-400" />
+                  {new Date(purchase.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between gap-4 border-b border-slate-100 pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/60 print:bg-white print:border-slate-100 print:p-2">
             <div>
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight">E-COMMERCE SYSTEM</h2>
-              <p className="text-slate-450 text-xs mt-0.5">Procurement Management Division</p>
-            </div>
-            <div className="text-left md:text-right">
-              <h3 className="text-slate-450 text-xs font-bold uppercase tracking-wider">Purchase Invoice</h3>
-              <p className="font-mono text-slate-800 text-lg font-bold mt-0.5">
-                {purchase.invoice_no ? `#${purchase.invoice_no}` : `INV-PR-${purchase.purchase_id}`}
-              </p>
-              <p className="text-slate-450 text-xs mt-1 flex md:justify-end items-center gap-1">
-                <BiCalendar />
-                {new Date(purchase.created_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 print:bg-white print:border-slate-100 print:p-2">
-            <div>
-              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Target Branch</h4>
-              <p className="font-bold text-slate-850 mt-1 flex items-center gap-1.5 text-xs">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target Branch</h4>
+              <p className="font-bold text-slate-800 mt-1 flex items-center gap-1.5 text-xs">
                 <BiStore className="text-primary text-sm" />
                 {purchase.branch_name ? `${purchase.branch_name}${purchase.branch_code ? ` (${purchase.branch_code})` : ''}` : 'Main Branch'}
               </p>
             </div>
 
             <div>
-              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Billing From (Supplier)</h4>
-              <p className="font-bold text-slate-850 mt-1 flex items-center gap-1.5 text-xs">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Billing From (Supplier)</h4>
+              <p className="font-bold text-slate-800 mt-1 flex items-center gap-1.5 text-xs">
                 <BiUser className="text-slate-400" />
                 {purchase.supplier_name || 'Walk-in Supplier'}
               </p>
@@ -216,7 +226,7 @@ export default function PurchaseDetailPage() {
             </div>
             
             <div>
-              <h4 className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Created & Processed By</h4>
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Created & Processed By</h4>
               <p className="font-bold text-slate-800 mt-1 flex items-center gap-1.5 text-xs">
                 <BiUser className="text-primary" />
                 {purchase.staff_name ? `${purchase.staff_name} (${purchase.staff_role || 'Staff'})` : 'System Administrator'}
@@ -229,7 +239,7 @@ export default function PurchaseDetailPage() {
 
           <div>
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Line Items</h4>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 font-semibold text-xs border-b border-slate-200 uppercase print:bg-white print:border-b-2 print:border-slate-300">
@@ -239,9 +249,9 @@ export default function PurchaseDetailPage() {
                     <th scope="col" className="px-4 py-2.5 text-right">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {purchase.items?.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/20">
+                    <tr key={item.id} className="hover:bg-slate-50/50">
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="font-semibold text-slate-800">{item.product_name || 'Deleted Product'}</span>
@@ -252,7 +262,7 @@ export default function PurchaseDetailPage() {
                       </td>
                       <td className="px-4 py-3 text-center text-slate-700">{item.quantity}</td>
                       <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(item.purchase_price)}</td>
-                      <td className="px-4 py-3 text-right font-medium text-slate-850">
+                      <td className="px-4 py-3 text-right font-medium text-slate-800">
                         {formatCurrency(parseFloat(item.quantity) * parseFloat(item.purchase_price))}
                       </td>
                     </tr>
@@ -263,10 +273,10 @@ export default function PurchaseDetailPage() {
           </div>
 
           <div className="flex justify-end pt-4 border-t border-slate-100">
-            <div className="w-full md:w-80 flex flex-col gap-2.5 text-sm text-slate-650">
+            <div className="w-full md:w-80 flex flex-col gap-2.5 text-sm text-slate-600">
               <div className="flex justify-between">
                 <span>Subtotal Invoice:</span>
-                <span className="font-medium text-slate-850">{formatCurrency(purchase.subtotal_amount)}</span>
+                <span className="font-medium text-slate-800">{formatCurrency(purchase.subtotal_amount)}</span>
               </div>
               {parseFloat(purchase.extra_discount) > 0 && (
                 <div className="flex justify-between text-rose-600">
@@ -284,7 +294,7 @@ export default function PurchaseDetailPage() {
                 <span>{formatCurrency(purchase.total_paid)}</span>
               </div>
               
-              <div className="flex justify-between p-2 rounded-xl bg-slate-55 bg-slate-50/75 border border-slate-150 items-center">
+              <div className="flex justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 items-center">
                 <span className="font-semibold text-slate-700">Remaining Balance:</span>
                 <span className={`text-base font-bold ${due > 0 ? 'text-amber-600' : 'text-primary-dark'}`}>
                   {formatCurrency(purchase.due_amount)}
@@ -296,20 +306,20 @@ export default function PurchaseDetailPage() {
           <div className="border-t border-slate-100 pt-6 mt-2">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Payments Ledger</h4>
             {purchase.payments && purchase.payments.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-slate-200 rounded-xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase print:bg-white print:border-b-2 print:border-slate-200">
+                    <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase print:bg-white print:border-b-2 print:border-slate-200">
                       <th scope="col" className="px-3 py-2">Payment Date</th>
                       <th scope="col" className="px-3 py-2">Method</th>
                       <th scope="col" className="px-3 py-2">Transaction ID</th>
                       <th scope="col" className="px-3 py-2 text-right">Amount Paid</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-slate-100 bg-white">
                     {purchase.payments.map((p) => (
                       <tr key={p.payment_id}>
-                        <td className="px-3 py-2.5 text-slate-650">
+                        <td className="px-3 py-2.5 text-slate-600">
                           {new Date(p.payment_date).toLocaleString()}
                         </td>
                         <td className="px-3 py-2.5">
@@ -327,28 +337,33 @@ export default function PurchaseDetailPage() {
                 </table>
               </div>
             ) : (
-              <p className="text-xs text-slate-450 italic">No payment record found for this invoice.</p>
+              <p className="text-xs text-slate-400 italic">No payment record found for this invoice.</p>
             )}
           </div>
 
         </div>
 
         {!isFullyPaid && (
-          <form onSubmit={handleLogPayment} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4 print:hidden animate-fade-in">
-            <div className="border-b border-slate-50 pb-2 flex items-center gap-1.5">
+          <form onSubmit={handleLogPayment} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4 print:hidden animate-fade-in">
+            <div className="border-b border-slate-100 pb-2 flex items-center gap-1.5">
               <BiPlusCircle className="text-primary text-lg" />
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Log Invoice Payment</h2>
             </div>
             
             <p className="text-slate-500 text-xs">
-              Log an incremental payment received by the supplier against the outstanding due balance of <span className="font-bold text-amber-600">{formatCurrency(due)}</span>.
+              Log a payment against the outstanding due balance of <span className="font-bold text-amber-600">{formatCurrency(due)}</span>.
+              {!purchase.stock_added && (
+                <span className="block mt-1.5 font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs">
+                  💡 Completing the full payment for this invoice will automatically add the purchase products to store stock inventory.
+                </span>
+              )}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-1">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase">Payment Amount *</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450 text-xs">{currencySymbol}</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
                   <input className="input-style pl-7"
                     type="number"
                     step="0.01"
@@ -366,7 +381,7 @@ export default function PurchaseDetailPage() {
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                 >
                   <option value="Cash">Cash</option>
                   <option value="Card">Credit/Debit Card</option>
